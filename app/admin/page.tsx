@@ -92,7 +92,13 @@ const BellIcon = () => (
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("Product");
   const tabs: TabKey[] = ["Product", "Customers", "Recipes"];
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
+  const filteredLeaderboard = leaderboardData.filter((item) =>
+    item.name.toLowerCase().includes(search.toLowerCase())
+  );
+  
   return (
     <>
       {/* Topbar */}
@@ -105,6 +111,8 @@ export default function AdminDashboardPage() {
             type="text"
             placeholder="Search"
             className="topbar-search"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
           />
         </div>
         <button className="topbar-bell" aria-label="Notifications">
@@ -215,7 +223,7 @@ export default function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {leaderboardData.map((row) => (
+              {filteredLeaderboard.map((row) => (
                 <tr key={row.id}>
                   <td>{row.rank}.</td>
                   <td>
@@ -237,6 +245,15 @@ export default function AdminDashboardPage() {
                   </td>
                 </tr>
               ))}
+              
+              {/* State ketika pencarian tidak ditemukan. colSpan diubah jadi 5 sesuai jumlah header */}
+              {filteredLeaderboard.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: "center", padding: "20px" }}>
+                    Produk "{search}" tidak ditemukan.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -127,7 +127,7 @@
   transform: translateY(-1px);
 }
 
-.btn-filter {
+/* .btn-filter {
   padding: 10px 32px;
   background: transparent;
   color: #888;
@@ -143,6 +143,30 @@
 .btn-filter:hover {
   border-color: #1a3a2a;
   color: #1a3a2a;
+} */
+
+/* Styling untuk Dropdown Filter */
+.select-filter {
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background-color: #fff;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+  appearance: auto; /* Memunculkan panah dropdown bawaan browser */
+}
+
+.select-filter:hover {
+  border-color: #d1d5db;
+}
+
+.select-filter:focus {
+  box-shadow: 0 0 0 2.5px rgba(46, 125, 50, 0.25); /* Efek hijau khas tema kamu */
 }
 
 /* ── Table Card ─────────────────────────────────────────────────────── */
@@ -366,9 +390,16 @@
   border-radius: 20px;
   width: 100%;
   max-width: 460px;
-  padding: 32px 32px 28px 32px;
+  /* padding: 32px 32px 28px 32px; */
   position: relative;
   animation: slideUp 0.2s ease;
+  overflow: hidden;
+  /* max-height: 90vh; */
+  /* overflow-y: auto; */
+}
+
+.modal-content {
+  padding: 32px 32px 28px 32px;
   max-height: 90vh;
   overflow-y: auto;
 }

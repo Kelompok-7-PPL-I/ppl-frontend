@@ -80,6 +80,8 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [stockFilter, setStockFilter] = useState<"all" | "low" | "medium" | "high" >("all");
+
   // Modals
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editTarget, setEditTarget] = useState<Product | null>(null);
@@ -97,10 +99,24 @@ export default function AdminProductsPage() {
 
   // ── Derived data ────────────────────────────────────────────────────
   const filtered = products.filter(
-    (p) =>
+    (p) =>{
+    //1. cek pencarian
+    const matchSearch = 
       p.nama.toLowerCase().includes(search.toLowerCase()) ||
-      p.idProd.toLowerCase().includes(search.toLowerCase())
-  );
+      p.idProd.toLowerCase().includes(search.toLowerCase());
+    
+    //2. Cek kategori stok
+    let matchStock = true;
+    if (stockFilter === "low"){
+        matchStock = p.stok <= 50;
+    }else if (stockFilter === "medium"){
+        matchStock = p.stok > 50 && p.stok <= 200;
+    }else if (stockFilter === "high"){
+        matchStock = p.stok > 200;
+    }
+
+    return matchSearch && matchStock;
+});
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
   const pageItems = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
@@ -219,7 +235,20 @@ export default function AdminProductsPage() {
             <button className="btn-tambah" onClick={openAdd}>
               + Tambah Produk
             </button>
-            <button className="btn-filter">Filter</button>
+            {/* Dropdown Filter Stok Baru */}
+            <select 
+            className="select-filter" 
+            value={stockFilter} 
+            onChange={(e) => {
+                setStockFilter(e.target.value as any);
+                setCurrentPage(1); // Wajib reset halaman ke 1 tiap kali ganti filter
+            }}
+            >
+            <option value="all">All Stock</option>
+            <option value="low">Low (≤ 50)</option>
+            <option value="medium">Medium (51 - 200)</option>
+            <option value="high">High (&gt; 200)</option>
+            </select>
           </div>
         </div>
 
@@ -316,8 +345,9 @@ export default function AdminProductsPage() {
         <div className="modal-backdrop" onClick={() => setModalMode(null)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setModalMode(null)}><CloseIcon /></button>
-            <div className="modal-title">Add New Product</div>
-            <div className="modal-sub">Menambah Produk Baru ke Database</div>
+            <div className="modal-content">  
+                <div className="modal-title">Add New Product</div>
+                <div className="modal-sub">Menambah Produk Baru ke Database</div>
 
             <div className="form-group">
               <label className="form-label">ID Produk</label>
@@ -345,6 +375,7 @@ export default function AdminProductsPage() {
             </div>
             <button className="btn-modal-submit" onClick={handleAdd}>Tambah</button>
           </div>
+          </div>  
         </div>
       )}
 
@@ -353,8 +384,9 @@ export default function AdminProductsPage() {
         <div className="modal-backdrop" onClick={() => setModalMode(null)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setModalMode(null)}><CloseIcon /></button>
-            <div className="modal-title">Edit Detail Product</div>
-            <div className="modal-sub">Edit Data dari Sebuah Produk</div>
+            <div className="modal-content">
+                <div className="modal-title">Edit Detail Product</div>
+                <div className="modal-sub">Edit Data dari Sebuah Produk</div>
 
             <div className="form-group">
               <label className="form-label">ID Produk</label>
@@ -381,6 +413,7 @@ export default function AdminProductsPage() {
               <input type="file" accept="image/*" className="form-upload" />
             </div>
             <button className="btn-modal-submit" onClick={handleEdit}>Edit</button>
+          </div>
           </div>
         </div>
       )}
