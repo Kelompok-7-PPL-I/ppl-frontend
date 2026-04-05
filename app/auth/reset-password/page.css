@@ -1,27 +1,19 @@
-* {
+.auth-page * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
+.auth-page {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
   height: 100vh;
   overflow: hidden;
-}
-
-.auth-page {
-  min-height: 100vh;
-  width: 100%;
   display: flex;
-  overflow: hidden;
-  position: fixed;
   background-color: #043915;
   font-family: 'Plus Jakarta Sans', sans-serif;
   color: white;
-  position: relative;
 }
 
 .map-container {
@@ -51,6 +43,8 @@ html, body {
   overflow-y: auto;
   background-color: #043915;
   z-index: 2;
+  overflow-y: auto; 
+  overflow-x: hidden; 
 }
 
 .form-card {
