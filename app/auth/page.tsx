@@ -1,7 +1,7 @@
 'use client';
 
 import './page.css';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight, Check, X, ArrowLeft, Mail } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
@@ -10,6 +10,7 @@ export default function AuthPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  // State Management
   const [view, setView] = useState<'login' | 'register' | 'forgot'>('login');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
@@ -18,8 +19,11 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Login States
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+
+  // Register States (Initialized with empty strings to avoid Uncontrolled/Controlled error)
   const [regData, setRegData] = useState({
     firstName: '',
     lastName: '',
@@ -28,6 +32,13 @@ export default function AuthPage() {
     confirmPassword: '',
   });
 
+  // Reset messages when switching between Login/Register
+  useEffect(() => {
+    setError(null);
+    setSuccessMsg(null);
+  }, [view]);
+
+  // Password Requirements Logic
   const requirements = [
     { re: /.{8,}/, label: "Minimal 8 Karakter" },
     { re: /[A-Z]/, label: "Minimal 1 Huruf Besar" },
@@ -46,6 +57,7 @@ export default function AuthPage() {
     return { label: "Kuat", color: "bg-green-500", text: "text-green-500" };
   };
 
+  // Auth Handlers
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -71,13 +83,17 @@ export default function AuthPage() {
     const { error } = await supabase.auth.signUp({
       email: regData.email,
       password: regData.password,
-      options: { data: { full_name: `${regData.firstName} ${regData.lastName}` } }
+      options: { 
+        data: { full_name: `${regData.firstName} ${regData.lastName}` },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      }
     });
     if (error) {
       setError(error.message);
       setLoading(false);
     } else {
-      alert("Pendaftaran berhasil! Silakan cek email kamu.");
+      setSuccessMsg("Pendaftaran berhasil! Silakan cek email kamu untuk verifikasi.");
+      setLoading(false);
     }
   };
 
@@ -85,7 +101,6 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setSuccessMsg(null);
     const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
       redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
     });
@@ -111,19 +126,18 @@ export default function AuthPage() {
       
       <section className="form-container">
         <div className="form-card">
-          {error && <div className="error-alert">{error}</div>}
-          {successMsg && <div className="success-alert">{successMsg}</div>}
+          {error && <div className="error-alert" style={{color: '#ff4d4d', fontSize: '14px', textAlign: 'center', marginBottom: '10px'}}>{error}</div>}
+          {successMsg && <div className="success-alert" style={{color: '#4ade80', fontSize: '14px', textAlign: 'center', marginBottom: '10px'}}>{successMsg}</div>}
 
           {view === 'forgot' ? (
             <div className="view-section">
               <button className="btn-back" onClick={() => setView('login')}>
-                <ArrowLeft size={16}/> Back to Login
+                <ArrowLeft size={16}/> Kembali ke Login
               </button>
-              <form className="auth-form" onSubmit={handleForgotPassword}>
               <header className="form-header">
-                <h2 className="form-title">Forgot Password</h2>
-                <p className="form-subtitle">Masukkan email kamu untuk link pemulihan.</p>
+                <h2 className="form-title">Lupa Password</h2>
               </header>
+              <form className="auth-form" onSubmit={handleForgotPassword}>
                 <div className="input-wrapper input-with-icon">
                   <Mail size={18} />
                   <input 
@@ -136,7 +150,7 @@ export default function AuthPage() {
                   />
                 </div>
                 <button className="btn-submit" disabled={loading}>
-                  {loading ? 'Sending...' : 'Send Reset Link'} <ArrowRight size={18} />
+                  {loading ? 'Mengirim...' : 'Kirim Link Reset'} <ArrowRight size={18} />
                 </button>
               </form>
             </div>
@@ -145,7 +159,7 @@ export default function AuthPage() {
               {view === 'login' ? (
                 <section className="view-section">
                   <header className="form-header">
-                    <h2 className="form-title">Login</h2>
+                    <h2 className="form-title">Masuk</h2>
                   </header>
                   <form className="auth-form" onSubmit={handleLogin}>
                     <div className="input-wrapper input-with-icon">
@@ -184,35 +198,38 @@ export default function AuthPage() {
                     )}
 
                     <button className="btn-submit" disabled={loading}>
-                      {loading ? 'Processing...' : 'Login'} <ArrowRight size={18} />
+                      {loading ? 'Memproses...' : 'Login'} <ArrowRight size={18} />
                     </button>
 
-                    <div className="separator">OR</div>
+                    <div className="separator">ATAU</div>
                     
                     <button type="button" className="btn-google" onClick={handleGoogleSignIn}>
-                      <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="G" />
-                      <span>Sign in with Google</span>
+                      <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="G" width={20} />
+                      <span>Masuk dengan Google</span>
                     </button>
                   </form>
                 </section>
               ) : (
                 <section className="view-section">
                   <header className="form-header">
-                    <h2 className="form-title">Register</h2>
+                    <h2 className="form-title">Daftar Akun</h2>
                   </header>
                   <form className="auth-form" onSubmit={handleRegister}>
                     <div className="row-inputs">
                       <input 
                         type="text" 
-                        placeholder="First Name" 
+                        placeholder="Nama Depan" 
                         className="input-field" 
+                        value={regData.firstName}
                         required 
                         onChange={(e) => setRegData({...regData, firstName: e.target.value})}
                       />
                       <input 
                         type="text" 
-                        placeholder="Last Name" 
+                        placeholder="Nama Belakang" 
                         className="input-field" 
+                        value={regData.lastName}
+                        autoComplete="off"
                         required 
                         onChange={(e) => setRegData({...regData, lastName: e.target.value})}
                       />
@@ -222,6 +239,7 @@ export default function AuthPage() {
                       type="email" 
                       placeholder="Email" 
                       className="input-field" 
+                      value={regData.email}
                       required 
                       onChange={(e) => setRegData({...regData, email: e.target.value})}
                     />
@@ -231,6 +249,7 @@ export default function AuthPage() {
                         type={showRegPassword ? "text" : "password"} 
                         placeholder="Password" 
                         className="input-field" 
+                        value={regData.password}
                         required 
                         onChange={(e) => setRegData({...regData, password: e.target.value})}
                       />
@@ -268,8 +287,9 @@ export default function AuthPage() {
                     <div className="input-wrapper">
                       <input 
                         type={showConfirmPassword ? "text" : "password"} 
-                        placeholder="Confirm Password" 
+                        placeholder="Konfirmasi Password" 
                         className={`input-field ${regData.confirmPassword ? (isMatch ? 'match' : 'no-match') : ''}`}
+                        value={regData.confirmPassword}
                         required 
                         onChange={(e) => setRegData({...regData, confirmPassword: e.target.value})}
                       />
@@ -279,14 +299,14 @@ export default function AuthPage() {
                     </div>
 
                     <button className="btn-submit" disabled={!isAllMet || !isMatch || loading}>
-                      {loading ? 'Processing...' : 'Sign Up'} <ArrowRight size={18} />
+                      {loading ? 'Memproses...' : 'Daftar Sekarang'} <ArrowRight size={18} />
                     </button>
 
-                    <div className="separator">OR</div>
+                    <div className="separator">ATAU</div>
 
                     <button type="button" className="btn-google" onClick={handleGoogleSignIn}>
-                      <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="G" />
-                      <span>Sign up with Google</span>
+                      <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="G" width={20} />
+                      <span>Daftar dengan Google</span>
                     </button>
                   </form>
                 </section>
@@ -296,7 +316,7 @@ export default function AuthPage() {
                 {view === 'login' ? (
                   <>Belum punya akun? <span className="highlight-yellow">Daftar</span></>
                 ) : (
-                  <>Sudah punya akun? <span className="highlight-yellow">Login</span></>
+                  <>Sudah punya akun? <span className="highlight-yellow">Masuk</span></>
                 )}
               </button>
             </>

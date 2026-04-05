@@ -48,12 +48,12 @@ export default function ResetPasswordPage() {
 
   return (
     <main className="auth-page">
-      
       <section className="map-container" />
 
       <section className="form-container">
         <div className="form-card">
           
+      <div className="view-section">
           <header className="form-header">
             <h2 className="form-title">New Password</h2>
             <p className="form-subtitle">Silakan masukkan kata sandi baru untuk akun Panganesia kamu.</p>
@@ -111,6 +111,7 @@ export default function ResetPasswordPage() {
             </button>
           </form>
 
+        </div>
         </div>
       </section>
     </main>

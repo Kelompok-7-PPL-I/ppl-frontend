@@ -1,33 +1,27 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
 .auth-page {
   min-height: 100vh;
   width: 100%;
   display: flex;
   overflow: hidden;
+  position: fixed;
   background-color: #043915;
   font-family: 'Plus Jakarta Sans', sans-serif;
   color: white;
   position: relative;
-}
-
-@media (max-width: 1023px) {
-  .auth-page {
-    background-image: url('/indonesian-map.png');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-  }
-
-  .auth-page::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to bottom,
-      rgba(4, 57, 21, 0.8),
-      rgba(4, 57, 21, 0.95)
-    );
-    z-index: 1;
-  }
 }
 
 .map-container {
@@ -73,13 +67,7 @@
   font-size: 24px; 
   font-weight: 700;
   letter-spacing: -0.5px;
-  margin-bottom: 4px;
-}
-
-.form-subtitle {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 14px;
+  margin-bottom: 16px;
 }
 
 .auth-form {
@@ -316,6 +304,35 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  width: 100%;
+}
+
+.row-inputs .input-field {
+  flex: 1; 
+  min-width: 0; 
+}
+
+@media (max-width: 1023px) {
+  .auth-page {
+    background-image: url('/indonesian-map.png');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .auth-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(4, 57, 21, 0.85), rgba(4, 57, 21, 0.98));
+    z-index: 1;
+  }
+
+    .form-container {
+    max-width: 100%;
+    border-left: none;
+    background-color: transparent;
+    padding: 24px;
+  }
 }
 
 @media (min-width: 1024px) {
