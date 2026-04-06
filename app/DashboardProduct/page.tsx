@@ -4,6 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import "./page.css";
+import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -115,6 +117,15 @@ export default function DashboardProduct() {
   const [activeBanner, setActiveBanner] = useState(0);
   const [products, setProducts] = useState<Product[]>(initialProducts);
 
+  const supabase = createClient();
+  const router = useRouter();
+  
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.refresh();
+    router.push("/");
+  };
+
   const handleToggleLike = (id: number) => {
     setProducts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, liked: !p.liked } : p))
@@ -160,10 +171,22 @@ export default function DashboardProduct() {
             <CartIcon />
             <span className="nav-link-label cart-label">Cart</span>
           </Link>
-          <Link href="/profile" className="nav-link">
-            <ProfileIcon />
-            <span className="nav-link-label profile-label">Profile</span>
-          </Link>
+
+          {/* BAGIAN PROFILE DROPDOWN */}
+          <div className="profile-dropdown-container">
+            <div className="nav-link profile-trigger">
+              <ProfileIcon />
+              <span className="nav-link-label profile-label">Profile</span>
+            </div>
+            
+            {/* Menu yang muncul saat hover */}
+            <div className="dropdown-menu">
+              <Link href="/profile" className="dropdown-item">My Profile</Link>
+              <button onClick={handleLogout} className="dropdown-item logout-btn-text">
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
       </nav>
 
