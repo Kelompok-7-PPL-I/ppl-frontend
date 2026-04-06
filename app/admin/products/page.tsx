@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./page.css";
+import { createBrowserClient } from '@supabase/ssr'
+
+export const createClient = () =>
+  createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Product {
-  id: number;
+  id: number; // Ini akan memetakan id_produk dari DB
   idProd: string;
   nama: string;
   harga: number;
@@ -16,22 +23,9 @@ interface Product {
 
 type ModalMode = "add" | "edit" | null;
 
-// ── Mock Data ────────────────────────────────────────────────────────────────
-const generateProducts = (): Product[] =>
-  Array.from({ length: 46 }, (_, i) => ({
-    id: i + 1,
-    idProd: `ID-${String(i + 1).padStart(3, "0")}`,
-    nama: "Beras Merah Organik",
-    harga: 36000,
-    stok: 1234,
-    deskripsi: "lorem ipsum lorem ipsum lorem ipsum lorem ipsum",
-    gambar: "/images/corn-1.jpg",
-  }));
-
-const ALL_PRODUCTS = generateProducts();
 const PER_PAGE = 10;
 
-// ── Icons ────────────────────────────────────────────────────────────────────
+// ── Icons (Tetap Sama) ───────────────────────────────────────────────────────
 const SearchIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -76,54 +70,91 @@ const fmtRupiah = (n: number) =>
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>(ALL_PRODUCTS);
+  const supabase = createClient();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-
-  const [stockFilter, setStockFilter] = useState<"all" | "low" | "medium" | "high" >("all");
+  const [stockFilter, setStockFilter] = useState<"all" | "low" | "medium" | "high">("all");
 
   // Modals
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editTarget, setEditTarget] = useState<Product | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
-  // Add form state
-  const [addForm, setAddForm] = useState({
-    idProd: "", nama: "", harga: "", stok: "", deskripsi: "", gambar: "",
-  });
+  // Form states
+  const [addForm, setAddForm] = useState({ idProd: "", nama: "", harga: "", stok: "", deskripsi: "" });
+  const [editForm, setEditForm] = useState({ idProd: "", nama: "", harga: "", stok: "", deskripsi: "" });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Edit form state
-  const [editForm, setEditForm] = useState({
-    idProd: "", nama: "", harga: "", stok: "", deskripsi: "", gambar: "",
-  });
+  // ── Fetch Data From Supabase ──────────────────────────────────────────
+  const fetchProducts = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('produk')
+      .select('*')
+      .order('id_produk', { ascending: false });
+
+    if (!error && data) {
+      const mapped = data.map((p: any) => ({
+        id: p.id_produk,
+        idProd: p.id_produk.toString(),
+        nama: p.nama_produk,
+        harga: p.harga,
+        stok: p.stok,
+        deskripsi: p.deskripsi || "",
+        gambar: p.gambar_url || "/images/corn-1.jpg",
+      }));
+      setProducts(mapped);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // ── Image Upload Logic ───────────────────────────────────────────────
+const uploadImage = async (file: File): Promise<string> => {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}.${fileExt}`;
+  const filePath = `products/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('panganesia')
+    .upload(filePath, file);
+
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from('panganesia').getPublicUrl(filePath);
+  
+  // Pastikan mengembalikan string, jangan biarkan ada celah null
+  return data.publicUrl;
+};
 
   // ── Derived data ────────────────────────────────────────────────────
-  const filtered = products.filter(
-    (p) =>{
-    //1. cek pencarian
-    const matchSearch = 
+  const filtered = products.filter((p) => {
+    const matchSearch =
       p.nama.toLowerCase().includes(search.toLowerCase()) ||
       p.idProd.toLowerCase().includes(search.toLowerCase());
-    
-    //2. Cek kategori stok
+
     let matchStock = true;
-    if (stockFilter === "low"){
-        matchStock = p.stok <= 50;
-    }else if (stockFilter === "medium"){
-        matchStock = p.stok > 50 && p.stok <= 200;
-    }else if (stockFilter === "high"){
-        matchStock = p.stok > 200;
-    }
+    if (stockFilter === "low") matchStock = p.stok <= 50;
+    else if (stockFilter === "medium") matchStock = p.stok > 50 && p.stok <= 200;
+    else if (stockFilter === "high") matchStock = p.stok > 200;
 
     return matchSearch && matchStock;
-});
+  });
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
   const pageItems = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
   // ── Handlers ────────────────────────────────────────────────────────
   const openAdd = () => {
-    setAddForm({ idProd: "", nama: "", harga: "", stok: "", deskripsi: "", gambar: "" });
+    setAddForm({ idProd: "", nama: "", harga: "", stok: "", deskripsi: "" });
+    setSelectedFile(null);
     setModalMode("add");
   };
 
@@ -135,55 +166,79 @@ export default function AdminProductsPage() {
       harga: String(p.harga),
       stok: String(p.stok),
       deskripsi: p.deskripsi,
-      gambar: p.gambar,
     });
+    setSelectedFile(null);
     setModalMode("edit");
   };
 
-  const handleAdd = () => {
-    if (!addForm.nama.trim() || !addForm.idProd.trim()) return;
-    const newProduct: Product = {
-      id: Date.now(),
-      idProd: addForm.idProd,
-      nama: addForm.nama,
-      harga: Number(addForm.harga) || 0,
-      stok: Number(addForm.stok) || 0,
-      deskripsi: addForm.deskripsi,
-      gambar: "/images/corn-1.jpg",
-    };
-    setProducts((prev) => [newProduct, ...prev]);
-    setModalMode(null);
-    setCurrentPage(1);
+  const handleAdd = async () => {
+    if (!addForm.nama.trim()) return;
+    setIsSubmitting(true);
+    try {
+      let imageUrl = "/images/corn-1.jpg";
+      if (selectedFile) {
+        const url = await uploadImage(selectedFile); 
+        imageUrl = url;
+      }
+
+      const { error } = await supabase.from('produk').insert([{
+        nama_produk: addForm.nama,
+        harga: Number(addForm.harga),
+        stok: Number(addForm.stok),
+        deskripsi: addForm.deskripsi,
+        gambar_url: imageUrl,
+        id_kategori: 1 // Ganti sesuai kebutuhan
+      }]);
+
+      if (error) throw error;
+      await fetchProducts();
+      setModalMode(null);
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (!editTarget) return;
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === editTarget.id
-          ? {
-              ...p,
-              idProd: editForm.idProd,
-              nama: editForm.nama,
-              harga: Number(editForm.harga) || p.harga,
-              stok: Number(editForm.stok) || p.stok,
-              deskripsi: editForm.deskripsi,
-            }
-          : p
-      )
-    );
-    setModalMode(null);
-    setEditTarget(null);
+    setIsSubmitting(true);
+    try {
+      let imageUrl = editTarget.gambar;
+      if (selectedFile) {
+        imageUrl = await uploadImage(selectedFile);
+      }
+
+      const { error } = await supabase.from('produk').update({
+        nama_produk: editForm.nama,
+        harga: Number(editForm.harga),
+        stok: Number(editForm.stok),
+        deskripsi: editForm.deskripsi,
+        gambar_url: imageUrl
+      }).eq('id_produk', editTarget.id);
+
+      if (error) throw error;
+      await fetchProducts();
+      setModalMode(null);
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
-    setDeleteTarget(null);
-    if (pageItems.length === 1 && safePage > 1) setCurrentPage(safePage - 1);
+    try {
+      const { error } = await supabase.from('produk').delete().eq('id_produk', deleteTarget.id);
+      if (error) throw error;
+      await fetchProducts();
+      setDeleteTarget(null);
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    }
   };
 
-  // ── Pagination helpers ───────────────────────────────────────────────
   const getPageNumbers = () => {
     const pages: (number | "...")[] = [];
     if (totalPages <= 5) {
@@ -203,7 +258,6 @@ export default function AdminProductsPage() {
   const startItem = (safePage - 1) * PER_PAGE + 1;
   const endItem = Math.min(safePage * PER_PAGE, filtered.length);
 
-  // ── Render ───────────────────────────────────────────────────────────
   return (
     <>
       {/* Topbar */}
@@ -225,7 +279,6 @@ export default function AdminProductsPage() {
 
       {/* Page body */}
       <div className="products-page">
-        {/* Header */}
         <div className="products-header">
           <div className="products-header-left">
             <h1>Products</h1>
@@ -235,25 +288,22 @@ export default function AdminProductsPage() {
             <button className="btn-tambah" onClick={openAdd}>
               + Tambah Produk
             </button>
-            {/* Dropdown Filter Stok Baru */}
             <select 
-            className="select-filter" 
-            value={stockFilter} 
-            onChange={(e) => {
-                setStockFilter(e.target.value as any);
-                setCurrentPage(1); // Wajib reset halaman ke 1 tiap kali ganti filter
-            }}
+              className="select-filter" 
+              value={stockFilter} 
+              onChange={(e) => { setStockFilter(e.target.value as any); setCurrentPage(1); }}
             >
-            <option value="all">All Stock</option>
-            <option value="low">Low (≤ 50)</option>
-            <option value="medium">Medium (51 - 200)</option>
-            <option value="high">High (&gt; 200)</option>
+              <option value="all">All Stock</option>
+              <option value="low">Low (≤ 50)</option>
+              <option value="medium">Medium (51 - 200)</option>
+              <option value="high">High (&gt; 200)</option>
             </select>
           </div>
         </div>
 
         {/* Table */}
         <div className="table-card">
+          {loading ? <div style={{padding: "20px", textAlign: "center"}}>Loading data...</div> : (
           <table className="products-table">
             <thead>
               <tr>
@@ -284,7 +334,7 @@ export default function AdminProductsPage() {
                     <td>{p.stok.toLocaleString("id-ID")}</td>
                     <td className="td-desc">{p.deskripsi}</td>
                     <td>
-                      <button className="img-badge">image</button>
+                      <img src={p.gambar} alt="thumb" style={{width: '30px', height: '30px', borderRadius: '4px', objectFit: 'cover'}} />
                     </td>
                     <td>
                       <div className="action-cell">
@@ -301,6 +351,7 @@ export default function AdminProductsPage() {
               )}
             </tbody>
           </table>
+          )}
         </div>
 
         {/* Pagination */}
@@ -313,9 +364,7 @@ export default function AdminProductsPage() {
               className="pg-btn"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
-            >
-              Prev
-            </button>
+            >Prev</button>
             {getPageNumbers().map((pg, i) =>
               pg === "..." ? (
                 <span key={`ellipsis-${i}`} className="pg-ellipsis">...</span>
@@ -324,18 +373,14 @@ export default function AdminProductsPage() {
                   key={pg}
                   className={`pg-btn ${safePage === pg ? "active" : ""}`}
                   onClick={() => setCurrentPage(pg as number)}
-                >
-                  {pg}
-                </button>
+                >{pg}</button>
               )
             )}
             <button
               className="pg-btn"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
-            >
-              Next
-            </button>
+            >Next</button>
           </div>
         </div>
       </div>
@@ -346,35 +391,33 @@ export default function AdminProductsPage() {
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setModalMode(null)}><CloseIcon /></button>
             <div className="modal-content">  
-                <div className="modal-title">Add New Product</div>
-                <div className="modal-sub">Menambah Produk Baru ke Database</div>
+              <div className="modal-title">Add New Product</div>
+              <div className="modal-sub">Menambah Produk Baru ke Database</div>
 
-            <div className="form-group">
-              <label className="form-label">ID Produk</label>
-              <input className="form-input" value={addForm.idProd} onChange={(e) => setAddForm({ ...addForm, idProd: e.target.value })} />
+              <div className="form-group">
+                <label className="form-label">Nama Produk</label>
+                <input className="form-input" value={addForm.nama} onChange={(e) => setAddForm({ ...addForm, nama: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Harga</label>
+                <input className="form-input" type="number" value={addForm.harga} onChange={(e) => setAddForm({ ...addForm, harga: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Stok</label>
+                <input className="form-input" type="number" value={addForm.stok} onChange={(e) => setAddForm({ ...addForm, stok: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Deskripsi</label>
+                <textarea className="form-textarea" value={addForm.deskripsi} onChange={(e) => setAddForm({ ...addForm, deskripsi: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Gambar Produk</label>
+                <input type="file" accept="image/*" className="form-upload" onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)} />
+              </div>
+              <button className="btn-modal-submit" onClick={handleAdd} disabled={isSubmitting}>
+                {isSubmitting ? "Processing..." : "Tambah"}
+              </button>
             </div>
-            <div className="form-group">
-              <label className="form-label">Nama Produk</label>
-              <input className="form-input" value={addForm.nama} onChange={(e) => setAddForm({ ...addForm, nama: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Harga</label>
-              <input className="form-input" type="number" value={addForm.harga} onChange={(e) => setAddForm({ ...addForm, harga: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Stok</label>
-              <input className="form-input" type="number" value={addForm.stok} onChange={(e) => setAddForm({ ...addForm, stok: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Deskripsi</label>
-              <textarea className="form-textarea" value={addForm.deskripsi} onChange={(e) => setAddForm({ ...addForm, deskripsi: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Gambar Produk</label>
-              <input type="file" accept="image/*" className="form-upload" />
-            </div>
-            <button className="btn-modal-submit" onClick={handleAdd}>Tambah</button>
-          </div>
           </div>  
         </div>
       )}
@@ -385,35 +428,33 @@ export default function AdminProductsPage() {
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setModalMode(null)}><CloseIcon /></button>
             <div className="modal-content">
-                <div className="modal-title">Edit Detail Product</div>
-                <div className="modal-sub">Edit Data dari Sebuah Produk</div>
+              <div className="modal-title">Edit Detail Product</div>
+              <div className="modal-sub">Edit Data dari Sebuah Produk</div>
 
-            <div className="form-group">
-              <label className="form-label">ID Produk</label>
-              <input className="form-input" value={editForm.idProd} onChange={(e) => setEditForm({ ...editForm, idProd: e.target.value })} />
+              <div className="form-group">
+                <label className="form-label">Nama Produk</label>
+                <input className="form-input" value={editForm.nama} onChange={(e) => setEditForm({ ...editForm, nama: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Harga</label>
+                <input className="form-input" value={editForm.harga} onChange={(e) => setEditForm({ ...editForm, harga: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Stok</label>
+                <input className="form-input" value={editForm.stok} onChange={(e) => setEditForm({ ...editForm, stok: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Deskripsi</label>
+                <textarea className="form-textarea" value={editForm.deskripsi} onChange={(e) => setEditForm({ ...editForm, deskripsi: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Ganti Gambar (Opsional)</label>
+                <input type="file" accept="image/*" className="form-upload" onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)} />
+              </div>
+              <button className="btn-modal-submit" onClick={handleEdit} disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Edit"}
+              </button>
             </div>
-            <div className="form-group">
-              <label className="form-label">Nama Produk</label>
-              <input className="form-input" value={editForm.nama} onChange={(e) => setEditForm({ ...editForm, nama: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Harga</label>
-              <input className="form-input" value={editForm.harga} onChange={(e) => setEditForm({ ...editForm, harga: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Stok</label>
-              <input className="form-input" value={editForm.stok} onChange={(e) => setEditForm({ ...editForm, stok: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Deskripsi</label>
-              <textarea className="form-textarea" value={editForm.deskripsi} onChange={(e) => setEditForm({ ...editForm, deskripsi: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Gambar Produk</label>
-              <input type="file" accept="image/*" className="form-upload" />
-            </div>
-            <button className="btn-modal-submit" onClick={handleEdit}>Edit</button>
-          </div>
           </div>
         </div>
       )}
