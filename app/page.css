@@ -319,7 +319,7 @@
 /* Variasi Tinggi untuk ritme asimetris */
 .short { min-height: 220px; }
 .tall { min-height: 300px; }
-.featured { min-height: 340px; background-color: rgba(255, 255, 255, 0.08); }
+.featured { min-height: 340px; background-color: rgba(255, 255, 255, 0.08); justify-content: center;}
 
 .wide-footer {
     width: 100%;
