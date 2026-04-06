@@ -58,43 +58,66 @@ export default function AuthPage() {
   };
 
   // Auth Handlers
-  const handleLogin = async (e: React.FormEvent) => {
+const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password: loginPassword,
-    });
-    if (error) {
-      setError(error.message);
+
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        // Ambil role dari tabel users berdasarkan id_user
+        const { data: userData, error: dbError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id_user', authData.user.id)
+          .single();
+
+        if (dbError) {
+          console.error("Profil tidak ditemukan:", dbError.message);
+          router.push('/DashboardProduct');
+        } else {
+          if (userData?.role === 'admin') {
+            router.push('/admin');
+          } else {
+            router.push('/DashboardProduct');
+          }
+        }
+        router.refresh();
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
       setLoading(false);
-    } else {
-      router.push('/DashboardProduct');
-      router.refresh();
     }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAllMet || !isMatch) return;
     setLoading(true);
-    setError(null);
+    
     const { error } = await supabase.auth.signUp({
       email: regData.email,
       password: regData.password,
-      options: { 
+      options: {
         data: { full_name: `${regData.firstName} ${regData.lastName}` },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`, // ARAHKAN KE CALLBACK
       }
     });
+
     if (error) {
       setError(error.message);
-      setLoading(false);
     } else {
-      setSuccessMsg("Pendaftaran berhasil! Silakan cek email kamu untuk verifikasi.");
-      setLoading(false);
+      setSuccessMsg("Pendaftaran Berhasil! Cek email kamu untuk verifikasi.");
+      // JANGAN router.push ke dashboard di sini!
     }
+    setLoading(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
