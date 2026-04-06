@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className={plusJakarta.variable}>
-      <body className="antialiased">
+      <body className={`antialiased ${plusJakarta.className}`}>
         <Providers>
           {children}
         </Providers>
