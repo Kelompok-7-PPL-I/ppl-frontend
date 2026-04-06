@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import Link from "next/link";
 import "./page.css";
@@ -26,14 +29,6 @@ const banners: Banner[] = [
   { id: 1, title: "SPECIAL\nDISCOUNT", bg: "#1f6e2b" },
   { id: 2, title: "FREE\nDELIVERY", bg: "#329c45" },
 ];
-
-const initialProducts: Product[] = Array.from({ length: 6 }, (_, i) => ({
-  id: i + 1,
-  name: "Jagung",
-  price: 10000,
-  image: "/images/corn-2.jpg",
-  liked: false,
-}));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatRupiah = (n: number) =>
@@ -83,6 +78,7 @@ function ProductCard({
           src={product.image}
           alt={product.name}
           fill
+          loading="lazy"
           sizes="(max-width: 768px) 100vw, 33vw"
           style={{ objectFit: "cover" }}
           className="card-image"
@@ -102,7 +98,9 @@ function ProductCard({
           <Link href={`/product/${product.id}`} className="btn-detail">
             Detail
           </Link>
-          <button className="btn-buy">Buy Now</button>
+          <Link href={`/checkout`} className="btn-buy">
+            Buy Now
+          </Link>
         </div>
       </div>
     </div>
@@ -113,12 +111,37 @@ function ProductCard({
 export default function DashboardProduct() {
   const [search, setSearch] = useState("");
   const [activeBanner, setActiveBanner] = useState(0);
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [localLikes, setLocalLikes] = useState<number[]>([]);
 
+  const { data: serverProducts = [], isLoading, isError } = useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("produk").select("*");
+      if (error) throw new Error(error.message);
+      
+      // Map data di sini 
+      return data.map((item) => ({
+        id: item.id_produk,
+        name: item.nama_produk,
+        price: Number(item.harga),
+        image: item.gambar_url,
+        liked: false,
+      }));
+    },
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const products = serverProducts.map((p) => ({
+    ...p,
+    liked: localLikes.includes(p.id),
+  }));
+  
   const handleToggleLike = (id: number) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, liked: !p.liked } : p))
+    setLocalLikes((prev) =>
+      prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id]
     );
+    console.log("Toggle like untuk id:", id);
   };
 
   const nextBanner = () =>
@@ -127,6 +150,22 @@ export default function DashboardProduct() {
   const filtered = products.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  function ProductSkeleton() {
+  return (
+      <div className="product-card skeleton">
+        <div className="card-image-wrap skeleton-box" />
+        <div className="card-body">
+          <div className="skeleton-line title" />
+          <div className="skeleton-line price" />
+          <div className="skeleton-actions">
+            <div className="skeleton-btn" />
+            <div className="skeleton-btn" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-root">
@@ -206,7 +245,15 @@ export default function DashboardProduct() {
 
       {/* ── Products Grid ── */}
       <section className="products-section">
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="products-grid">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ProductSkeleton key={i} />
+          ))}
+        </div>
+        ) : isError ? (
+          <p>Terjadi kesalahan saat memuat data.</p>
+        ) : filtered.length === 0 ? (
           <p className="no-results">Produk tidak ditemukan.</p>
         ) : (
           <div className="products-grid">
