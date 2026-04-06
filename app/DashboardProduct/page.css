@@ -1,0 +1,469 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+.dashboard-root {
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  padding-bottom: 80px;
+}
+
+/* ── Navbar ── */
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  padding: 24px 60px;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.search-wrap {
+  flex: 1;
+  position: relative;
+  max-width: 500px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 14px 48px 14px 24px;
+  border: none;
+  border-radius: 50px;
+  background: #f2f3f5;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+  transition: background 0.2s;
+}
+
+.search-input:focus {
+  background: #e8eaed;
+}
+
+.search-icon-wrap {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  margin-left: auto;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 16px;
+  transition: transform 0.2s;
+}
+
+.nav-link:hover {
+  transform: translateY(-1px);
+}
+
+.cart-label {
+  color: #2a8a3a;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.profile-label {
+  color: #ffcc00;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* ── Hero Text ── */
+.hero-text {
+  padding: 20px 60px 10px 60px;
+}
+
+.welcome-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #14532d; /* Warna hijau tua mirip mockup */
+  margin: 0 0 6px 0;
+  letter-spacing: -0.3px;
+}
+
+.welcome-sub {
+  font-size: 16px;
+  color: #777;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ── Banner ── */
+.banner-section {
+  padding: 24px 60px 48px 60px;
+}
+
+.banner-card {
+  position: relative;
+  border-radius: 20px;
+  padding: 56px 48px;
+  overflow: hidden;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  transition: background 0.4s ease;
+}
+
+.banner-content {
+  max-width: 500px;
+}
+
+.banner-title {
+  font-size: 40px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+
+.banner-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.banner-arrow:hover {
+  opacity: 0.7;
+}
+
+.banner-arrow-right {
+  right: 24px;
+}
+
+.banner-dots {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+}
+
+.banner-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid #fff;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s;
+  padding: 0;
+}
+
+.dot-active {
+  background: #fff;
+}
+
+/* ── Products ── */
+.products-section {
+  padding: 0 60px;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 32px;
+}
+
+.no-results {
+  text-align: center;
+  color: #999;
+  font-size: 15px;
+  padding: 40px 0;
+}
+
+/* ── Product Card ── */
+.product-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1);
+}
+
+.card-image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 20px 20px 0 0;
+  overflow: visible; /* Biar tombol wishlist bisa overlap */
+}
+
+.card-image {
+  border-radius: 20px 20px 0 0;
+}
+
+.like-btn {
+  position: absolute;
+  bottom: -18px; /* Offset melayang */
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s;
+  z-index: 10;
+}
+
+.like-btn:hover {
+  transform: scale(1.1);
+}
+
+.card-body {
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.card-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.card-price {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+}
+
+.card-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: auto;
+}
+
+.btn-detail {
+  flex: 1;
+  padding: 10px 0;
+  border: 1px solid #333;
+  border-radius: 50px;
+  background: transparent;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  display: inline-block;
+  text-align: center;
+}
+
+.btn-detail:hover {
+  background: #f9f9f9;
+}
+
+.btn-buy {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  border-radius: 50px;
+  background: #2a8a3a;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+
+  text-decoration: none;
+  display: flex;    
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.btn-buy:hover {
+  background: #1f6e2b;
+  text-decoration: none;
+  color: #fff; 
+}
+
+.skeleton {
+  animation: pulse 1.5s infinite;
+}
+
+.skeleton-box {
+  width: 100%;
+  height: 160px;
+  background: #e5e5e5;
+  border-radius: 12px;
+}
+
+.skeleton-line {
+  height: 12px;
+  background: #e5e5e5;
+  border-radius: 6px;
+  margin: 8px 0;
+}
+
+.skeleton-line.title {
+  width: 60%;
+  height: 14px;
+}
+
+.skeleton-line.price {
+  width: 40%;
+}
+
+.skeleton-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.skeleton-btn {
+  width: 60px;
+  height: 28px;
+  background: #e5e5e5;
+  border-radius: 8px;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 16px 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .search-wrap {
+    order: 3;
+    max-width: 100%;
+    margin-top: 8px;
+  }
+
+  .hero-text,
+  .banner-section,
+  .products-section {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .banner-card {
+    padding: 32px 24px;
+    min-height: 200px;
+  }
+
+  .banner-title {
+    font-size: 28px;
+  }
+}
+/* Container utama */
+.profile-dropdown-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+/* Menu Dropdown (Sembunyi secara default) */
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background-color: white;
+  min-width: 140px;
+  box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  z-index: 10;
+  padding: 8px 0;
+  border: 1px solid #eee;
+}
+
+/* Munculkan saat container di-hover */
+.profile-dropdown-container:hover .dropdown-menu {
+  display: block;
+}
+
+/* Item di dalam menu */
+.dropdown-item {
+  display: block;
+  padding: 10px 16px;
+  text-decoration: none;
+  color: #333;
+  font-size: 14px;
+  text-align: left;
+  width: 100%;
+  background: none;
+  border: none;
+  transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #f5f5f5;
+  color: #2a8a3a; /* Warna hijau tema kamu */
+}
+
+/* Khusus tombol logout */
+.logout-btn-text {
+  color: #e53935; /* Warna merah */
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.logout-btn-text:hover {
+  background-color: #fff5f5;
+  color: #c62828;
+}
