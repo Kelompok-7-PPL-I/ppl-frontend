@@ -1,34 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 import "./page.css";
 
-const thumbnails = [
-  "/images/corn-1.jpg",
-  "/images/corn-2.jpg",
-  "/images/corn-3.jpg",
-  "/images/corn-4.jpg",
-  "/images/corn-5.jpg",
-  "/images/corn-6.jpg",
-];
+const formatRupiah = (n: number) =>
+  "Rp " + n.toLocaleString("id-ID").replace(/\./g, ".");
 
 export default function DetailProduct() {
   const router = useRouter();
+  const params = useParams();
+  const id = params.id;
+  console.log(id);
+
+  const [product, setProduct] = useState<any>(null);
+
+  useEffect(() => {
+  const fetchProduct = async () => {
+    const { data, error } = await supabase
+      .from("produk")
+      .select("*")
+      .eq("id_produk", id)
+      .single();
+
+    if (data) {
+      setProduct({
+        id: data.id_produk,
+        name: data.nama_produk,
+        price: Number(data.harga),
+        images: data.gambar_url ? [data.gambar_url] : [],
+        desc: data.deskripsi,
+      });
+    }
+
+    if (error) {
+      console.error(error);
+    }
+  };
+
+  if (id) fetchProduct();
+}, [id]);
+
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [addedToCart, setAddedToCart] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
 
-  const visibleThumbs = thumbnails.slice(startIndex, startIndex + 3);
-  const extraCount = thumbnails.length - (startIndex + 3);
+  const images = product?.images ?? [];
+  const visibleThumbs = images.slice(0, 3);
+  const extraCount = images.length - 3;
 
   const handleDecrease = () => setQuantity((q) => Math.max(1, q - 1));
   const handleIncrease = () => setQuantity((q) => q + 1);
 
   const handleNext = () => {
-  if (activeImage < thumbnails.length - 1) {
+  if (activeImage < images.length - 1) {
     const newIndex = activeImage + 1;
     setActiveImage(newIndex);
 
@@ -54,6 +84,10 @@ const handlePrev = () => {
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
   };
+
+if (!product) {
+  return <p>Loading...</p>;
+}
 
   return (
     <div className="detail-root">
@@ -82,63 +116,57 @@ const handlePrev = () => {
             <button className="arrow left" onClick={handlePrev}>
               {"<"}
             </button>
-            <Image
-              src={thumbnails[activeImage]}
-              alt="Jagung Manis"
-              fill
-              sizes="(max-width: 768px) 100vw, 440px"
-              className="main-image"
-              style={{ objectFit: "cover" }}
-              priority
-            />
+
+            {product.images.length > 0 ? (
+              <Image
+                src={product.images[activeImage]}
+                alt={product.name}
+                fill
+                className="main-image"
+                style={{ objectFit: "cover" }}
+                priority
+              />
+            ) : (
+              <div className="no-image">No Image</div>
+            )}
+
             <button className="arrow right" onClick={handleNext}>
               {">"}
             </button>
           </div>
 
           <div className="thumbnails-row">
-            {visibleThumbs.map((src, i) => (
+            {visibleThumbs.map((src: string, i: number) => (
               <button
                 key={i}
-                className={`thumb-btn ${activeImage === startIndex + i ? "thumb-active" : ""}`}
-                onClick={() => setActiveImage(startIndex + i)}
+                className={`thumb-btn ${activeImage === i ? "thumb-active" : ""}`}
+                onClick={() => setActiveImage(i)}
               >
                 <Image
                   src={src}
                   alt={`Thumbnail ${i + 1}`}
                   fill
-                  sizes="96px"
-                  style={{ objectFit: "cover" }}
                   className="thumb-img"
                 />
               </button>
             ))}
+
             {extraCount > 0 && (
-              <button
-                className="thumb-btn thumb-extra"
-                onClick={() => {
-                  setStartIndex(startIndex + 3);
-                  setActiveImage(startIndex + 3);
-                }}
-              >
-                <span className="extra-label">+{extraCount}</span>
-              </button>
+              <div className="thumb-extra">
+                +{extraCount}
+              </div>
             )}
           </div>
         </section>
 
         {/* Right: Product Info */}
         <section className="info-section">
-          <h1 className="product-name">Jagung Manis</h1>
-          <p className="product-price">Rp 10.000</p>
+          <h1 className="product-name">{product.name}</h1>
+          <p className="product-price">{formatRupiah(product.price)}</p>
 
           <div className="description-box">
             <p className="description-text">
-              Jagung manis segar pilihan langsung dari kebun petani lokal.
-              Dipanen pada pagi hari untuk menjaga kesegaran dan kadar gula
-              alaminya. Cocok untuk direbus, dibakar, atau diolah menjadi
-              berbagai hidangan lezat. Tekstur renyah dan manis alami tanpa
-              tambahan bahan pengawet.
+              {product.desc}
             </p>
           </div>
 
@@ -160,8 +188,9 @@ const handlePrev = () => {
               {addedToCart ? "✓ Added!" : "Add To Cart"}
             </button>
           </div>
-
-          <button className="buy-now-btn">Buy Now</button>
+          <Link href="/checkout" className="buy-now-btn">
+            Buy Now
+          </Link>
         </section>
       </main>
     </div>
