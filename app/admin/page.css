@@ -1,0 +1,344 @@
+/* ── Admin Dashboard Page Styles ───────────────────────────────────── */
+
+/* ── Topbar ─────────────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 36px;
+  background: #fff;
+  border-bottom: 1px solid #ebebeb;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.topbar-search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 520px;
+}
+
+.topbar-search-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  display: flex;
+  align-items: center;
+}
+
+.topbar-search {
+  width: 100%;
+  padding: 11px 44px 11px 20px;
+  border: none;
+  border-radius: 50px;
+  background: #f2f3f5;
+  font-size: 14px;
+  font-family: var(--font-jakarta), sans-serif;
+  color: #333;
+  outline: none;
+  transition: box-shadow 0.2s;
+}
+
+.topbar-search:focus {
+  box-shadow: 0 0 0 2.5px rgba(46, 125, 50, 0.25);
+}
+
+.topbar-bell {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #555;
+  transition: background 0.18s;
+  margin-left: auto;
+}
+
+.topbar-bell:hover {
+  background: #f2f3f5;
+}
+
+/* ── Page Body ──────────────────────────────────────────────────────── */
+.dashboard-page {
+  padding: 36px 36px 60px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* ── Page Header ────────────────────────────────────────────────────── */
+.page-header h1 {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: -0.4px;
+  margin-bottom: 4px;
+}
+
+.page-header p {
+  font-size: 14px;
+  color: #888;
+  font-weight: 500;
+}
+
+/* ── Stat Cards ─────────────────────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.stat-card {
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 16px;
+  padding: 22px 24px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.stat-card:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.07);
+  transform: translateY(-2px);
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #888;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.stat-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  width: fit-content;
+  margin-top: 4px;
+}
+
+.stat-badge.up {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.stat-badge.neutral {
+  background: #fffde7;
+  color: #f9a825;
+}
+
+.stat-badge.down {
+  background: #fdecea;
+  color: #c62828;
+}
+
+/* ── Charts Row ─────────────────────────────────────────────────────── */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.chart-card {
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 16px;
+  padding: 24px 24px 20px 24px;
+}
+
+.chart-card-header {
+  margin-bottom: 20px;
+}
+
+.chart-card-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: -0.2px;
+}
+
+.chart-card-sub {
+  font-size: 12.5px;
+  color: #aaa;
+  font-weight: 500;
+  margin-top: 3px;
+}
+
+/* ── Leaderboard ────────────────────────────────────────────────────── */
+.leaderboard-card {
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.leaderboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px 20px 28px;
+}
+
+.leaderboard-title {
+  font-size: 20px;
+  font-weight: 800;
+  font-style: italic;
+  color: #1a1a1a;
+  letter-spacing: -0.3px;
+}
+
+.leaderboard-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f2f3f5;
+  border-radius: 50px;
+  padding: 4px;
+}
+
+.lb-tab {
+  padding: 8px 20px;
+  border-radius: 50px;
+  border: none;
+  background: transparent;
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+
+.lb-tab.active {
+  background: #f5c800;
+  color: #1a1a1a;
+}
+
+.lb-tab:not(.active):hover {
+  color: #333;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* Table */
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.lb-table thead tr {
+  background: #f5c800;
+}
+
+.lb-table thead th {
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a1a;
+  font-family: var(--font-jakarta), sans-serif;
+}
+
+.lb-table thead th:first-child {
+  padding-left: 28px;
+  width: 64px;
+}
+
+.lb-table thead th:last-child {
+  padding-right: 28px;
+  text-align: right;
+}
+
+.lb-table tbody tr {
+  border-bottom: 1px solid #f2f3f5;
+  transition: background 0.15s;
+}
+
+.lb-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.lb-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.lb-table tbody td {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+  font-family: var(--font-jakarta), sans-serif;
+}
+
+.lb-table tbody td:first-child {
+  padding-left: 28px;
+  color: #888;
+  font-weight: 600;
+}
+
+.lb-table tbody td:last-child {
+  padding-right: 28px;
+  text-align: right;
+}
+
+/* Product cell */
+.lb-product-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lb-product-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #e8f5e9;
+  flex-shrink: 0;
+}
+
+.lb-product-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* Trend badge */
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* ── Recharts overrides ──────────────────────────────────────────────── */
+.recharts-wrapper {
+  font-family: var(--font-jakarta), sans-serif !important;
+}
+
+.recharts-legend-item-text {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}

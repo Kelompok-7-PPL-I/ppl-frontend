@@ -1,0 +1,232 @@
+.auth-page * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.auth-page {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  background-color: #043915;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: white;
+}
+
+.map-container {
+  display: none;
+  flex: 1; 
+  position: relative;
+  background-image: url('/indonesian-map.png');
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
+}
+
+.map-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.form-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+  overflow-y: auto;
+  background-color: #043915;
+  z-index: 2;
+  overflow-y: auto; 
+  overflow-x: hidden; 
+}
+
+.form-card {
+  width: 100%;
+  max-width: 420px; 
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-header {
+  text-align: center;
+}
+
+.form-title {
+  text-align: center;
+  font-size: 24px; 
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 14px;
+}
+
+
+.form-subtitle {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.input-field {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  padding: 14px 20px;
+  color: white;
+  font-size: 15px;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.input-field:focus {
+  border-color: #FFD400;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 4px rgba(255, 212, 0, 0.1);
+}
+
+.password-toggle {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+}
+
+.password-toggle:hover {
+  color: #FFD400;
+}
+
+.btn-submit {
+  width: 100%;
+  background: white;
+  color: #043915;
+  font-weight: 700;
+  padding: 15px;
+  border-radius: 16px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 8px;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: #FFD400;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.btn-submit:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.requirement-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.req-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  transition: color 0.3s ease;
+}
+
+.req-item.met { color: #4ade80; }
+.req-item.unmet { color: rgba(255, 255, 255, 0.2); }
+
+.error-alert {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.input-field.match { border-color: #4ade80; }
+.input-field.no-match { border-color: #ef4444; }
+
+.view-section {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@media (max-width: 1023px) {
+  .auth-page {
+    background-image: url('/indonesian-map.png');
+    background-size: cover;
+    background-position: center;
+  }
+  .auth-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(4, 57, 21, 0.85), rgba(4, 57, 21, 0.98));
+    z-index: 1;
+  }
+  .form-container {
+    max-width: 100%;
+    border-left: none;
+    background-color: transparent;
+    padding: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .map-container { 
+    display: block; 
+  }
+  .form-container { 
+    width: 450px; 
+    min-width: 400px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .auth-page { background-image: none; }
+}
+
+@media (min-width: 1440px) {
+  .form-container {
+    width: 550px;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

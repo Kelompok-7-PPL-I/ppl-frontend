@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import Link from "next/link";
 import "./page.css";
+import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -137,6 +139,15 @@ export default function DashboardProduct() {
     liked: localLikes.includes(p.id),
   }));
   
+  const supabase = createClient();
+  const router = useRouter();
+  
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.refresh();
+    router.push("/");
+  };
+
   const handleToggleLike = (id: number) => {
     setLocalLikes((prev) =>
       prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id]
@@ -199,10 +210,22 @@ export default function DashboardProduct() {
             <CartIcon />
             <span className="nav-link-label cart-label">Cart</span>
           </Link>
-          <Link href="/profile" className="nav-link">
-            <ProfileIcon />
-            <span className="nav-link-label profile-label">Profile</span>
-          </Link>
+
+          {/* BAGIAN PROFILE DROPDOWN */}
+          <div className="profile-dropdown-container">
+            <div className="nav-link profile-trigger">
+              <ProfileIcon />
+              <span className="nav-link-label profile-label">Profile</span>
+            </div>
+            
+            {/* Menu yang muncul saat hover */}
+            <div className="dropdown-menu">
+              <Link href="/profile" className="dropdown-item">My Profile</Link>
+              <button onClick={handleLogout} className="dropdown-item logout-btn-text">
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
       </nav>
 
