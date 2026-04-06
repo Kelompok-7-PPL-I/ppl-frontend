@@ -254,6 +254,13 @@
 }
 
 .buy-now-btn {
+  display: flex;           
+  align-items: center;    
+  justify-content: center; 
+  text-decoration: none;  
+  box-sizing: border-box;  
+  
+  /* --- Properti asli kamu --- */
   width: 100%;
   padding: 16px;
   background: #f5c800;
@@ -272,6 +279,8 @@
   background: #e6b800;
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(245, 200, 0, 0.4);
+  text-decoration: none; 
+  color: #1a1a1a;    
 }
 
 .buy-now-btn:active {
