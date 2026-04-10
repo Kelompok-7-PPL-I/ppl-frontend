@@ -17,7 +17,7 @@ import {
 import "./page.css";
 
 // Types 
-type TabKey = "Product" | "Customers" | "Recipes";
+type TabKey = "Product" | "Users" | "Recipes";
 type BadgeVariant = "up" | "neutral" | "down";
 
 interface StatCard {
@@ -91,7 +91,7 @@ const BellIcon = () => (
 // ── Component ────────────────────────────────────────────────────────────────
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("Product");
-  const tabs: TabKey[] = ["Product", "Customers", "Recipes"];
+  const tabs: TabKey[] = ["Product", "Users", "Recipes"];
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
