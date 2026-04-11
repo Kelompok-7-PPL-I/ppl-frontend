@@ -1,4 +1,4 @@
-/* ── Admin Products Page ────────────────────────────────────────────── */
+/* ── Admin Orders Page ────────────────────────────────────────────── */
 
 /* ── Topbar ─────────────────────────────────────────────────────────── */
 .topbar {
@@ -683,4 +683,162 @@
 
 .products-table {
   min-width: 1000px; /* Memastikan tabel punya ruang cukup untuk semua kolom */
+}
+
+
+/* tambah */
+/* ── Form Modal Specifics ───────────────────────────────────────────── */
+
+/* Container Utama Modal */
+.modal-content {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 500px; /* Sedikit lebih lebar untuk form order */
+  padding: 32px;
+  position: relative;
+  animation: slideUp 0.25s ease-out;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modal-header h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+  letter-spacing: -0.5px;
+}
+
+/* Layout Form Baris (Untuk Status & Metode berdampingan) */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Label Styling */
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4b5563;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Input & Select Styling */
+.form-group input, 
+.form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid #f3f4f6;
+  border-radius: 12px;
+  background: #f9fafb;
+  font-family: inherit;
+  font-size: 14px;
+  color: #1f2937;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.form-group input:focus, 
+.form-group select:focus {
+  background: #fff;
+  border-color: #1a3a2a; /* Hijau tema kamu */
+  box-shadow: 0 0 0 4px rgba(26, 58, 42, 0.1);
+}
+
+/* Action Buttons di bawah Modal */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.btn-cancel {
+  padding: 12px 24px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.btn-save {
+  padding: 12px 32px;
+  background: #f5c800; /* Kuning Panganesia */
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(245, 200, 0, 0.3);
+}
+
+.btn-save:hover {
+  background: #e6b800;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px -1px rgba(245, 200, 0, 0.4);
+}
+
+.btn-save:active {
+  transform: translateY(0);
+}
+
+/* Status Badges di Tabel (Tambahan untuk variasi status) */
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.status-badge.paid {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.status-badge.pending {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.status-badge.failed {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Tombol + Tambah Order di Header */
+.btn-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #1a3a2a; /* Hijau gelap */
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add:hover {
+  background: #2a5a42;
+  transform: scale(1.02);
 }
