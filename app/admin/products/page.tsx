@@ -25,7 +25,6 @@ type ModalMode = "add" | "edit" | null;
 
 const PER_PAGE = 10;
 
-// ── Icons (Tetap Sama) ───────────────────────────────────────────────────────
 const SearchIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -303,7 +302,6 @@ const uploadImage = async (file: File): Promise<string> => {
 
         {/* Table */}
         <div className="table-card">
-          {loading ? <div style={{padding: "20px", textAlign: "center"}}>Loading data...</div> : (
           <table className="products-table">
             <thead>
               <tr>
@@ -318,7 +316,9 @@ const uploadImage = async (file: File): Promise<string> => {
               </tr>
             </thead>
             <tbody>
-              {pageItems.length === 0 ? (
+              {loading ? (
+                <tr><td colSpan={8} style={{textAlign: "center", padding: "40px"}}>Memuat...</td></tr>
+              ) : pageItems.length === 0 ? (
                 <tr>
                   <td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "#aaa" }}>
                     Tidak ada produk ditemukan.
@@ -333,9 +333,9 @@ const uploadImage = async (file: File): Promise<string> => {
                     <td>{fmtRupiah(p.harga)}</td>
                     <td>{p.stok.toLocaleString("id-ID")}</td>
                     <td className="td-desc">{p.deskripsi}</td>
-                    <td>
-                      <img src={p.gambar} alt="thumb" style={{width: '30px', height: '30px', borderRadius: '4px', objectFit: 'cover'}} />
-                    </td>
+                    <td className="img-container">
+                      <img src={p.gambar} alt="thumb" className="img-thumb"/> 
+                    </td> 
                     <td>
                       <div className="action-cell">
                         <button className="btn-icon edit" onClick={() => openEdit(p)} aria-label="Edit">
@@ -351,13 +351,12 @@ const uploadImage = async (file: File): Promise<string> => {
               )}
             </tbody>
           </table>
-          )}
         </div>
 
         {/* Pagination */}
         <div className="pagination-row">
           <span className="pagination-info">
-            Menampilkan {filtered.length === 0 ? 0 : startItem}–{endItem} dari {filtered.length} produk
+            Menampilkan {filtered.length === 0 ? 0 : startItem}-{endItem} dari {filtered.length} produk
           </span>
           <div className="pagination-controls">
             <button
