@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client"; 
@@ -19,8 +20,8 @@ const navItems = [
     ),
   },
   {
-    label: "Customers",
-    href: "/admin/customers",
+    label: "Users",
+    href: "/admin/users",
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="currentColor">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -41,8 +42,8 @@ const navItems = [
     ),
   },
   {
-    label: "Receipies",
-    href: "/admin/receipies",
+    label: "Recipes", // Fixed typo: Receipies -> Recipes
+    href: "/admin/recipes",
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -69,11 +70,28 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  
+  // State untuk menyimpan info admin
+  const [adminInfo, setAdminInfo] = useState({ name: "Admin", email: "loading..." });
+
+  useEffect(() => {
+    const getAdminData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Ambil nama dari metadata atau default ke Admin
+        setAdminInfo({
+          name: user.user_metadata?.full_name || "Admin Panganesia",
+          email: user.email || "admin@panganesia.com"
+        });
+      }
+    };
+    getAdminData();
+  }, [supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.refresh();
-    router.push("/");
+    router.push("/auth"); // Diarahkan ke auth page
   };
 
   return (
@@ -114,7 +132,7 @@ export default function AdminSidebar() {
         })}
       </ul>
 
-<div className="sidebar-user-container">
+      <div className="sidebar-user-container">
         <div className="sidebar-user">
           <div className="sidebar-avatar">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -123,14 +141,22 @@ export default function AdminSidebar() {
             </svg>
           </div>
           <div className="sidebar-user-info">
-            <span className="sidebar-user-name">Admin</span>
-            <span className="sidebar-user-email">admin@gmail.com</span>
+            <span className="sidebar-user-name">{adminInfo.name}</span>
+            <span className="sidebar-user-email">{adminInfo.email}</span>
           </div>
         </div>
 
-        {/* Dropdown Menu yang akan muncul saat sidebar-user-container di-hover */}
+        {/* Dropdown Menu dengan Settings & Logout */}
         <div className="admin-logout-dropdown">
-          <button onClick={handleLogout} className="logout-item">
+          <Link href="/admin/settings" className="logout-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            Settings
+          </Link>
+          <hr style={{ border: '0', borderTop: '1px solid #eee', margin: '4px 0' }} />
+          <button onClick={handleLogout} className="logout-item" style={{ color: '#e63946' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}>
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />
