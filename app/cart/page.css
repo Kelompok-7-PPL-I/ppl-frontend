@@ -50,7 +50,7 @@
   flex: 1;
   display: flex;
   gap: 20px;
-  border: 1.5px solid #eeeeee;
+  border: 1.5px solid #aeaeae;
   border-radius: 20px;
   padding: 20px;
   background: #fff;
@@ -79,7 +79,7 @@
 
 .item-name {
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 750;
   color: #000000 !important;
   margin: 0;
 }
@@ -123,14 +123,14 @@
 }
 
 .qty-number {
-  font-weight: 800;
-  color: #000000 !important;
+  font-weight: 600;
+  color: #000000;
   font-size: 16px;
 }
 
 .item-price-text {
-  color: #28a745 !important;
-  font-weight: 800;
+  color: #28a745;
+  font-weight: 600;
   font-size: 18px;
 }
 
