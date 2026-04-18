@@ -23,11 +23,20 @@ interface Banner {
   id: number;
   title: string;
   bg: string;
+  buttonText?: string; 
+  link?: string;       
 }
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const banners: Banner[] = [
-  { id: 0, title: "CHECK THIS\nOUT !", bg: "#2a8a3a" },
+  { 
+    id: 0, 
+    title: "DISCOVER\nNEW RECIPES", 
+    bg: "url('https://i.pinimg.com/1200x/93/5c/63/935c63beb807c40e73966b6043af6f6a.jpg')", 
+    buttonText: "Find out",
+    link: "/recipes" 
+  },
+  // Sisanya tetap pakai warna atau bisa kamu ganti gambar juga nanti
   { id: 1, title: "SPECIAL\nDISCOUNT", bg: "#1f6e2b" },
   { id: 2, title: "FREE\nDELIVERY", bg: "#329c45" },
 ];
@@ -48,6 +57,28 @@ const CartIcon = () => (
     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
   </svg>
 );
+const ChefHatIcon = () => (
+  <svg 
+    width="28" 
+    height="28" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="#ff6b00" 
+    strokeWidth="2.2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+  >
+    {/* Bagian Mahkota (Gembung) - Dibuat lebar dan bulat */}
+    <path d="M6 13c-3 0-4-3-4-5a5 5 0 0 1 10-2 5 5 0 0 1 10 2c0 2-1 5-4 5" />
+    
+    {/* Bagian Bawah (Band) - Kotak simetris di tengah */}
+    <path d="M6 13h12v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-7Z" />
+    
+    {/* Garis detail lipatan topi */}
+    <line x1="6" y1="17" x2="18" y2="17" />
+  </svg>
+);
+
 const ProfileIcon = () => (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="#ffcc00" stroke="#ffcc00" strokeWidth="0">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -206,6 +237,10 @@ export default function DashboardProduct() {
         </div>
 
         <div className="nav-actions">
+          <Link href="/recipes" className="nav-link">
+            <ChefHatIcon />
+            <span className="nav-link-label resep-label">Resep</span>
+          </Link>
           <Link href="/cart" className="nav-link">
             <CartIcon />
             <span className="nav-link-label cart-label">Cart</span>
@@ -239,7 +274,11 @@ export default function DashboardProduct() {
       <section className="banner-section">
         <div
           className="banner-card"
-          style={{ background: banners[activeBanner].bg }}
+          style={{ 
+            background: banners[activeBanner].bg.startsWith('url') 
+              ? `${banners[activeBanner].bg} center/cover no-repeat` 
+              : banners[activeBanner].bg 
+          }}
         >
           <div className="banner-content">
             <h2 className="banner-title">
@@ -247,6 +286,15 @@ export default function DashboardProduct() {
                 <span key={idx} style={{ display: 'block' }}>{line}</span>
               ))}
             </h2>
+
+            {/* Tampilkan tombol jika ada buttonText di data banner */}
+            {banners[activeBanner].buttonText && (
+              <Link href={banners[activeBanner].link || "#"}>
+                <button className="banner-cta-button">
+                  {banners[activeBanner].buttonText}
+                </button>
+              </Link>
+            )}
           </div>
 
           <button className="banner-arrow banner-arrow-right" onClick={nextBanner}>
