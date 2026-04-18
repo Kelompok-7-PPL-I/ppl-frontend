@@ -280,7 +280,7 @@ const uploadImage = async (file: File): Promise<string> => {
       <div className="products-page">
         <div className="products-header">
           <div className="products-header-left">
-            <h1>Products</h1>
+            <h1>Produk</h1>
             <p>Kelola semua produk Panganesia</p>
           </div>
           <div className="products-header-right">

@@ -144,7 +144,7 @@ const fetchRecipes = useCallback(async () => {
         {/* Header Halaman */}
         <div className="recipes-header">
           <div className="recipes-header-left">
-            <h1>Recipes</h1>
+            <h1>Resep</h1>
             <p>Kelola daftar resep masakan dan informasi gizi Panganesia</p>
           </div>
           <div className="recipes-header-right">

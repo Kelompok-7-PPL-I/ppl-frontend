@@ -70,6 +70,29 @@ export default function AdminUsersPage() {
     }
   };
 
+  const updateRole = async (idUser: string, newRole: string) => {
+    const sure = window.confirm(`Apakah Anda yakin ingin mengubah role user ini menjadi ${newRole.toUpperCase()}?`);
+  
+    if (!sure) {
+      fetchUsers(); 
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ role: newRole })
+        .eq('id_user', idUser);
+
+      if (error) throw error;
+
+      setUsers(users.map(u => (u.id_user === idUser ? { ...u, role: newRole } : u)));
+      alert("Role berhasil diperbarui!");
+    } catch (err: any) {
+      alert("Gagal update role: " + err.message);
+    }
+  };
+
   const filtered = users.filter(u => {
     const matchSearch = (u.nama?.toLowerCase() || "").includes(search.toLowerCase()) || (u.email?.toLowerCase() || "").includes(search.toLowerCase());
     const matchRole = roleFilter === "all" || u.role?.toLowerCase() === roleFilter.toLowerCase();
@@ -84,20 +107,20 @@ export default function AdminUsersPage() {
     <>
       <div className="topbar">
         <div className="topbar-search-wrap">
-          <input type="text" placeholder="Cari user..." className="topbar-search" value={search} onChange={(e) => {setSearch(e.target.value); setCurrentPage(1);}} />
+          <input type="text" placeholder="Cari user" className="topbar-search" value={search} onChange={(e) => {setSearch(e.target.value); setCurrentPage(1);}} />
         </div>
       </div>
 
       <div className="products-page">
         <div className="products-header">
           <div className="products-header-left">
-            <h1>Users</h1>
+            <h1>Pengguna</h1>
             <p>Data seluruh pengguna yang terdaftar di Panganesia.</p>
           </div>
           <div className="products-header-right">
             <select className="select-filter" value={roleFilter} onChange={(e) => {setRoleFilter(e.target.value); setCurrentPage(1);}}>
               <option value="all">Semua Role</option>
-              <option value="customer">Customer</option>
+              <option value="customer">Costumer</option>
               <option value="admin">Admin</option>
             </select>
           </div>
@@ -108,12 +131,12 @@ export default function AdminUsersPage() {
             <thead>
               <tr>
                 <th>No.</th>
-                <th>ID User</th>
+                <th>ID Pengguna</th>
                 <th>Email</th>
-                <th>First Name</th>
-                <th>Last Name</th>
+                <th>Nama Depan</th>
+                <th>Nama Belakang</th>
                 <th style={{ textAlign: 'center' }}>Role</th>
-                <th>Nomor Telp</th>
+                <th>No Telepon</th>
                 <th style={{ textAlign: 'center' }}>Aksi</th>
               </tr>
             </thead>
@@ -132,9 +155,14 @@ export default function AdminUsersPage() {
                     <td style={{ fontWeight: "700" }}>{firstName}</td>
                     <td>{lastName}</td>
                     <td style={{ textAlign: 'center' }}>
-                      <span className={`role-badge ${u.role?.toLowerCase() === 'admin' ? 'role-admin' : 'role-user'}`}>
-                        {u.role || "customer"}
-                      </span>
+                      <select 
+                        className={`role-select-dropdown ${u.role?.toLowerCase() === 'admin' ? 'is-admin' : 'is-user'}`}
+                        value={u.role || "customer"}
+                        onChange={(e) => updateRole(u.id_user, e.target.value)}
+                      >
+                        <option value="customer">customer</option>
+                        <option value="admin">admin</option>
+                      </select>
                     </td>
                     <td>{u.nomor_telp || "-"}</td>
                     <td>

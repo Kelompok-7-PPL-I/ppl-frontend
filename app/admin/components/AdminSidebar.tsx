@@ -8,7 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 const navItems = [
   {
-    label: "Dashboard",
+    label: "Beranda",
     href: "/admin",
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -20,7 +20,7 @@ const navItems = [
     ),
   },
   {
-    label: "Users",
+    label: "Pengguna",
     href: "/admin/users",
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -31,7 +31,7 @@ const navItems = [
     ),
   },
   {
-    label: "Products",
+    label: "Produk",
     href: "/admin/products",
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -42,7 +42,7 @@ const navItems = [
     ),
   },
   {
-    label: "Recipes", // Fixed typo: Receipies -> Recipes
+    label: "Resep", // Fixed typo: Receipies -> Recipes
     href: "/admin/recipes",
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -55,7 +55,7 @@ const navItems = [
     ),
   },
   {
-    label: "Orders",
+    label: "Pesanan",
     href: "/admin/orders",
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

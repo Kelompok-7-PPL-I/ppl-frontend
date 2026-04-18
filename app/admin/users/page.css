@@ -684,3 +684,43 @@
 .products-table {
   min-width: 1000px; /* Memastikan tabel punya ruang cukup untuk semua kolom */
 }
+
+/* Styling untuk Dropdown Role */
+.role-select-dropdown {
+  padding: 6px 12px;
+  border-radius: 8px; /* Lebih kotak atau bulat sesuai selera */
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  outline: none;
+  appearance: none; /* Menghilangkan panah default browser agar lebih clean */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 32px;
+  transition: all 0.2s ease;
+}
+
+/* Warna saat Role adalah Admin */
+.role-select-dropdown.is-admin {
+  background-color: #fff1f2;
+  color: #e11d48;
+  border-color: #fda4af;
+}
+
+/* Warna saat Role adalah Customer */
+.role-select-dropdown.is-user {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.role-select-dropdown:hover {
+  filter: contrast(1.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.role-select-dropdown:focus {
+  ring: 2px solid #3b82f6;
+}

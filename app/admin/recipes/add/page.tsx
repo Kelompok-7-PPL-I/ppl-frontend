@@ -135,7 +135,7 @@ export default function AddRecipePage() {
           >
             ← Kembali ke Daftar
           </button>
-          <h1>Add New Recipe</h1>
+          <h1>Tambah Resep Baru</h1>
         </header>
 
         <form onSubmit={handleSave} className="main-recipe-form">
@@ -245,7 +245,7 @@ export default function AddRecipePage() {
 
           <div className="form-footer-sticky">
             <button type="submit" className="btn-submit-recipe" disabled={isSubmitting}>
-              {isSubmitting ? "Sedang Memproses..." : "Publish Resep"}
+              {isSubmitting ? "Sedang Memproses..." : "Publikasikan Resep"}
             </button>
           </div>
         </form>
