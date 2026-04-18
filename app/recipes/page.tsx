@@ -1,19 +1,113 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { createClient } from '@/utils/supabase/client';
 import "./page.css"
 
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"]});
 
+interface RecipeUI {
+  id: number;
+  title: string;
+  time: string;
+  tags: string[];
+  description: string;
+  imageUrl: string;
+  showButton: boolean;
+}
+
 export default function RecipesPage(){
+    const supabase = createClient();
+  
+    const [recipes, setRecipes] = useState<RecipeUI[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     const [localLikes, setLocalLikes] = useState<number[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const carouselRef = useRef<HTMLDivElement>(null)
+
+    const itemsPerPage = 5;
+
+    const [currentPage, setCurrentPage] = useState<number>(() => {
+      if (typeof window !== "undefined") {
+        const savedPage = sessionStorage.getItem("recipePage");
+        return savedPage ? Number(savedPage) : 1;
+      }
+      return 1;
+    });
+    
+    // FETCH DATA DARI SUPABASE
+    useEffect(() => {
+      const fetchRecipes = async () => {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('recipes')
+          .select('*')
+          .order('id_recipe', { ascending: false });
+
+        if (!error && data) {
+          // Melakukan mapping data dari DB ke struktur UI
+          const formattedRecipes = data.map((dbRecipe: any) => {
+            
+            // Mengambil informasi gizi utama (Kata sebelum tanda ":" pertama)
+            // Contoh: "Kalori: 450 kkal, ..." -> "Kalori"
+            let mainNutritionTag = "";
+            if (dbRecipe.informasi_gizi) {
+              // Split berdasarkan koma pertama untuk ambil item pertama, lalu split ":" untuk ambil kuncinya
+              const firstItem = dbRecipe.informasi_gizi.split(',')[0];
+              mainNutritionTag = firstItem.split(':')[0].trim();
+            }
+
+            // Menggabungkan tag dari kategori_jenis dan informasi_gizi (filter string kosong)
+            const recipeTags = [dbRecipe.kategori_jenis, mainNutritionTag].filter(Boolean);
+
+            return {
+              id: dbRecipe.id_recipe,
+              title: dbRecipe.judul_resep || "Resep Tanpa Judul",
+              time: `${dbRecipe.waktu_masak || 0} min`, // Menambahkan "min"
+              tags: recipeTags,
+              description: dbRecipe.deskripsi_singkat || "Tidak ada deskripsi.",
+              imageUrl: dbRecipe.gambar_url || "/images/placeholder.jpg", // Beri gambar default jika null
+              showButton: true,
+            };
+          });
+
+          setRecipes(formattedRecipes);
+        } else {
+          console.error("Gagal mengambil data resep:", error);
+        }
+        setIsLoading(false);
+      };
+
+      fetchRecipes();
+    }, [supabase]);
+
+    // Selalu simpan ke session storage setiap kali user pindah halaman
+    useEffect(() => {
+      sessionStorage.setItem("recipePage", currentPage.toString());
+    }, [currentPage]);
+      
+    // Kembalikan posisi scroll setelah loading selesai dan halaman yang tepat sudah di-render
+    useEffect(() => {
+      if (!isLoading) {
+        const savedScroll = sessionStorage.getItem('recipeScroll');
+        if (savedScroll) {
+          // Kasih delay sedikit (150ms) agar gambar dan card sempat dirender ukurannya
+          setTimeout(() => {
+            window.scrollTo({ top: Number(savedScroll), behavior: 'auto' });
+            
+            // Opsional tapi penting: Hapus memori scroll setelah dipakai 
+            // agar kalau user pindah halaman pakai pagination, ga tiba-tiba scroll sendiri
+            sessionStorage.removeItem('recipeScroll');
+          }, 150);
+        }
+      }
+    }, [isLoading, currentPage]);
     
     const handleToggleLike = (id: number) => {
     setLocalLikes((prev) =>
@@ -27,6 +121,7 @@ export default function RecipesPage(){
       // Kalau tag belum ada, tambahkan. Kalau sudah ada, biarkan.
       if (!selectedTags.includes(tag)) {
         setSelectedTags([...selectedTags, tag]);
+        setCurrentPage(1);
       }
       setIsOpen(false); // Tutup dropdown setelah milih
     };
@@ -34,12 +129,14 @@ export default function RecipesPage(){
     const handleRemoveTag = (e: React.MouseEvent, tagToRemove: string) => {
       e.stopPropagation(); // Mencegah dropdown terbuka saat klik tombol 'X'
       setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+      setCurrentPage(1);
     };
 
     const clearAllTags = (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setSelectedTags([]);
+      setCurrentPage(1);
       setIsOpen(false);
     };
     
@@ -62,40 +159,14 @@ export default function RecipesPage(){
         { label: "Healthy", group: "Kategori" },
         { label: "Low Sugar", group: "Kategori" },
         { label: "Karbohidrat", group: "Informasi Gizi" },
+        { label: "Kalori", group: "Informasi Gizi" },
         { label: "Protein", group: "Informasi Gizi" },
+        { label: "Lemak", group: "Informasi Gizi" },
+        { label: "Serat", group: "Informasi Gizi" },
+        { label: "Vitamin", group: "Informasi Gizi" },
     ];
     
-    const recipeList = [
-        {
-            id: 1,
-            title: "Jagung Susu Keju",
-            time: "10 min",
-            tags: ["Snack", "Kalori"],
-            description:
-            "Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet.",
-            showButton: true,
-        },
-        {
-            id: 2,
-            title: "Nasi Tiwul",
-            time: "10 min",
-            tags: ["Weight Gain", "Protein"],
-            description:
-            "Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet.Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet.",
-            showButton: true,
-        },
-        {
-            id: 3,
-            title: "Salad Jagung Sehat",
-            time: "15 min",
-            tags: ["Diet", "Healthy"],
-            description:
-            "Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet. Lorem ipsum sil dolor amet.",
-            showButton: true,
-        },
-    ];
-    
-    const filteredRecipes = recipeList.filter((recipe) => {
+    const filteredRecipes = recipes.filter((recipe) => {
         const searchMatch =
             recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             recipe.tags.some(tag =>
@@ -114,19 +185,34 @@ export default function RecipesPage(){
 
         return searchMatch && filterMatch;
     });
+    
+    const totalPages = Math.ceil(filteredRecipes.length / itemsPerPage);
+
+    const currentRecipes = filteredRecipes.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
 
   return (
     <main className={`recipes-container ${plusJakarta.className}`}>
       {/* Header & Navigation */}
       <nav className="top-nav">
-        <a href="#" className="back-button">
+        <a href="/DashboardProduct" className="back-button">
           Back
         </a>
       </nav>
 
       <div className="controls-row">
         <div className="search-box">
-          <input type="text" placeholder="Search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <input 
+            type="text" 
+            placeholder="Search" 
+            value={searchTerm} 
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // <-- Tambahkan reset disini
+            }} 
+          />
           <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -259,60 +345,115 @@ export default function RecipesPage(){
 
       {/* Recipe List Cards */}
       <section className="recipe-list">
-        {filteredRecipes.length === 0 ? (
-        <p className="no-results">Tidak ada resep ditemukan </p>
+        {isLoading ? (
+          /* Render Skeleton Loader sebanyak 6 buah (atau sesuai kebutuhan) */
+          Array.from({ length: 6 }).map((_, i) => (
+            <div className="recipe-card" key={i}>
+              <div className="recipe-image-wrapper">
+                <div className="skeleton-box skeleton-img" style={{ position: 'absolute' }}></div>
+              </div>
+              
+              <div className="recipe-info">
+                <div className="recipe-header">
+                  {/* Skeleton Title */}
+                  <div className="skeleton-box skeleton-title"></div>
+                </div>
+
+                <div className="recipe-meta">
+                  {/* Skeleton Tags/Meta */}
+                  <div className="skeleton-box skeleton-meta"></div>
+                </div>
+
+                {/* Skeleton Description (2 baris) */}
+                <div className="skeleton-box skeleton-desc"></div>
+                <div className="skeleton-box skeleton-desc short"></div>
+
+                {/* Skeleton Button */}
+                <div className="skeleton-box skeleton-btn"></div>
+              </div>
+            </div>
+          ))
+        ) : currentRecipes.length === 0 ? (
+          <p className="no-results">Tidak ada resep ditemukan</p>
         ) : (
-        filteredRecipes.map((recipe) => 
-          <div className="recipe-card" key={recipe.id}>
-            <div className="recipe-image-wrapper">
-              <Image 
-                src="/images/corn-2.jpg" 
-                alt={recipe.title} 
-                fill 
-                className="recipe-image"
-                objectFit="cover"
-                loading="eager"
-              />
-            </div>
-            
-            <div className="recipe-info">
-              <div className="recipe-header">
-                <h2>{recipe.title}</h2>
-                <button className="favorite-btn" onClick={() => handleToggleLike(recipe.id)}>
-                  <svg viewBox="0 0 24 24" fill={localLikes.includes(recipe.id) ? "#ff4d6d" : "none"} stroke={localLikes.includes(recipe.id) ? "#ff4d6d" : "#333"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                  </svg>
-                </button>
+          currentRecipes.map((recipe) => (
+            <div className="recipe-card" key={recipe.id}>
+              <div className="recipe-image-wrapper">
+                {/* Menggunakan tag img standar agar tidak bentrok dengan config domain next/image dari Supabase URL */}
+                <img 
+                  src={recipe.imageUrl} 
+                  alt={recipe.title} 
+                  className="recipe-image object-cover w-full h-full"
+                  style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute' }}
+                />
               </div>
-
-              <div className="recipe-meta">
-                <span className="time">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="clock-icon">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
-                  {recipe.time}
-                </span>
-                {recipe.tags.map((tag, index) => (
-                  <span className="tag" key={index}>{tag}</span>
-                ))}
-              </div>
-
-              <p className="recipe-description">{recipe.description}</p>
-
-              {recipe.showButton && (
-                <Link href={`/recipes/${recipe.id}`} className="cook-now-btn">
-                    Cook Now 
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                    <polyline points="12 5 19 12 12 19"></polyline>
+              
+              <div className="recipe-info">
+                <div className="recipe-header">
+                  <h2>{recipe.title}</h2>
+                  <button className="favorite-btn" onClick={() => handleToggleLike(recipe.id)}>
+                    <svg viewBox="0 0 24 24" fill={localLikes.includes(recipe.id) ? "#ff4d6d" : "none"} stroke={localLikes.includes(recipe.id) ? "#ff4d6d" : "#333"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                     </svg>
-                </Link>
-            )}
+                  </button>
+                </div>
+
+                <div className="recipe-meta">
+                  <span className="time">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="clock-icon">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    {recipe.time}
+                  </span>
+                  {recipe.tags.map((tag, index) => (
+                    <span className="tag" key={index}>{tag}</span>
+                  ))}
+                </div>
+
+                <p className="recipe-description">{recipe.description}</p>
+
+                {recipe.showButton && (
+                  <Link 
+                    href={`/recipes/${recipe.id}`} 
+                    className="cook-now-btn"
+                    onClick={() => sessionStorage.setItem('recipeScroll', window.scrollY.toString())}
+                  >
+                      Cook Now 
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                      </svg>
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </section>
+      {!isLoading && totalPages > 1 && (
+        <div className="pagination-wrapper">
+          <button 
+            className="pagination-btn"
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            Prev
+          </button>
+          
+          <span className="pagination-info">
+            Page {currentPage} of {totalPages}
+          </span>
+          
+          <button 
+            className="pagination-btn"
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </main>
   );
 }

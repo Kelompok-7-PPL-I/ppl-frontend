@@ -3,7 +3,7 @@ body {
 }
 
 .recipe-detail-page {
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 2rem;
   color: #333;
@@ -129,6 +129,24 @@ body {
   letter-spacing: 0.5px;
 }
 
+.recipe-detail-page .nutrition-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.recipe-detail-page .nutrition-card {
+  background-color: #f3f4f6;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border-left: 4px solid #ffcc00; /* Aksen warna */
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
 /* --- INGREDIENTS LIST --- */
 .recipe-detail-page .ingredients-list {
   list-style: none;
@@ -172,4 +190,10 @@ body {
   text-decoration: underline;
   margin-top: 1rem;
   display: inline-block;
+}
+
+.recipe-detail-page .steps-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Jarak antar nomor langkah */
 }
