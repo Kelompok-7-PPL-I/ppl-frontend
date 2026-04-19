@@ -1,0 +1,459 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Plus_Jakarta_Sans } from "next/font/google";
+import { createClient } from '@/utils/supabase/client';
+import "./page.css"
+
+const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"]});
+
+interface RecipeUI {
+  id: number;
+  title: string;
+  time: string;
+  tags: string[];
+  description: string;
+  imageUrl: string;
+  showButton: boolean;
+}
+
+export default function RecipesPage(){
+    const supabase = createClient();
+  
+    const [recipes, setRecipes] = useState<RecipeUI[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const [localLikes, setLocalLikes] = useState<number[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [isOpen, setIsOpen] = useState(false);
+    const carouselRef = useRef<HTMLDivElement>(null)
+
+    const itemsPerPage = 5;
+
+    const [currentPage, setCurrentPage] = useState<number>(() => {
+      if (typeof window !== "undefined") {
+        const savedPage = sessionStorage.getItem("recipePage");
+        return savedPage ? Number(savedPage) : 1;
+      }
+      return 1;
+    });
+    
+    // FETCH DATA DARI SUPABASE
+    useEffect(() => {
+      const fetchRecipes = async () => {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('recipes')
+          .select('*')
+          .order('id_recipe', { ascending: false });
+
+        if (!error && data) {
+          // Melakukan mapping data dari DB ke struktur UI
+          const formattedRecipes = data.map((dbRecipe: any) => {
+            
+            // Mengambil informasi gizi utama (Kata sebelum tanda ":" pertama)
+            // Contoh: "Kalori: 450 kkal, ..." -> "Kalori"
+            let mainNutritionTag = "";
+            if (dbRecipe.informasi_gizi) {
+              // Split berdasarkan koma pertama untuk ambil item pertama, lalu split ":" untuk ambil kuncinya
+              const firstItem = dbRecipe.informasi_gizi.split(',')[0];
+              mainNutritionTag = firstItem.split(':')[0].trim();
+            }
+
+            // Menggabungkan tag dari kategori_jenis dan informasi_gizi (filter string kosong)
+            const recipeTags = [dbRecipe.kategori_jenis, mainNutritionTag].filter(Boolean);
+
+            return {
+              id: dbRecipe.id_recipe,
+              title: dbRecipe.judul_resep || "Resep Tanpa Judul",
+              time: `${dbRecipe.waktu_masak || 0} min`, // Menambahkan "min"
+              tags: recipeTags,
+              description: dbRecipe.deskripsi_singkat || "Tidak ada deskripsi.",
+              imageUrl: dbRecipe.gambar_url || "/images/placeholder.jpg", // Beri gambar default jika null
+              showButton: true,
+            };
+          });
+
+          setRecipes(formattedRecipes);
+        } else {
+          console.error("Gagal mengambil data resep:", error);
+        }
+        setIsLoading(false);
+      };
+
+      fetchRecipes();
+    }, [supabase]);
+
+    // Selalu simpan ke session storage setiap kali user pindah halaman
+    useEffect(() => {
+      sessionStorage.setItem("recipePage", currentPage.toString());
+    }, [currentPage]);
+      
+    // Kembalikan posisi scroll setelah loading selesai dan halaman yang tepat sudah di-render
+    useEffect(() => {
+      if (!isLoading) {
+        const savedScroll = sessionStorage.getItem('recipeScroll');
+        if (savedScroll) {
+          // Kasih delay sedikit (150ms) agar gambar dan card sempat dirender ukurannya
+          setTimeout(() => {
+            window.scrollTo({ top: Number(savedScroll), behavior: 'auto' });
+            
+            // Opsional tapi penting: Hapus memori scroll setelah dipakai 
+            // agar kalau user pindah halaman pakai pagination, ga tiba-tiba scroll sendiri
+            sessionStorage.removeItem('recipeScroll');
+          }, 150);
+        }
+      }
+    }, [isLoading, currentPage]);
+    
+    const handleToggleLike = (id: number) => {
+    setLocalLikes((prev) =>
+        prev.includes(id)
+        ? prev.filter((favId) => favId !== id)
+        : [...prev, id]
+    );
+    };
+
+    const handleSelectTag = (tag: string) => {
+      // Kalau tag belum ada, tambahkan. Kalau sudah ada, biarkan.
+      if (!selectedTags.includes(tag)) {
+        setSelectedTags([...selectedTags, tag]);
+        setCurrentPage(1);
+      }
+      setIsOpen(false); // Tutup dropdown setelah milih
+    };
+
+    const handleRemoveTag = (e: React.MouseEvent, tagToRemove: string) => {
+      e.stopPropagation(); // Mencegah dropdown terbuka saat klik tombol 'X'
+      setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+      setCurrentPage(1);
+    };
+
+    const clearAllTags = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setSelectedTags([]);
+      setCurrentPage(1);
+      setIsOpen(false);
+    };
+    
+    // Fungsi untuk menggeser carousel menggunakan tombol
+    const scrollCarousel = (direction: "left" | "right") => {
+        if (carouselRef.current) {
+            const scrollAmount = 420; // Lebar card + gap
+            carouselRef.current.scrollBy({
+                left: direction === "left" ? -scrollAmount : scrollAmount,
+                behavior: "smooth",
+            });
+        }
+    };
+
+    const options = [
+        { label: "Snack", group: "Kategori" },
+        { label: "Diet", group: "Kategori" },
+        { label: "Weight Gain", group: "Kategori" },
+        { label: "High Protein", group: "Kategori" },
+        { label: "Healthy", group: "Kategori" },
+        { label: "Low Sugar", group: "Kategori" },
+        { label: "Karbohidrat", group: "Informasi Gizi" },
+        { label: "Kalori", group: "Informasi Gizi" },
+        { label: "Protein", group: "Informasi Gizi" },
+        { label: "Lemak", group: "Informasi Gizi" },
+        { label: "Serat", group: "Informasi Gizi" },
+        { label: "Vitamin", group: "Informasi Gizi" },
+    ];
+    
+    const filteredRecipes = recipes.filter((recipe) => {
+        const searchMatch =
+            recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            recipe.tags.some(tag =>
+            tag.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+        const filterMatch =
+          selectedTags.length === 0 || // Kalau nggak ada tag yang dipilih, tampilkan semua
+          selectedTags.every(selectedTag => 
+            // .every() memastikan resep punya SEMUA tag yang dipilih
+            // pakai .some() di dalamnya untuk ngecek mengabaikan huruf besar/kecil
+            recipe.tags.some(recipeTag => 
+              recipeTag.toLowerCase() === selectedTag.toLowerCase()
+            )
+          );
+
+        return searchMatch && filterMatch;
+    });
+    
+    const totalPages = Math.ceil(filteredRecipes.length / itemsPerPage);
+
+    const currentRecipes = filteredRecipes.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+
+  return (
+    <main className={`recipes-container ${plusJakarta.className}`}>
+      {/* Header & Navigation */}
+      <nav className="top-nav">
+        <a href="/DashboardProduct" className="back-button">
+          Back
+        </a>
+      </nav>
+
+      <div className="controls-row">
+        <div className="search-box">
+          <input 
+            type="text" 
+            placeholder="Search" 
+            value={searchTerm} 
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // <-- Tambahkan reset disini
+            }} 
+          />
+          <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+
+        <div className="filter-box">
+          <div className="custom-select" onClick={() => setIsOpen(!isOpen)}>
+            
+            {/* Area Tag Pills */}
+            <div className="selected-tags-wrapper">
+              {selectedTags.length === 0 && <span className="placeholder-text">Filter</span>}
+              
+              {selectedTags.map((tag, index) => (
+                <span key={index} className="tag-pill-ui">
+                  <span className="tag-dot"></span>
+                  {tag}
+                  <button className="remove-tag-btn" onClick={(e) => handleRemoveTag(e, tag)}>
+                    &times;
+                  </button>
+                </span>
+              ))}
+
+              {selectedTags.length > 0 && <span className="add-tag-text">Add tag</span>}
+            </div>
+
+            {/* Icon Garis 3 atau Icon X untuk Clear All */}
+            {selectedTags.length > 0 ? (
+              <div 
+                className="clear-all-btn-wrapper"
+                onClick={clearAllTags} 
+                style={{ cursor: "pointer", display: "flex", padding: "4px" }}
+              >
+                <svg className="icon-select clear-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </div>
+            ) : (
+              <svg className="icon-select" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="21" y1="10" x2="3" y2="10"></line>
+                <line x1="21" y1="6" x2="3" y2="6"></line>
+                <line x1="21" y1="14" x2="3" y2="14"></line>
+                <line x1="21" y1="18" x2="3" y2="18"></line>
+              </svg>
+            )}
+          </div>
+
+          {/* Dropdown Menu */}
+          {isOpen && (
+            <div className="dropdown-menu">
+              <p className="group-title">Kategori</p>
+              {options
+                .filter(opt => opt.group === "Kategori")
+                // Sembunyikan opsi yang sudah dipilih dari dropdown
+                .filter(opt => !selectedTags.includes(opt.label))
+                .map((opt, i) => (
+                  <div key={i} className="dropdown-item" onClick={() => handleSelectTag(opt.label)}>
+                    {opt.label}
+                  </div>
+                ))}
+
+              <p className="group-title">Informasi Gizi</p>
+              {options
+                .filter(opt => opt.group === "Informasi Gizi")
+                .filter(opt => !selectedTags.includes(opt.label))
+                .map((opt, i) => (
+                  <div key={i} className="dropdown-item" onClick={() => handleSelectTag(opt.label)}>
+                    {opt.label}
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+
+        <div className="logo-wrapper">
+          <Image src="/images/logo.png" alt="Website Logo" width={48} height={48} className="logo-img" />
+        </div>
+      </div>
+
+      {/* Page Titles */}
+      <header className="page-header">
+        <h1>RECIPES</h1>
+        <p>Find Out What Do You Want To Cook Today!</p>
+      </header>
+
+      {/* Hero Carousel Cards */}
+      <div className="carousel-wrapper">
+        <button className="carousel-arrow left" onClick={() => scrollCarousel("left")}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+      <section className="hero-carousel" ref={carouselRef}>
+          {/* Card 1 */}
+          <div className="hero-card yellow-card">
+            <div className="hero-content">
+              <h2>CHECK THIS<br/>OUT !</h2>
+              <h3>Nasi Goreng Quinoa</h3>
+              <p>Perfect Lunch For Your Bulking Menu!</p>
+              <a href="#" className="more-link">More</a>
+            </div>
+            <div className="hero-image-placeholder hero-img-1"></div>
+          </div>
+
+          {/* Card 2 */}
+          <div className="hero-card green-card">
+            <div className="hero-image-placeholder hero-img-2"></div>
+            <div className="hero-content right-align">
+              <h2>LET&apos;S COOK NOW!</h2>
+              <p className="special-text">Special<br/>As Ur<br/>Diet<br/>Partner</p>
+              <button className="more-btn">More</button>
+            </div>
+          </div>
+
+          {/* Card 3 (Baru) */}
+          <div className="hero-card orange-card">
+            <div className="hero-content">
+              <h2>OUR NEW<br/>PROTEIN</h2>
+              <h3>Stuffed Paprika</h3>
+              <p>Delicious & Healthy!</p>
+              <a href="#" className="more-link-white">More</a>
+            </div>
+            <div className="hero-image-placeholder hero-img-3"></div>
+          </div>
+        </section>
+
+        <button className="carousel-arrow right" onClick={() => scrollCarousel("right")}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </div>
+
+      {/* Recipe List Cards */}
+      <section className="recipe-list">
+        {isLoading ? (
+          /* Render Skeleton Loader sebanyak 6 buah (atau sesuai kebutuhan) */
+          Array.from({ length: 6 }).map((_, i) => (
+            <div className="recipe-card" key={i}>
+              <div className="recipe-image-wrapper">
+                <div className="skeleton-box skeleton-img" style={{ position: 'absolute' }}></div>
+              </div>
+              
+              <div className="recipe-info">
+                <div className="recipe-header">
+                  {/* Skeleton Title */}
+                  <div className="skeleton-box skeleton-title"></div>
+                </div>
+
+                <div className="recipe-meta">
+                  {/* Skeleton Tags/Meta */}
+                  <div className="skeleton-box skeleton-meta"></div>
+                </div>
+
+                {/* Skeleton Description (2 baris) */}
+                <div className="skeleton-box skeleton-desc"></div>
+                <div className="skeleton-box skeleton-desc short"></div>
+
+                {/* Skeleton Button */}
+                <div className="skeleton-box skeleton-btn"></div>
+              </div>
+            </div>
+          ))
+        ) : currentRecipes.length === 0 ? (
+          <p className="no-results">Tidak ada resep ditemukan</p>
+        ) : (
+          currentRecipes.map((recipe) => (
+            <div className="recipe-card" key={recipe.id}>
+              <div className="recipe-image-wrapper">
+                {/* Menggunakan tag img standar agar tidak bentrok dengan config domain next/image dari Supabase URL */}
+                <img 
+                  src={recipe.imageUrl} 
+                  alt={recipe.title} 
+                  className="recipe-image object-cover w-full h-full"
+                  style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute' }}
+                />
+              </div>
+              
+              <div className="recipe-info">
+                <div className="recipe-header">
+                  <h2>{recipe.title}</h2>
+                  <button className="favorite-btn" onClick={() => handleToggleLike(recipe.id)}>
+                    <svg viewBox="0 0 24 24" fill={localLikes.includes(recipe.id) ? "#ff4d6d" : "none"} stroke={localLikes.includes(recipe.id) ? "#ff4d6d" : "#333"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="recipe-meta">
+                  <span className="time">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="clock-icon">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    {recipe.time}
+                  </span>
+                  {recipe.tags.map((tag, index) => (
+                    <span className="tag" key={index}>{tag}</span>
+                  ))}
+                </div>
+
+                <p className="recipe-description">{recipe.description}</p>
+
+                {recipe.showButton && (
+                  <Link 
+                    href={`/recipes/${recipe.id}`} 
+                    className="cook-now-btn"
+                    onClick={() => sessionStorage.setItem('recipeScroll', window.scrollY.toString())}
+                  >
+                      Cook Now 
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                      </svg>
+                  </Link>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+      {!isLoading && totalPages > 1 && (
+        <div className="pagination-wrapper">
+          <button 
+            className="pagination-btn"
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            Prev
+          </button>
+          
+          <span className="pagination-info">
+            Page {currentPage} of {totalPages}
+          </span>
+          
+          <button 
+            className="pagination-btn"
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </main>
+  );
+}

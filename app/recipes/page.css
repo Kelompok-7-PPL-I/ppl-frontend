@@ -1,0 +1,661 @@
+body {
+  background-color: #ffffff !important;
+}
+
+/* Container Utama */
+.recipes-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: #333;
+}
+
+/* Navigasi Top */
+.top-nav {
+  margin-bottom: 1.5rem;
+}
+
+.back-button {
+  color: #d32f2f;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 1rem;
+  border-bottom: 2px solid #d32f2f;
+  padding-bottom: 2px;
+}
+
+/* Kontrol Pencarian & Filter */
+.controls-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 3rem;
+}
+
+.search-box, .filter-box {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-box input, 
+.filter-box select {
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 50px;
+  border: none;
+  background-color: #f1f3f4;
+  font-size: 0.95rem;
+  outline: none;
+  font-family: inherit;
+  color: #555;
+  appearance: none;
+}
+
+.search-box .icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #888;
+}
+
+.no-results {
+  text-align: center;
+  color: #999;
+  font-size: 15px;
+  padding: 40px 0;
+}
+
+.custom-select {
+  width: 100%;
+  padding: 12px 45px 12px 20px; 
+  border-radius: 50px;
+  background: #f1f3f4;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  padding: 10px 0;
+  z-index: 20;
+  animation: fadeIn 0.2s ease;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.dropdown-menu::-webkit-scrollbar {
+  width: 6px; /* Lebar scrollbar */
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background-color: #d1d5db; 
+  border-radius: 10px;     
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af; 
+}
+
+.group-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #999;
+  padding: 8px 16px;
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: #fff0f3;
+  color: #ff4d6d;
+}
+
+.filter-box .icon-select {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #888;
+  pointer-events: none;
+}
+
+.custom-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 8px 16px;
+  /* (Pertahankan border/background aslimu di sini) */
+}
+
+.selected-tags-wrapper {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+}
+
+.tag-pill-ui {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f1f3f4;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.tag-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #00bcd4; /* Warna titik bisa diubah sesuai selera */
+  border-radius: 50%;
+}
+
+.remove-tag-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 0 0 4px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.remove-tag-btn:hover {
+  color: #d32f2f;
+}
+
+.add-tag-text, .placeholder-text {
+  color: #777;
+  font-size: 0.9rem;
+}
+
+.clear-all {
+  cursor: pointer;
+  color: #999;
+}
+
+.clear-all:hover {
+  color: #333;
+}
+
+.logo-wrapper {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e8f5e9;
+  border-radius: 50%;
+  padding: 5px;
+}
+
+.logo-img {
+  border-radius: 50%;
+}
+
+/* Page Header */
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
+}
+
+.page-header p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* Hero Carousel */
+.hero-carousel {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  scrollbar-width: none; /* Firefox */
+}
+
+.hero-carousel::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.hero-card {
+  min-width: 400px;
+  border-radius: 20px;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Yellow Card */
+.yellow-card {
+  background-color: #FFCE00;
+}
+
+.yellow-card .hero-content {
+  padding: 2rem;
+  width: 60%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.yellow-card h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  padding-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.yellow-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.yellow-card p {
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.yellow-card .more-link {
+  color: #000;
+  font-weight: 600;
+  text-decoration: underline;
+  padding-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.hero-img-1 {
+  width: 45%;
+  background: url('/images/banner1.png') no-repeat;
+  background-size: auto 200%;
+  background-position: calc(100% + 200px) center;
+  border-radius: 0;
+  transform: none;
+}
+
+/* Green Card */
+.green-card {
+  background-color: #0A3D22;
+  color: white;
+}
+
+.hero-img-2 {
+  width: 45%;
+  background: url('/images/banner2.png') no-repeat center center;
+  background-size: cover;
+  border-radius: 0 50% 50% 0;
+  background-position: left center;
+  transform: scaleX(-1) scale(1.3) translateX(-5%) translateY(10%);
+}
+
+.green-card .hero-content {
+  padding: 2rem;
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.green-card h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.special-text {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 1rem;
+}
+
+.green-card .more-btn {
+  background: transparent;
+  border: 1px solid white;
+  color: white;
+  padding: 6px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* --- ORANGE CARD --- */
+.orange-card {
+  background-color: #D66D31; 
+  color: white;
+}
+
+.orange-card .hero-content {
+  padding: 2rem 2.5rem; 
+  width: 55%; 
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.orange-card h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+.orange-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.orange-card p {
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.more-link-white {
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: underline;
+  font-size: 0.9rem;
+  padding-bottom: 1rem;
+}
+
+.hero-img-3 {
+  width: 45%;
+  background: url('/images/banner3.jpg') no-repeat right center;
+  background-size: cover;
+  border-radius: 50% 0 0 50%; 
+  transform: scale(1.1) translateX(5%);
+}
+
+/* List Resep */
+.recipe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.recipe-card {
+  display: flex;
+  background: #ffffff;
+  border: 1px solid #eaeaea;
+  border-radius: 20px;
+  padding: 1.2rem;
+  gap: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+
+.recipe-image-wrapper {
+  position: relative;
+  width: 200px;
+  align-self: stretch;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.recipe-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.recipe-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.recipe-header h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.favorite-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  transition: transform 0.2s ease;
+}
+
+.favorite-btn:active {
+  transform: scale(1.2);
+}
+
+.favorite-btn svg {
+  width: 24px;
+  height: 24px;
+  transition: fill 0.3s ease;
+}
+
+.recipe-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.clock-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.tag {
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  color: #666;
+}
+
+.recipe-description {
+  font-size: 0.85rem;
+  color: #777;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.cook-now-btn {
+  align-self: flex-start;
+  background-color: #FFCE00;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+  color: #000;
+  transition: all 0.3s ease;
+}
+
+.cook-now-btn svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+}
+
+.cook-now-btn:hover {
+  background-color: #e5b900;
+  transform: translateY(-2px); 
+  box-shadow: 0 4px 12px rgba(255, 206, 0, 0.4);
+}
+
+.cook-now-btn:hover svg {
+  transform: translateX(4px);
+}
+
+/* Responsif Sederhana */
+@media (max-width: 768px) {
+  .controls-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .logo-wrapper {
+    margin-left: 0;
+    align-self: flex-end;
+  }
+
+  .recipe-card {
+    flex-direction: column;
+  }
+  
+  .recipe-image-wrapper {
+    width: 100%;
+    height: 200px;
+  }
+}
+
+/* PAGINATION STYLES */
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.pagination-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  color: #333;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Efek saat tombol di-hover (kecuali kalau sedang disabled) */
+.pagination-btn:hover:not(:disabled) {
+  background-color: #f0f0f0;
+  border-color: #999;
+}
+
+/* Tampilan tombol saat berada di ujung halaman (disabled) */
+.pagination-btn:disabled {
+  background-color: #f9f9f9;
+  color: #bbb;
+  border-color: #eee;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-weight: bold;
+  color: #555;
+}
+
+/* SKELETON LOADER STYLES */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton-box {
+  background: #f6f7f8;
+  background-image: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 2000px 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 8px; /* Sesuaikan radius dengan desain aslimu */
+}
+
+/* Specific Skeleton Parts */
+.skeleton-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px 16px 0 0; /* Mengikuti bentuk recipe-image-wrapper biasanya */
+}
+
+.skeleton-title {
+  height: 24px;
+  width: 70%;
+  margin-bottom: 12px;
+}
+
+.skeleton-meta {
+  height: 20px;
+  width: 40%;
+  margin-bottom: 16px;
+  border-radius: 20px;
+}
+
+.skeleton-desc {
+  height: 14px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.skeleton-desc.short {
+  width: 80%;
+}
+
+.skeleton-btn {
+  height: 36px;
+  width: 120px;
+  margin-top: 16px;
+  border-radius: 24px;
+}
