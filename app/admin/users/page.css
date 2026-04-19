@@ -305,16 +305,15 @@
   color: #c62828;
 }
 
-/* ── Pagination ──────────────────────────────────────────────────────── */
 .pagination-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4px;
+  padding: 20px 4px 0 4px;
 }
 
 .pagination-info {
-  font-size: 13.5px;
+  font-size: 14px;
   color: #888;
   font-weight: 500;
 }
@@ -322,7 +321,42 @@
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+.pg-btn {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 50px; /* Membuat tombol bulat */
+  border: 1px solid #ddd;
+  background: #fff;
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pg-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #1a3a2a;
+  color: #1a3a2a;
+}
+
+.pg-btn.active {
+  background: #1a3a2a; /* Warna Hijau Gelap sesuai gambar */
+  border-color: #1a3a2a;
+  color: #fff;
+}
+
+.pg-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .pg-btn {
@@ -612,27 +646,81 @@
   color: #333;
 }
 
-.img-thumb {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  object-fit: cover;
-  border: 1px solid #eee;
+/* Styling untuk Role Badge */
+.role-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  display: inline-block;
 }
 
-.img-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.role-admin {
+  background: #fdf2f2;
+  color: #c81e1e;
+  border: 1px solid #fbd5d5;
 }
 
+.role-user {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+/* Membatasi lebar alamat di tabel agar tidak kepanjangan */
 .td-desc {
-  max-width: 250px;
-  font-size: 12.5px;
-  color: #777;
-  line-height: 1.55;
+  max-width: 200px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* Menambahkan horizontal scroll jika layar kekecilan */
+.table-card {
+  overflow-x: auto;
+}
+
+.products-table {
+  min-width: 1000px; /* Memastikan tabel punya ruang cukup untuk semua kolom */
+}
+
+/* Styling untuk Dropdown Role */
+.role-select-dropdown {
+  padding: 6px 12px;
+  border-radius: 8px; /* Lebih kotak atau bulat sesuai selera */
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  outline: none;
+  appearance: none; /* Menghilangkan panah default browser agar lebih clean */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 32px;
+  transition: all 0.2s ease;
+}
+
+/* Warna saat Role adalah Admin */
+.role-select-dropdown.is-admin {
+  background-color: #fff1f2;
+  color: #e11d48;
+  border-color: #fda4af;
+}
+
+/* Warna saat Role adalah Customer */
+.role-select-dropdown.is-user {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.role-select-dropdown:hover {
+  filter: contrast(1.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.role-select-dropdown:focus {
+  ring: 2px solid #3b82f6;
+}

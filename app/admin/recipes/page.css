@@ -1,4 +1,4 @@
-/* ── Admin Products Page ────────────────────────────────────────────── */
+/* ── Admin Recipes Page ────────────────────────────────────────────── */
 
 /* ── Topbar ─────────────────────────────────────────────────────────── */
 .topbar {
@@ -68,7 +68,7 @@
 }
 
 /* ── Page Body ──────────────────────────────────────────────────────── */
-.products-page {
+.recipes-page {
   padding: 36px 36px 60px 36px;
   display: flex;
   flex-direction: column;
@@ -78,13 +78,13 @@
 }
 
 /* ── Page Header ────────────────────────────────────────────────────── */
-.products-header {
+.recipes-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
 }
 
-.products-header-left h1 {
+.recipes-header-left h1 {
   font-size: 26px;
   font-weight: 800;
   color: #1a1a1a;
@@ -92,13 +92,13 @@
   margin-bottom: 4px;
 }
 
-.products-header-left p {
+.recipes-header-left p {
   font-size: 14px;
   color: #888;
   font-weight: 500;
 }
 
-.products-header-right {
+.recipes-header-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -171,23 +171,24 @@
 
 /* ── Table Card ─────────────────────────────────────────────────────── */
 .table-card {
+  width: 100%;
   background: #fff;
   border: 1px solid #ebebeb;
   border-radius: 20px;
   overflow: hidden;
 }
 
-.products-table {
+.recipes-table {
   width: 100%;
   border-collapse: collapse;
 }
 
 /* Table Header */
-.products-table thead tr {
+.recipes-table thead tr {
   background: #f5c800;
 }
 
-.products-table thead th {
+.recipes-table thead th {
   padding: 15px 18px;
   text-align: left;
   font-size: 13.5px;
@@ -197,31 +198,31 @@
   white-space: nowrap;
 }
 
-.products-table thead th:first-child {
+.recipes-table thead th:first-child {
   padding-left: 28px;
   width: 56px;
 }
 
-.products-table thead th:last-child {
+.recipes-table thead th:last-child {
   padding-right: 28px;
   text-align: center;
 }
 
 /* Table Body */
-.products-table tbody tr {
+.recipes-table tbody tr {
   border-bottom: 1px solid #f4f4f4;
   transition: background 0.15s;
 }
 
-.products-table tbody tr:last-child {
+.recipes-table tbody tr:last-child {
   border-bottom: none;
 }
 
-.products-table tbody tr:hover {
+.recipes-table tbody tr:hover {
   background: #fafafa;
 }
 
-.products-table tbody td {
+.recipes-table tbody td {
   padding: 16px 18px;
   font-size: 13.5px;
   color: #333;
@@ -230,13 +231,13 @@
   vertical-align: middle;
 }
 
-.products-table tbody td:first-child {
+.recipes-table tbody td:first-child {
   padding-left: 28px;
   color: #888;
   font-weight: 600;
 }
 
-.products-table tbody td:last-child {
+.recipes-table tbody td:last-child {
   padding-right: 28px;
   text-align: center;
 }
@@ -305,16 +306,15 @@
   color: #c62828;
 }
 
-/* ── Pagination ──────────────────────────────────────────────────────── */
 .pagination-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4px;
+  padding: 20px 4px 0 4px;
 }
 
 .pagination-info {
-  font-size: 13.5px;
+  font-size: 14px;
   color: #888;
   font-weight: 500;
 }
@@ -322,7 +322,42 @@
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+.pg-btn {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 50px; /* Membuat tombol bulat */
+  border: 1px solid #ddd;
+  background: #fff;
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pg-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #1a3a2a;
+  color: #1a3a2a;
+}
+
+.pg-btn.active {
+  background: #1a3a2a; /* Warna Hijau Gelap sesuai gambar */
+  border-color: #1a3a2a;
+  color: #fff;
+}
+
+.pg-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .pg-btn {
@@ -611,6 +646,49 @@
   border-color: #888;
   color: #333;
 }
+.table-card {
+  overflow-x: auto;
+}
+
+/* Pastikan tabel punya layout yang stabil */
+.recipes-table {
+  border-collapse: collapse;
+  table-layout: fixed; /* Ini WAJIB supaya max-width kolom dipatuhi */
+}
+
+/* Pengaturan lebar kolom spesifik */
+.col-no { width: 50px; }
+.col-judul { width: 150px; }
+.col-kat { width: 120px; }
+.col-data { width: 176px; } /* Untuk Deskripsi, Bahan, Langkah */
+.col-gizi { width: 150px; }
+.col-img { width: 80px; }
+.col-aksi { width: 100px; }
+
+/* Wrapper untuk teks yang mau dipotong */
+.text-wrapper {
+  display: block; /* Ganti dari -webkit-box ke block dulu */
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Maksimal 2 baris */
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #555;
+}
+
+/* Judul tetap tebal dan 1 baris */
+.judul-wrapper {
+  font-weight: 700;
+  color: #1a3a2a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
 
 .img-thumb {
   width: 44px;
@@ -619,20 +697,3 @@
   object-fit: cover;
   border: 1px solid #eee;
 }
-
-.img-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.td-desc {
-  max-width: 250px;
-  font-size: 12.5px;
-  color: #777;
-  line-height: 1.55;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
