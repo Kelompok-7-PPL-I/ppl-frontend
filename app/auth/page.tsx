@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight, Check, X, ArrowLeft, Mail } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { signIn } from "next-auth/react";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function AuthPage() {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // Register States (Initialized with empty strings to avoid Uncontrolled/Controlled error)
+  // Register States
   const [regData, setRegData] = useState({
     firstName: '',
     lastName: '',
@@ -57,40 +58,81 @@ export default function AuthPage() {
     return { label: "Kuat", color: "bg-green-500", text: "text-green-500" };
   };
 
-  // Auth Handlers
-const handleLogin = async (e: React.FormEvent) => {
+  // ==============================
+  // AUTH HANDLERS
+  // ==============================
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      const result = await signIn("credentials", {
         email: loginEmail,
         password: loginPassword,
+        redirect: false,
       });
 
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // Ambil role dari tabel users berdasarkan id_user
-        const { data: userData, error: dbError } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id_user', authData.user.id)
-          .single();
-
-        if (dbError) {
-          console.error("Profil tidak ditemukan:", dbError.message);
-          router.push('/DashboardProduct');
-        } else {
-          if (userData?.role === 'admin') {
-            router.push('/admin');
-          } else {
-            router.push('/DashboardProduct');
-          }
-        }
-        router.refresh();
+      if (result?.error) {
+        throw new Error(result.error);
       }
+
+      if (result?.ok) {
+        // 1. Tampilkan pesan sukses
+        setSuccessMsg("Login berhasil! Mengalihkan ke dashboard...");
+
+        // 2. Beri jeda 1.5 detik agar browser menyimpan session, lalu pindah halaman
+        setTimeout(() => {
+          router.push('/DashboardProduct');
+          router.refresh(); // Memaksa Next.js mengambil state session terbaru
+        }, 1500);
+      }
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false); // Matikan loading hanya jika error
+    }
+    // Catatan: setLoading(false) di block 'finally' dihapus agar 
+    // tombol tetap status "Memproses..." saat jeda pindah halaman.
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccessMsg(null);
+
+    try {
+      // TEMBAK KE API CUSTOM KITA (Bukan Supabase Auth)
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: `${regData.firstName} ${regData.lastName}`,
+          email: regData.email,
+          password: regData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Gagal mendaftar');
+      }
+
+      // Jika berhasil
+      setSuccessMsg("Pendaftaran Berhasil! Cek email kamu untuk info lengkapnya.");
+
+      // Kosongkan form setelah sukses
+      setRegData({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
+
+      // Otomatis pindah ke tampilan login setelah 3 detik
+      setTimeout(() => {
+        setView('login');
+      }, 3000);
+
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -98,40 +140,29 @@ const handleLogin = async (e: React.FormEvent) => {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    const { error } = await supabase.auth.signUp({
-      email: regData.email,
-      password: regData.password,
-      options: {
-        data: { full_name: `${regData.firstName} ${regData.lastName}` },
-        emailRedirectTo: `${window.location.origin}/auth/callback`, // ARAHKAN KE CALLBACK
-      }
-    });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setSuccessMsg("Pendaftaran Berhasil! Cek email kamu untuk verifikasi.");
-      // JANGAN router.push ke dashboard di sini!
-    }
-    setLoading(false);
-  };
-
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
-    });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      setSuccessMsg("Link reset password telah dikirim ke email kamu!");
+
+    try {
+      // Panggil custom API kita (Nodemailer) yang sudah kamu buat
+      const response = await fetch('/api/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail }),
+      });
+      
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Gagal mengirim link reset password");
+      }
+
+      setSuccessMsg("Link reset password telah dikirim ke email kamu (cek juga folder Spam)!");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
       setLoading(false);
     }
   };
@@ -142,6 +173,10 @@ const handleLogin = async (e: React.FormEvent) => {
       options: { redirectTo: `${window.location.origin}/auth/callback?next=/DashboardProduct` },
     });
   };
+
+  // ==============================
+  // UI RENDER
+  // ==============================
 
   return (
     <main className="auth-page">

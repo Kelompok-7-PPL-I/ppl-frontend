@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client"; 
 import { usePathname, useRouter } from "next/navigation";
+import { signOut as nextAuthSignOut } from "next-auth/react";
 
 const navItems = [
   {
@@ -89,7 +90,10 @@ export default function AdminSidebar() {
   }, [supabase]);
 
   const handleLogout = async () => {
+    // Log out dari Supabase
     await supabase.auth.signOut();
+    // Log out dari NextAuth
+    await nextAuthSignOut({ redirect: false });
     router.refresh();
     router.push("/auth"); // Diarahkan ke auth page
   };

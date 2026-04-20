@@ -1,0 +1,174 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  engineType      = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["public", "auth"]
+}
+
+// ─── PENGGUNA & AUTH ─────────────────────────────────────────────────────────
+model Pengguna {
+  id             String          @id @db.Uuid
+  nama           String?         @db.VarChar
+  email          String          @unique @db.VarChar
+  password       String?         @db.VarChar
+  alamat         String?         @db.Text
+  nomor_telp     String?         @db.VarChar
+  peran              String          @default("user") @db.VarChar
+  reset_token        String?         @db.VarChar
+  reset_token_expiry DateTime?       @db.Timestamptz
+  dibuat_pada        DateTime        @default(now()) @db.Timestamptz
+  
+  // Relasi
+  pesanan        Pesanan[]
+  keranjang      Keranjang[]
+  ulasan         Ulasan[]
+  favorit_produk FavoritProduk[]
+  favorit_resep  FavoritResep[]
+
+  @@map("pengguna")
+  @@schema("public")
+}
+
+// ─── PRODUK (MARKETPLACE) ────────────────────────────────────────────────────
+model Produk {
+  id_produk   Int             @id @default(autoincrement())
+  nama_produk String          @db.VarChar
+  deskripsi   String?         @db.Text
+  harga       Decimal         @db.Decimal(12, 2)
+  stok        Int             @default(0)
+  gambar_url  String?         @db.VarChar
+  is_promo    Boolean         @default(false)
+  dibuat_pada DateTime        @default(now()) @db.Timestamptz
+
+  // Relasi
+  item_pesanan ItemPesanan[]
+  keranjang    Keranjang[]
+  ulasan       Ulasan[]
+  favorit      FavoritProduk[]
+
+  @@map("produk")
+  @@schema("public")
+}
+
+// ─── RESEP (EDUKASI PANGAN) ──────────────────────────────────────────────────
+model Resep {
+  id_resep          Int            @id @default(autoincrement())
+  judul_resep       String         @db.VarChar
+  bahan_bahan       String?        @db.Text
+  langkah_masak     String?        @db.Text
+  kategori_jenis    String?        @db.VarChar
+  informasi_gizi    String?        @db.Text
+  deskripsi_singkat String?        @db.Text
+  gambar_url        String?        @db.VarChar
+  waktu_masak       Int?
+  
+  // Relasi
+  id_kategori       Int?
+  kategori          Kategori?      @relation(fields: [id_kategori], references: [id_kategori])
+  favorit           FavoritResep[]
+
+  @@map("resep")
+  @@schema("public")
+}
+
+// ─── KATEGORI ────────────────────────────────────────────────────────────────
+model Kategori {
+  id_kategori   Int     @id @default(autoincrement())
+  nama_kategori String  @db.VarChar
+  icon_url      String? @db.Text
+
+  resep Resep[]
+
+  @@map("kategori")
+  @@schema("public")
+}
+
+// ─── FAVORIT ─────────────────────────────────────────────────────────────────
+model FavoritProduk {
+  id_fav    Int      @id @default(autoincrement())
+  id_user   String   @db.Uuid
+  id_produk Int
+  
+  pengguna Pengguna @relation(fields: [id_user], references: [id])
+  produk   Produk   @relation(fields: [id_produk], references: [id_produk])
+
+  @@unique([id_user, id_produk])
+  @@map("favorit_produk")
+  @@schema("public")
+}
+
+model FavoritResep {
+  id_fav    Int      @id @default(autoincrement())
+  id_user   String   @db.Uuid
+  id_resep  Int
+  
+  pengguna Pengguna @relation(fields: [id_user], references: [id])
+  resep    Resep    @relation(fields: [id_resep], references: [id_resep])
+
+  @@unique([id_user, id_resep])
+  @@map("favorit_resep")
+  @@schema("public")
+}
+
+// ─── TRANSAKSI & KERANJANG ───────────────────────────────────────────────────
+model Pesanan {
+  id_pesanan        Int           @id @default(autoincrement())
+  id_user           String        @db.Uuid
+  tanggal_pesanan   DateTime      @default(now()) @db.Timestamptz
+  total_harga       Decimal       @db.Decimal(12, 2)
+  status_pembayaran String        @db.VarChar
+  metode_bayar      String?       @db.VarChar
+
+  pengguna     Pengguna      @relation(fields: [id_user], references: [id])
+  item_pesanan ItemPesanan[]
+
+  @@map("pesanan")
+  @@schema("public")
+}
+
+model ItemPesanan {
+  id_item    Int     @id @default(autoincrement())
+  id_pesanan Int
+  id_produk  Int
+  kuantitas  Int
+  subtotal   Decimal @db.Decimal(12, 2)
+
+  pesanan Pesanan @relation(fields: [id_pesanan], references: [id_pesanan])
+  produk  Produk  @relation(fields: [id_produk], references: [id_produk])
+
+  @@map("item_pesanan")
+  @@schema("public")
+}
+
+model Keranjang {
+  id_keranjang Int      @id @default(autoincrement())
+  id_user      String   @db.Uuid
+  id_produk    Int
+  jumlah       Int
+  dibuat_pada  DateTime @default(now()) @db.Timestamptz
+
+  pengguna Pengguna @relation(fields: [id_user], references: [id])
+  produk   Produk   @relation(fields: [id_produk], references: [id_produk])
+
+  @@map("keranjang")
+  @@schema("public")
+}
+
+model Ulasan {
+  id_ulasan      Int      @id @default(autoincrement())
+  id_user        String   @db.Uuid
+  id_produk      Int
+  rating         Int      @default(5)
+  komentar       String?  @db.Text
+  tanggal_ulasan DateTime @default(now()) @db.Timestamptz
+
+  pengguna Pengguna @relation(fields: [id_user], references: [id])
+  produk   Produk   @relation(fields: [id_produk], references: [id_produk])
+
+  @@map("ulasan")
+  @@schema("public")
+}

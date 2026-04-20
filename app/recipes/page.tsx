@@ -46,9 +46,9 @@ export default function RecipesPage(){
       const fetchRecipes = async () => {
         setIsLoading(true);
         const { data, error } = await supabase
-          .from('recipes')
+          .from('resep')
           .select('*')
-          .order('id_recipe', { ascending: false });
+          .order('id_resep', { ascending: false });
 
         if (!error && data) {
           // Melakukan mapping data dari DB ke struktur UI
@@ -67,7 +67,7 @@ export default function RecipesPage(){
             const recipeTags = [dbRecipe.kategori_jenis, mainNutritionTag].filter(Boolean);
 
             return {
-              id: dbRecipe.id_recipe,
+              id: dbRecipe.id_resep,
               title: dbRecipe.judul_resep || "Resep Tanpa Judul",
               time: `${dbRecipe.waktu_masak || 0} min`, // Menambahkan "min"
               tags: recipeTags,

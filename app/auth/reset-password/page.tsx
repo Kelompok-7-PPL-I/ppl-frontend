@@ -1,20 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Check, X, ShieldCheck } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
 import './page.css';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const supabase = createClient();
   
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Mengambil parameter token dari URL
+    const searchParams = new URLSearchParams(window.location.search);
+    setToken(searchParams.get('token'));
+  }, []);
 
   const requirements = [
     { re: /.{8,}/, label: "Minimal 8 Karakter" },
@@ -30,19 +35,33 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     if (metReqs < 4 || !isMatch) return;
     
+    if (!token) {
+        setError("Token tidak ada. Silakan request link reset yang baru.");
+        return;
+    }
+
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.updateUser({ 
-      password: password 
-    });
+    try {
+      const response = await fetch('/api/reset-password/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password }),
+      });
 
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      alert("Password berhasil diperbarui! Silakan login kembali.");
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Gagal mengubah password.");
+      }
+
+      alert("Password berhasil diperbarui! Silakan login kembali dengan password baru.");
       router.push('/auth'); 
+
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
     }
   };
 

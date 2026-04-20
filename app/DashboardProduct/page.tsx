@@ -7,6 +7,7 @@ import Link from "next/link";
 import "./page.css";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import { signOut as nextAuthSignOut } from "next-auth/react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -128,9 +129,13 @@ export default function DashboardProduct() {
   }));
 
   const handleLogout = async () => {
+    // Log out dari Supabase
     await supabase.auth.signOut();
+    // Log out dari NextAuth (tanpa paksa reload biar router yang handle)
+    await nextAuthSignOut({ redirect: false });
+    
+    router.push("/auth");
     router.refresh();
-    router.push("/");
   };
 
   const handleToggleLike = (id: number) => {

@@ -99,7 +99,7 @@ export default function AddRecipePage() {
 
       // 3. Insert ke Supabase (Mapping sesuai kolom DB kamu)
       const { error: insertError } = await supabase
-        .from('recipes')
+        .from('resep')
         .insert([{
           judul_resep: form.judul_resep,
           kategori_jenis: form.kategori_jenis,

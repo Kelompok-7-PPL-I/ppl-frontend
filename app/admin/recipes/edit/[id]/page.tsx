@@ -52,9 +52,9 @@ export default function EditRecipePage() {
     try {
       setIsLoading(true);
       const { data, error } = await supabase
-        .from('recipes')
+        .from('resep')
         .select('*')
-        .eq('id_recipe', id)
+        .eq('id_resep', id)
         .single();
 
       if (error) throw error;
@@ -130,7 +130,7 @@ export default function EditRecipePage() {
         .join(", ");
 
       const { error } = await supabase
-        .from('recipes')
+        .from('resep')
         .update({
           judul_resep: form.judul_resep,
           kategori_jenis: form.kategori_jenis,
@@ -140,7 +140,7 @@ export default function EditRecipePage() {
           langkah_masak: form.langkah_masak,
           gambar_url: finalImageUrl
         })
-        .eq('id_recipe', id);
+        .eq('id_resep', id);
 
       if (error) throw error;
 

@@ -20,9 +20,9 @@ export default async function RecipeDetail({ params }: { params: Promise<{ id: s
 
   // 1. Fetch data dari Supabase berdasarkan id_recipe
   const { data: recipe, error } = await supabase
-    .from('recipes')
+    .from('resep')
     .select('*')
-    .eq('id_recipe', resolvedParams.id)
+    .eq('id_resep', resolvedParams.id)
     .single();
 
   // Handling jika resep tidak ditemukan atau error

@@ -13,7 +13,7 @@ const supabase = createBrowserClient(
 );
 
 interface Recipe {
-  id_recipe: string;
+  id_resep: number;
   judul_resep: string;
   kategori_jenis: string;
   deskripsi_singkat: string;
@@ -83,7 +83,7 @@ const fetchRecipes = useCallback(async () => {
   try {
     setLoading(true);
     const { data, error } = await supabase
-      .from('recipes')
+      .from('resep')
       .select('*');
 
     if (!error) {
@@ -104,7 +104,7 @@ const fetchRecipes = useCallback(async () => {
   const handleDelete = async () => {
     if (!targetRecipe) return;
     try {      
-      const { error } = await supabase.from('recipes').delete().eq('id_recipe', targetRecipe.id_recipe);
+      const { error } = await supabase.from('resep').delete().eq('id_resep', targetRecipe.id_resep);
       if (error) throw error;
       await fetchRecipes();
       setIsDeleteModalOpen(false);
@@ -195,7 +195,7 @@ const fetchRecipes = useCallback(async () => {
             {loading ? (
                 <tr><td colSpan={8} style={{textAlign: "center", padding: "40px"}}>Memuat...</td></tr>
               ) : pageItems.map((r, i) => (
-              <tr key={r.id_recipe}>
+              <tr key={r.id_resep}>
                 <td>{(safePage - 1) * PER_PAGE + i + 1}.</td>
                 <td><span className="judul-wrapper" title={r.judul_resep}>{r.judul_resep}</span></td>
                 <td><span className="cat-badge">{r.kategori_jenis}</span></td>
@@ -211,7 +211,7 @@ const fetchRecipes = useCallback(async () => {
                   <img src={r.gambar_url || "/placeholder.jpg"} className="img-thumb" alt="" />
                 </td>
                 <td className="action-cell">
-                  <Link href={`/admin/recipes/edit/${r.id_recipe}`} className="btn-icon edit" aria-label="Edit">
+                  <Link href={`/admin/recipes/edit/${r.id_resep}`} className="btn-icon edit" aria-label="Edit">
                     <EditIcon />
                   </Link>
                   <button className="btn-icon delete" onClick={() => {
