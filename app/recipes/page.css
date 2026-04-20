@@ -30,6 +30,8 @@ body {
   gap: 1rem;
   align-items: center;
   margin-bottom: 3rem;
+  position: relative;
+  z-index: 100;
 }
 
 .search-box, .filter-box {
