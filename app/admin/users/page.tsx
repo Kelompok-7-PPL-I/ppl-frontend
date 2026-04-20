@@ -11,13 +11,13 @@ export const createClient = () =>
   );
 
 interface User {
-  id_user: string;
+  id: string;
   nama: string;
   email: string;
   alamat: string;
   nomor_telp: string;
-  role: string;
-  created_at: string;
+  peran: string;
+  dibuat_pada: string;
 }
 
 const PER_PAGE = 10;
@@ -44,7 +44,7 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('pengguna').select('*').order('dibuat_pada', { ascending: false });
     if (!error) setUsers(data || []);
     setLoading(false);
   };
@@ -62,7 +62,7 @@ export default function AdminUsersPage() {
 
   const handleDelete = async () => {
     if (!targetUser) return;
-    const { error } = await supabase.from('users').delete().eq('id_user', targetUser.id_user);
+    const { error } = await supabase.from('pengguna').delete().eq('id', targetUser.id);
     if (!error) {
       fetchUsers();
       setIsDeleteModalOpen(false);
@@ -80,13 +80,13 @@ export default function AdminUsersPage() {
 
     try {
       const { error } = await supabase
-        .from('users')
-        .update({ role: newRole })
-        .eq('id_user', idUser);
+        .from('pengguna')
+        .update({ peran: newRole })
+        .eq('id', idUser);
 
       if (error) throw error;
 
-      setUsers(users.map(u => (u.id_user === idUser ? { ...u, role: newRole } : u)));
+      setUsers(users.map(u => (u.id === idUser ? { ...u, peran: newRole } : u)));
       alert("Role berhasil diperbarui!");
     } catch (err: any) {
       alert("Gagal update role: " + err.message);
@@ -95,7 +95,7 @@ export default function AdminUsersPage() {
 
   const filtered = users.filter(u => {
     const matchSearch = (u.nama?.toLowerCase() || "").includes(search.toLowerCase()) || (u.email?.toLowerCase() || "").includes(search.toLowerCase());
-    const matchRole = roleFilter === "all" || u.role?.toLowerCase() === roleFilter.toLowerCase();
+    const matchRole = roleFilter === "all" || u.peran?.toLowerCase() === roleFilter.toLowerCase();
     return matchSearch && matchRole;
   });
 
@@ -146,19 +146,19 @@ export default function AdminUsersPage() {
               ) : pageItems.map((u, i) => {
                 const { firstName, lastName } = splitName(u.nama);
                 return (
-                  <tr key={u.id_user}>
+                  <tr key={u.id}>
                     <td>{(safePage - 1) * PER_PAGE + i + 1}.</td>
                     <td style={{ fontSize: '11px', color: '#888', fontFamily: 'monospace' }}>
-                      {u.id_user.substring(0, 8)}...
+                      {u.id.substring(0, 8)}...
                     </td>
                     <td>{u.email}</td>
                     <td style={{ fontWeight: "700" }}>{firstName}</td>
                     <td>{lastName}</td>
                     <td style={{ textAlign: 'center' }}>
                       <select 
-                        className={`role-select-dropdown ${u.role?.toLowerCase() === 'admin' ? 'is-admin' : 'is-user'}`}
-                        value={u.role || "customer"}
-                        onChange={(e) => updateRole(u.id_user, e.target.value)}
+                        className={`role-select-dropdown ${u.peran?.toLowerCase() === 'admin' ? 'is-admin' : 'is-user'}`}
+                        value={u.peran || "customer"}
+                        onChange={(e) => updateRole(u.id, e.target.value)}
                       >
                         <option value="customer">customer</option>
                         <option value="admin">admin</option>
@@ -200,7 +200,7 @@ export default function AdminUsersPage() {
                 <span className="warning-title">Hapus Profil</span>
               </div>
             </div>
-            <p className="warning-text">Hapus profil <strong>{targetUser.nama}</strong>? Tindakan ini hanya menghapus data di tabel users.</p>
+            <p className="warning-text">Hapus profil <strong>{targetUser.nama}</strong>? Tindakan ini hanya menghapus data di tabel pengguna.</p>
             <div className="warning-actions">
               <button className="btn-warn-yes" onClick={handleDelete}>Ya, Hapus</button>
               <button className="btn-warn-no" onClick={() => setIsDeleteModalOpen(false)}>Batal</button>

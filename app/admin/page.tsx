@@ -142,16 +142,16 @@ export default function AdminDashboardPage() {
           .from('produk')
           .select('*', { count: 'exact', head: true });
         
-        // 2. Ambil Total Pelanggan (Tabel 'users' dengan role customer)
+        // 2. Ambil Total Pelanggan (Tabel 'pengguna' dengan peran customer)
         const { count: cCount } = await supabase
-          .from('users')
+          .from('pengguna')
           .select('*', { count: 'exact', head: true })
-          .eq('role', 'customer');
+          .eq('peran', 'customer');
 
-        // 3. Ambil Data Penjualan & Pesanan (Tabel 'orders')
+        // 3. Ambil Data Penjualan & Pesanan (Tabel 'pesanan')
         const { data: orders } = await supabase
-          .from('orders')
-          .select('total_harga, created_at');
+          .from('pesanan')
+          .select('total_harga, tanggal_pesanan');
 
         // Kalkulasi total nominal dan jumlah transaksi
         const totalRevenue = orders?.reduce((sum, item) => sum + (item.total_harga || 0), 0) || 0;

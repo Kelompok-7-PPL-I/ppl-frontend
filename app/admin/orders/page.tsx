@@ -11,9 +11,9 @@ export const createClient = () =>
   );
 
 interface Order {
-  id_order: number;
+  id_pesanan: number;
   id_user: string;
-  tanggal_order: string;
+  tanggal_pesanan: string;
   total_harga: number;
   status_pembayaran: string;
   metode_bayar: string;
@@ -50,7 +50,7 @@ export default function AdminOrdersPage() {
 
   const fetchOrders = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('orders').select('*').order('tanggal_order', { ascending: false });
+    const { data, error } = await supabase.from('pesanan').select('*').order('tanggal_pesanan', { ascending: false });
     if (!error) setOrders(data || []);
     setLoading(false);
   };
@@ -61,11 +61,11 @@ export default function AdminOrdersPage() {
     e.preventDefault();
     if (targetOrder) {
       // UPDATE
-      const { error } = await supabase.from('orders').update(formData).eq('id_order', targetOrder.id_order);
+      const { error } = await supabase.from('pesanan').update(formData).eq('id_pesanan', targetOrder.id_pesanan);
       if (!error) fetchOrders();
     } else {
       // INSERT
-      const { error } = await supabase.from('orders').insert([{ ...formData, tanggal_order: new Date().toISOString() }]);
+      const { error } = await supabase.from('pesanan').insert([{ ...formData, tanggal_pesanan: new Date().toISOString() }]);
       if (!error) fetchOrders();
     }
     closeModal();
@@ -73,7 +73,7 @@ export default function AdminOrdersPage() {
 
   const handleDelete = async () => {
     if (!targetOrder) return;
-    const { error } = await supabase.from('orders').delete().eq('id_order', targetOrder.id_order);
+    const { error } = await supabase.from('pesanan').delete().eq('id_pesanan', targetOrder.id_pesanan);
     if (!error) {
       fetchOrders();
       setIsDeleteModalOpen(false);
@@ -103,7 +103,7 @@ export default function AdminOrdersPage() {
   };
 
   const filtered = orders.filter(o => {
-    const matchSearch = (o.id_order?.toString() || "").includes(search.toLowerCase());
+    const matchSearch = (o.id_pesanan?.toString() || "").includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || o.status_pembayaran?.toLowerCase() === statusFilter.toLowerCase();
     return matchSearch && matchStatus;
   });
@@ -154,9 +154,9 @@ export default function AdminOrdersPage() {
               {loading ? (
                 <tr><td colSpan={7} style={{textAlign: "center", padding: "40px"}}>Memuat data...</td></tr>
               ) : pageItems.map((o, i) => (
-                <tr key={o.id_order}>
+                <tr key={o.id_pesanan}>
                   <td>{(safePage - 1) * PER_PAGE + i + 1}.</td>
-                  <td className="mono-cell">#{o.id_order}</td>
+                  <td className="mono-cell">#{o.id_pesanan}</td>
                   <td style={{fontSize: '11px', color: '#666'}}>{o.id_user}</td>
                   <td className="bold-cell">Rp {o.total_harga?.toLocaleString('id-ID')}</td>
                   <td>{o.metode_bayar}</td>
@@ -227,7 +227,7 @@ export default function AdminOrdersPage() {
                 <span className="warning-title">Hapus Order</span>
               </div>
             </div>
-            <p className="warning-text">Hapus permanen order <strong>#{targetOrder.id_order}</strong>?</p>
+            <p className="warning-text">Hapus permanen order <strong>#{targetOrder.id_pesanan}</strong>?</p>
             <div className="warning-actions">
               <button className="btn-warn-yes" onClick={handleDelete}>Ya, Hapus</button>
               <button className="btn-warn-no" onClick={() => setIsDeleteModalOpen(false)}>Batal</button>
