@@ -38,9 +38,10 @@ const handler = NextAuth({
 
                 // 4. Jika semua oke, kembalikan data user untuk disimpan di session
                 return {
-                    id: user.id.toString(), // Sesuaikan dengan nama kolom ID di skema kamu (dari 'id_pengguna' jadi 'id')
+                    id: user.id.toString(),
                     email: user.email,
-                    name: user.nama, // Di database kamu namanya 'nama', bukan 'nama_lengkap'
+                    name: user.nama,
+                    peran: user.peran,
                 };
             },
         }),
@@ -50,7 +51,21 @@ const handler = NextAuth({
     },
     secret: process.env.NEXTAUTH_SECRET,
     pages: {
-        signIn: "/auth/login", // Arahkan ke halaman login custom kamu
+        signIn: "/auth/login",
+    },
+    callbacks: {
+        async jwt({ token, user }: { token: any, user: any }) {
+            if (user) {
+                token.peran = user.peran;
+            }
+            return token;
+        },
+        async session({ session, token }: { session: any, token: any }) {
+            if (session.user) {
+                session.user.peran = token.peran;
+            }
+            return session;
+        },
     },
 });
 

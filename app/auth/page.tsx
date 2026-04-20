@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight, Check, X, ArrowLeft, Mail } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -82,10 +82,17 @@ export default function AuthPage() {
         // 1. Tampilkan pesan sukses
         setSuccessMsg("Login berhasil! Mengalihkan ke dashboard...");
 
-        // 2. Beri jeda 1.5 detik agar browser menyimpan session, lalu pindah halaman
-        setTimeout(() => {
-          router.push('/DashboardProduct');
-          router.refresh(); // Memaksa Next.js mengambil state session terbaru
+        // 2. Cek session untuk menentukan role dan redirect
+        setTimeout(async () => {
+          const session = await getSession();
+          
+          if (session?.user?.peran === 'admin') {
+            router.push('/admin');
+          } else {
+            router.push('/DashboardProduct');
+          }
+          
+          router.refresh(); 
         }, 1500);
       }
     } catch (err: any) {

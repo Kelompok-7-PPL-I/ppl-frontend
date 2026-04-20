@@ -62,8 +62,8 @@ export async function proxy(request: NextRequest) {
   // Redirect user yang sudah login jika masuk ke halaman Auth
   if (isLogged) {
     // Role handling: Cek NextAuth dulu, kalau null ambil dari Supabase
-    // @ts-ignore (Karna token.role bukan tipe standar JWT NextAuth)
-    const userRole = (token?.role as string) || supabaseUser?.user_metadata?.role || 'user'; 
+    // @ts-ignore (Karna token.peran bukan tipe standar JWT NextAuth bawaan)
+    const userRole = (token?.peran as string) || supabaseUser?.user_metadata?.role || 'user'; 
 
     if (path.startsWith('/admin') && userRole !== 'admin') {
       return NextResponse.redirect(new URL('/DashboardProduct', request.url))
