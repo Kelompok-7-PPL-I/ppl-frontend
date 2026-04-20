@@ -175,10 +175,15 @@ export default function AuthPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/DashboardProduct` },
-    });
+    setLoading(true);
+    setError(null);
+    try {
+      // Menggunakan NextAuth untuk memicu login Google
+      await signIn("google", { callbackUrl: "/DashboardProduct" });
+    } catch (err: any) {
+      setError("Gagal masuk dengan Google. Silakan coba lagi.");
+      setLoading(false);
+    }
   };
 
   // ==============================
