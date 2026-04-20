@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { getSession } from "next-auth/react";
 
 export default function ProfilePage() {
     const supabase = createClient();
@@ -11,13 +12,14 @@ export default function ProfilePage() {
 
     useEffect(() => {
         const fetchProfile = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
+        const session = await getSession();
+        const email = session?.user?.email;
         
-        if (user) {
+        if (email) {
             const { data, error } = await supabase
-            .from('users')
+            .from('pengguna')
             .select('*')
-            .eq('email', user.email)
+            .eq('email', email)
             .single();
             
             if (!error) {
@@ -54,7 +56,7 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1">
             <h2 className="text-xl font-bold text-gray-800">{profile?.nama}</h2>
-            <p className="text-gray-500 text-xs">Joined Panganesia since {new Date(profile?.created_at).toLocaleDateString()}</p>
+            <p className="text-gray-500 text-xs">Joined Panganesia since {profile?.dibuat_pada ? new Date(profile.dibuat_pada).toLocaleDateString() : 'Invalid Date'}</p>
             </div>
             <div className="text-center px-6 border-l border-gray-100 shrink-0">
             <p className="text-xl font-black text-[#064E3B]">24</p>

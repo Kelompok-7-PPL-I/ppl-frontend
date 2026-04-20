@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client"; 
 import { usePathname, useRouter } from "next/navigation";
-import { signOut as nextAuthSignOut } from "next-auth/react";
+import { signOut as nextAuthSignOut, getSession } from "next-auth/react";
 
 const navItems = [
   {
@@ -77,17 +77,18 @@ export default function AdminSidebar() {
 
   useEffect(() => {
     const getAdminData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Ambil nama dari metadata atau default ke Admin
+      const session = await getSession();
+      if (session?.user) {
         setAdminInfo({
-          name: user.user_metadata?.full_name || "Admin Panganesia",
-          email: user.email || "admin@panganesia.com"
+          name: session.user.name || "Admin Panganesia",
+          email: session.user.email || "admin@panganesia.com"
         });
+      } else {
+        setAdminInfo({ name: "Admin", email: "Belum masuk" });
       }
     };
     getAdminData();
-  }, [supabase]);
+  }, []);
 
   const handleLogout = async () => {
     // Log out dari Supabase
