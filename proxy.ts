@@ -2,18 +2,16 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getToken } from "next-auth/jwt";
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
 
-  // 1. Cek Token dari NextAuth
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET
   });
 
-  // 2. Cek Session dari Supabase (untuk tipe auth yang belum dimigrasi)
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -50,35 +48,45 @@ export async function proxy(request: NextRequest) {
     path.startsWith('/cart') || 
     path.startsWith('/checkout') || 
     path.startsWith('/payment') || 
-    path.startsWith('/profile');
+    path.startsWith('/profile')||
+    path.startsWith('/recipes');
     
-  const isAuthPath = path === '/auth' || path.startsWith('/register');
+  const isAuthPath = path === '/auth';
 
-  // Tolak akses ke area non-publik jika belum login
   if (!isLogged && isProtectedPath) {
     return NextResponse.redirect(new URL('/auth', request.url))
   }
 
-  // Redirect user yang sudah login jika masuk ke halaman Auth
-  if (isLogged) {
-    // Role handling: Cek NextAuth dulu, kalau null ambil dari Supabase
-    // @ts-ignore (Karna token.peran bukan tipe standar JWT NextAuth bawaan)
-    const userRole = (token?.peran as string) || supabaseUser?.user_metadata?.role || 'user'; 
 
-    if (path.startsWith('/admin') && userRole !== 'admin') {
-      return NextResponse.redirect(new URL('/DashboardProduct', request.url))
-    }
+if (isLogged) {
+  let userRole = (token?.peran as string) || supabaseUser?.user_metadata?.role || 'customer';
 
-    if (isAuthPath) {
-      const targetPath = userRole === 'admin' ? '/admin' : '/DashboardProduct';
-      return NextResponse.redirect(new URL(targetPath, request.url))
+  if (path.startsWith('/admin') || isAuthPath) {
+    const { data: pengguna } = await supabase
+      .from('pengguna') 
+      .select('peran') 
+      .eq('id', token?.sub || supabaseUser?.id)
+      .single();
+
+    if (pengguna?.peran) {
+      userRole = pengguna.peran;
     }
   }
+
+  if (path.startsWith('/admin') && userRole !== 'admin') {
+    return NextResponse.redirect(new URL('/DashboardProduct', request.url))
+  }
+
+  if (isAuthPath) {
+    const targetPath = userRole === 'admin' ? '/admin' : '/DashboardProduct';
+    return NextResponse.redirect(new URL(targetPath, request.url))
+  }
+}
 
   return response
 }
 
-export default proxy;
+export default middleware;
 
 export const config = {
   matcher: [

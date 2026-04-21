@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { createClient } from '@/utils/supabase/client';
 import "./page.css"
+import { useRouter } from "next/navigation";
 
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"]});
 
@@ -20,6 +21,7 @@ interface RecipeUI {
 }
 
 export default function RecipesPage(){
+    const router = useRouter();
     const supabase = createClient();
   
     const [recipes, setRecipes] = useState<RecipeUI[]>([]);
@@ -196,13 +198,12 @@ export default function RecipesPage(){
   return (
     <main className={`recipes-container ${plusJakarta.className}`}>
       {/* Header & Navigation */}
-      <nav className="top-nav">
+
+
+      <div className="controls-row">
         <a href="/DashboardProduct" className="back-button">
           Back
         </a>
-      </nav>
-
-      <div className="controls-row">
         <div className="search-box">
           <input 
             type="text" 
@@ -295,8 +296,8 @@ export default function RecipesPage(){
 
       {/* Page Titles */}
       <header className="page-header">
-        <h1>RECIPES</h1>
-        <p>Find Out What Do You Want To Cook Today!</p>
+        <h1>RESEP</h1>
+        <p>Cari Tau Apa Yang Mau Kamu Masak Hari Ini!</p>
       </header>
 
       {/* Hero Carousel Cards */}
@@ -308,9 +309,9 @@ export default function RecipesPage(){
           {/* Card 1 */}
           <div className="hero-card yellow-card">
             <div className="hero-content">
-              <h2>CHECK THIS<br/>OUT !</h2>
+              <h2>Coba<br/>Sekarang !</h2>
               <h3>Nasi Goreng Quinoa</h3>
-              <p>Perfect Lunch For Your Bulking Menu!</p>
+              <p>Makan Siang Sempurna Untuk Kamu Yang Mau Bulking!</p>
               <a href="#" className="more-link">More</a>
             </div>
             <div className="hero-image-placeholder hero-img-1"></div>
@@ -320,8 +321,8 @@ export default function RecipesPage(){
           <div className="hero-card green-card">
             <div className="hero-image-placeholder hero-img-2"></div>
             <div className="hero-content right-align">
-              <h2>LET&apos;S COOK NOW!</h2>
-              <p className="special-text">Special<br/>As Ur<br/>Diet<br/>Partner</p>
+              <h2>AYO MASAK SEKARANG!</h2>
+              <p className="special-text">Menu<br/>Spesial<br/>Teman<br/>Dietmu</p>
               <button className="more-btn">More</button>
             </div>
           </div>
@@ -329,12 +330,23 @@ export default function RecipesPage(){
           {/* Card 3 (Baru) */}
           <div className="hero-card orange-card">
             <div className="hero-content">
-              <h2>OUR NEW<br/>PROTEIN</h2>
-              <h3>Stuffed Paprika</h3>
-              <p>Delicious & Healthy!</p>
+              <h2>MENU<br/>PROTEIN BARU</h2>
+              <h3>Salad Paprika</h3>
+              <p>Enak & Sehat!</p>
               <a href="#" className="more-link-white">More</a>
             </div>
             <div className="hero-image-placeholder hero-img-3"></div>
+          </div>
+
+          {/* Card 4 */}
+          <div className="hero-card yellow-card">
+            <div className="hero-content">
+              <h2>Coba<br/>Sekarang !</h2>
+              <h3>Nasi Goreng Quinoa</h3>
+              <p>Makan Siang Sempurna Untuk Kamu Yang Mau Bulking!</p>
+              <a href="#" className="more-link">More</a>
+            </div>
+            <div className="hero-image-placeholder hero-img-1"></div>
           </div>
         </section>
 

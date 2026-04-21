@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client"; 
@@ -43,7 +44,7 @@ const navItems = [
     ),
   },
   {
-    label: "Resep", // Fixed typo: Receipies -> Recipes
+    label: "Resep", 
     href: "/admin/recipes",
     icon: (
       <svg className="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -71,28 +72,49 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const { data: session } = useSession();
   
   // State untuk menyimpan info admin
-  const [adminInfo, setAdminInfo] = useState({ name: "Admin", email: "loading..." });
+  const [adminInfo, setAdminInfo] = useState({ nama: "Admin", email: "loading..." });
 
-  useEffect(() => {
+useEffect(() => {
     const getAdminData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Ambil nama dari metadata atau default ke Admin
+      try {
+        const { data: { user: pengguna } } = await supabase.auth.getUser();
+        
+        if (pengguna) {
+          setAdminInfo({
+            nama: pengguna.user_metadata?.nama || pengguna.user_metadata?.full_name || "Admin Panganesia",
+            email: pengguna.email || "admin@panganesia.com"
+          });
+          return; // Exit if found
+        }
+
+        if (session?.user) {
+          setAdminInfo({
+            nama: session.user.name || "Admin Panganesia",
+            email: session.user.email || "admin@panganesia.com"
+          });
+          return;
+        }
+
+        // 3. Final Fallback: If both are null, stop the loading state
         setAdminInfo({
-          name: user.user_metadata?.full_name || "Admin Panganesia",
-          email: user.email || "admin@panganesia.com"
+          nama: "Admin",
+          email: "Session not found"
         });
+
+      } catch (err) {
+        console.error("Error fetching admin data:", err);
+        setAdminInfo({ nama: "Admin", email: "Error loading profile" });
       }
     };
+
     getAdminData();
-  }, [supabase]);
+  }, [supabase, session]); // 'session' must be in dependencies
 
   const handleLogout = async () => {
-    // Log out dari Supabase
     await supabase.auth.signOut();
-    // Log out dari NextAuth
     await nextAuthSignOut({ redirect: false });
     router.refresh();
     router.push("/auth"); // Diarahkan ke auth page
@@ -145,7 +167,7 @@ export default function AdminSidebar() {
             </svg>
           </div>
           <div className="sidebar-user-info">
-            <span className="sidebar-user-name">{adminInfo.name}</span>
+            <span className="sidebar-user-name">{adminInfo.nama}</span>
             <span className="sidebar-user-email">{adminInfo.email}</span>
           </div>
         </div>

@@ -4,10 +4,11 @@ body {
 
 /* Container Utama */
 .recipes-container {
-  max-width: 1000px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 48px 0px;
   color: #333;
+  z-index: 1;
 }
 
 /* Navigasi Top */
@@ -27,7 +28,7 @@ body {
 /* Kontrol Pencarian & Filter */
 .controls-row {
   display: flex;
-  gap: 1rem;
+  gap: 2rem;
   align-items: center;
   margin-bottom: 3rem;
 }
@@ -36,6 +37,7 @@ body {
   position: relative;
   flex: 1;
   max-width: 400px;
+  z-index: 100;
 }
 
 .search-box input, 
@@ -77,6 +79,7 @@ body {
   cursor: pointer;
   font-size: 0.95rem;
   color: #555;
+  pointer-events: auto !important;
 }
 
 .dropdown-menu {
@@ -92,6 +95,7 @@ body {
   animation: fadeIn 0.2s ease;
   max-height: 250px;
   overflow-y: auto;
+  display: block !important;
 }
 
 .dropdown-menu::-webkit-scrollbar {
@@ -240,7 +244,7 @@ body {
 /* Hero Carousel */
 .hero-carousel {
   display: flex;
-  gap: 1.5rem;
+  gap: 2rem;
   overflow-x: auto;
   margin-bottom: 2rem;
   padding-bottom: 1rem;

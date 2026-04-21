@@ -120,7 +120,7 @@ export default function AdminUsersPage() {
           <div className="products-header-right">
             <select className="select-filter" value={roleFilter} onChange={(e) => {setRoleFilter(e.target.value); setCurrentPage(1);}}>
               <option value="all">Semua Role</option>
-              <option value="customer">Costumer</option>
+              <option value="customer">Customer</option>
               <option value="admin">Admin</option>
             </select>
           </div>
