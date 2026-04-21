@@ -153,20 +153,9 @@ export default function RecipesPage(){
         }
     };
 
-    const options = [
-        { label: "Snack", group: "Kategori" },
-        { label: "Diet", group: "Kategori" },
-        { label: "Weight Gain", group: "Kategori" },
-        { label: "High Protein", group: "Kategori" },
-        { label: "Healthy", group: "Kategori" },
-        { label: "Low Sugar", group: "Kategori" },
-        { label: "Karbohidrat", group: "Informasi Gizi" },
-        { label: "Kalori", group: "Informasi Gizi" },
-        { label: "Protein", group: "Informasi Gizi" },
-        { label: "Lemak", group: "Informasi Gizi" },
-        { label: "Serat", group: "Informasi Gizi" },
-        { label: "Vitamin", group: "Informasi Gizi" },
-    ];
+    // Dynamic Filtering Options from Database
+    const dynamicCategories = Array.from(new Set(recipes.map(r => r.tags[0]))).filter(Boolean);
+    const dynamicNutrition = Array.from(new Set(recipes.map(r => r.tags[1]))).filter(Boolean);
     
     const filteredRecipes = recipes.filter((recipe) => {
         const searchMatch =
@@ -265,26 +254,31 @@ export default function RecipesPage(){
           {/* Dropdown Menu */}
           {isOpen && (
             <div className="dropdown-menu">
-              <p className="group-title">Kategori</p>
-              {options
-                .filter(opt => opt.group === "Kategori")
-                // Sembunyikan opsi yang sudah dipilih dari dropdown
-                .filter(opt => !selectedTags.includes(opt.label))
-                .map((opt, i) => (
-                  <div key={i} className="dropdown-item" onClick={() => handleSelectTag(opt.label)}>
-                    {opt.label}
-                  </div>
-                ))}
+              {dynamicCategories.length > 0 && (
+                <>
+                  <p className="group-title">Kategori</p>
+                  {dynamicCategories
+                    .filter(opt => !selectedTags.includes(opt as string))
+                    .map((opt, i) => (
+                      <div key={`cat-${i}`} className="dropdown-item" onClick={(e) => { e.stopPropagation(); handleSelectTag(opt as string); }}>
+                        {opt}
+                      </div>
+                    ))}
+                </>
+              )}
 
-              <p className="group-title">Informasi Gizi</p>
-              {options
-                .filter(opt => opt.group === "Informasi Gizi")
-                .filter(opt => !selectedTags.includes(opt.label))
-                .map((opt, i) => (
-                  <div key={i} className="dropdown-item" onClick={() => handleSelectTag(opt.label)}>
-                    {opt.label}
-                  </div>
-                ))}
+              {dynamicNutrition.length > 0 && (
+                <>
+                  <p className="group-title">Informasi Gizi</p>
+                  {dynamicNutrition
+                    .filter(opt => !selectedTags.includes(opt as string))
+                    .map((opt, i) => (
+                      <div key={`nut-${i}`} className="dropdown-item" onClick={(e) => { e.stopPropagation(); handleSelectTag(opt as string); }}>
+                        {opt}
+                      </div>
+                    ))}
+                </>
+              )}
             </div>
           )}
         </div>
