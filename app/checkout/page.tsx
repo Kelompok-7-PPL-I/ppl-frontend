@@ -9,20 +9,21 @@ import {
   mdiClipboardTextOutline, 
   mdiCreditCardOutline,
   mdiChevronLeft,
-  mdiPlus
+  mdiPlus,
+  mdiClose
 } from '@mdi/js';
 import './page.css';
 
 export default function CheckoutPage() {
-const router = useRouter();
+  const router = useRouter();
   const [modal, setModal] = useState({ isOpen: false, type: "" });
+  const [productNote, setProductNote] = useState("");
+  const [noteInput, setNoteInput] = useState("");
   
-  // State untuk menyimpan pilihan User
   const [selectedAddress, setSelectedAddress] = useState(0);
   const [selectedShipping, setSelectedShipping] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState(0);
 
-  // Data List
   const addresses = [
     { name: "Amanda Toshiba", phone: "+62 828 9810 6967", detail: "Jl. KH. Noer Ali No. 193, Bekasi Selatan", note: "(Gerbang warna coklat)" },
     { name: "Amanda (Kantor)", phone: "+62 828 9810 6967", detail: "Gedung Cyber 2 Lt. 10, Kuningan, Jakarta Selatan", note: "(Titip di Resepsionis)" },
@@ -42,8 +43,16 @@ const router = useRouter();
     { id: 2, name: "Transfer Bank", desc: "BCA, Mandiri, BNI", provider: "BCA" }
   ];
 
-  const openModal = (type: string) => setModal({ isOpen: true, type });
+  const openModal = (type: string) => {
+    if (type === "Notes") setNoteInput(productNote);
+    setModal({ isOpen: true, type });
+  };
   const closeModal = () => setModal({ isOpen: false, type: "" });
+
+  const saveNote = () => {
+    setProductNote(noteInput.trim());
+    closeModal();
+  };
 
   const handleCheckout = () => {
     router.push('/payment'); 
@@ -51,24 +60,29 @@ const router = useRouter();
 
   return (
     <div className="checkout-view">
-      <div className="checkout-container">
-        <header className="header-section">
-          <button className="back-btn" onClick={() => window.history.back()}>
-             <Icon path={mdiChevronLeft} size={1} /> Back
-          </button>
-          <h1 className="main-headline">Let's Complete Your Order!</h1>
-        </header>
 
+      {/* ── Sticky Header ── */}
+      <div className="checkout-header">
+        <button className="back-btn" onClick={() => window.history.back()}>
+          <Icon path={mdiChevronLeft} size={0.9} />
+        </button>
+        <span className="header-title">Selesaikan Pesananmu</span>
+      </div>
+
+      <div className="checkout-container">
         <div className="main-layout">
+
+          {/* ── Left: Detail Columns ── */}
           <div className="details-side">
-            
-            {/* Delivery Address Card */}
+
+            {/* Delivery Address */}
             <div className="card-outer">
               <div className="card-top-row">
                 <span className="section-label">
-                  <Icon className="icon" path={mdiMapMarker} size={0.8} color="#043915" /> Delivery Address
+                  <Icon className="icon" path={mdiMapMarker} size={0.75} />
+                  Alamat Pengiriman
                 </span>
-                <button className="change-btn" onClick={() => openModal("Address")}>Change</button>
+                <button className="change-btn" onClick={() => openModal("Address")}>Ganti</button>
               </div>
               <div className="card-inner-white">
                 <h3 className="user-title">{addresses[selectedAddress].name}</h3>
@@ -78,20 +92,23 @@ const router = useRouter();
               </div>
             </div>
 
-            {/* Shipping Method Card */}
+            {/* Shipping Method */}
             <div className="card-outer">
               <div className="card-top-row">
                 <span className="section-label">
-                  <Icon className="icon" path={mdiTruckDelivery} size={0.8} color="#043915" /> Shipping Method
+                  <Icon className="icon" path={mdiTruckDelivery} size={0.75} />
+                  Metode Pengiriman
                 </span>
-                <button className="change-btn" onClick={() => openModal("Shipping")}>Change</button>
+                <button className="change-btn" onClick={() => openModal("Shipping")}>Ganti</button>
               </div>
               <div className="card-inner-white flex-space">
                 <div>
                   <h3 className="method-title">{shippingOptions[selectedShipping].name}</h3>
                   <p className="arrival-txt">{shippingOptions[selectedShipping].desc}</p>
                 </div>
-                <span className="green-price">Rp {shippingOptions[selectedShipping].price.toLocaleString("id-ID")}</span>
+                <span className="green-price">
+                  Rp {shippingOptions[selectedShipping].price.toLocaleString("id-ID")}
+                </span>
               </div>
             </div>
 
@@ -99,7 +116,8 @@ const router = useRouter();
             <div className="card-outer">
               <div className="card-top-row">
                 <span className="section-label">
-                  <Icon className="icon" path={mdiClipboardTextOutline} size={0.8} color="#043915" /> Order Details
+                  <Icon className="icon" path={mdiClipboardTextOutline} size={0.75} />
+                  Detail Pesanan
                 </span>
               </div>
               <div className="card-inner-white product-layout">
@@ -112,59 +130,117 @@ const router = useRouter();
                     <span className="bold-price">Rp 30.000</span>
                   </div>
                   <div className="qty-chip">QTY 2</div>
-                  <div className="notes-action">Add notes</div>
+                  <div
+                    className="notes-action"
+                    onClick={() => openModal("Notes")}
+                  >
+                    {productNote ? `📝 ${productNote}` : "+ Tambah catatan"}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Payment Method Card */}
+            {/* Payment Method */}
             <div className="card-outer">
               <div className="card-top-row">
                 <span className="section-label">
-                  <Icon className="icon" path={mdiCreditCardOutline} size={0.8} color="#043915" /> Payment Method
+                  <Icon className="icon" path={mdiCreditCardOutline} size={0.75} />
+                  Metode Pembayaran
                 </span>
-                <button className="change-btn" onClick={() => openModal("Payment")}>Change</button>
+                <button className="change-btn" onClick={() => openModal("Payment")}>Ganti</button>
               </div>
               <div className="card-inner-white">
                 <h3 className="method-title">{paymentOptions[selectedPayment].name}</h3>
                 <p className="arrival-txt">{paymentOptions[selectedPayment].provider}</p>
               </div>
             </div>
+
           </div>
 
-          {/* Right Summary */}
+          {/* ── Right: Summary ── */}
           <aside className="summary-side">
             <div className="payment-summary-card">
-              <h2 className="summary-heading">Detail Payment</h2>
-              <div className="summary-row"><span>Subtotal (1 item)</span><span>Rp 30.000</span></div>
-              <div className="summary-row"><span>Shipping Cost</span><span>Rp {shippingOptions[selectedShipping].price.toLocaleString()}</span></div>
-              <div className="summary-row"><span>Service Fee</span><span>Rp 2.000</span></div>
+              <h2 className="summary-heading">Ringkasan Pembayaran</h2>
+
+              <div className="summary-row">
+                <span>Subtotal (1 item)</span>
+                <span>Rp 30.000</span>
+              </div>
+              <div className="summary-row">
+                <span>Biaya Pengiriman</span>
+                <span>Rp {shippingOptions[selectedShipping].price.toLocaleString("id-ID")}</span>
+              </div>
+              <div className="summary-row">
+                <span>Biaya Layanan</span>
+                <span>Rp 2.000</span>
+              </div>
+
               <hr className="summary-divider" />
-              <div className="total-meta">TOTAL AMOUNT</div>
-              <div className="total-value">Rp {(32000 + shippingOptions[selectedShipping].price).toLocaleString()}</div>
-              <button className="main-checkout-btn" onClick={handleCheckout}>CHECKOUT</button>
+
+              <div className="total-meta">TOTAL PEMBAYARAN</div>
+              <div className="total-value">
+                Rp {(32000 + shippingOptions[selectedShipping].price).toLocaleString("id-ID")}
+              </div>
+
+              <button className="main-checkout-btn" onClick={handleCheckout}>
+                Bayar Sekarang
+              </button>
             </div>
           </aside>
+
         </div>
       </div>
 
-      {/* MODAL POPUP */}
+      {/* ── Modal ── */}
       {modal.isOpen && (
         <div className="modal-backdrop" onClick={closeModal}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="modal-nav">
-              <h3 className="modal-h3">Select {modal.type}</h3>
-              <button className="close-x" onClick={closeModal}>&times;</button>
+              <h3 className="modal-h3">
+                {modal.type === "Address" && "Pilih Alamat"}
+                {modal.type === "Shipping" && "Pilih Pengiriman"}
+                {modal.type === "Payment" && "Pilih Pembayaran"}
+              </h3>
+              <button className="close-x" onClick={closeModal}>
+                <Icon path={mdiClose} size={0.7} />
+              </button>
             </div>
-            
+
             <div className="modal-content scrollable-list">
-              
-              {/* Logic Address */}
+
+              {/* Notes */}
+              {modal.type === "Notes" && (
+                <div className="notes-modal-body">
+                  <p className="notes-modal-desc">Catatan ini akan diteruskan ke tim Panganesia saat memproses pesananmu.</p>
+                  <textarea
+                    className="notes-textarea"
+                    placeholder="Contoh: tolong dikemas rapi, jangan dilipat..."
+                    value={noteInput}
+                    onChange={(e) => setNoteInput(e.target.value)}
+                    maxLength={200}
+                    autoFocus
+                  />
+                  <div className="notes-char-count">{noteInput.length}/200</div>
+                  <button className="confirm-btn" onClick={saveNote}>
+                    Simpan Catatan
+                  </button>
+                  {productNote && (
+                    <button
+                      className="notes-delete-btn"
+                      onClick={() => { setProductNote(""); setNoteInput(""); closeModal(); }}
+                    >
+                      Hapus Catatan
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Address */}
               {modal.type === "Address" && (
                 <>
                   {addresses.map((addr, idx) => (
-                    <div 
-                      key={idx} 
+                    <div
+                      key={idx}
                       className={`option-item ${selectedAddress === idx ? 'active' : ''}`}
                       onClick={() => { setSelectedAddress(idx); closeModal(); }}
                     >
@@ -172,19 +248,19 @@ const router = useRouter();
                         <strong>{addr.name}</strong>
                         <p>{addr.detail}</p>
                       </div>
-                      {selectedAddress === idx && <div className="check-dot"></div>}
+                      {selectedAddress === idx && <div className="check-dot" />}
                     </div>
                   ))}
                   <button className="add-btn-modal">
-                    <Icon path={mdiPlus} size={0.8} /> Add New Address
+                    <Icon path={mdiPlus} size={0.75} /> Tambah Alamat Baru
                   </button>
                 </>
               )}
 
-              {/* Logic Shipping */}
+              {/* Shipping */}
               {modal.type === "Shipping" && shippingOptions.map((ship, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className={`option-item ${selectedShipping === idx ? 'active' : ''}`}
                   onClick={() => { setSelectedShipping(idx); closeModal(); }}
                 >
@@ -192,14 +268,17 @@ const router = useRouter();
                     <strong>{ship.name}</strong>
                     <p>{ship.desc}</p>
                   </div>
-                  <span className="price-label">Rp {ship.price.toLocaleString()}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span className="price-label">Rp {ship.price.toLocaleString("id-ID")}</span>
+                    {selectedShipping === idx && <div className="check-dot" />}
+                  </div>
                 </div>
               ))}
 
-              {/* Logic Payment */}
+              {/* Payment */}
               {modal.type === "Payment" && paymentOptions.map((pay, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className={`option-item ${selectedPayment === idx ? 'active' : ''}`}
                   onClick={() => { setSelectedPayment(idx); closeModal(); }}
                 >
@@ -207,7 +286,7 @@ const router = useRouter();
                     <strong>{pay.name}</strong>
                     <p>{pay.desc}</p>
                   </div>
-                  {selectedPayment === idx && <div className="check-dot"></div>}
+                  {selectedPayment === idx && <div className="check-dot" />}
                 </div>
               ))}
 
