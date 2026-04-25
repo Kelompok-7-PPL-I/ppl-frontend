@@ -5,11 +5,9 @@
 }
 
 .auth-page {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
   display: flex;
   background-color: #043915;
   font-family: 'Plus Jakarta Sans', sans-serif;

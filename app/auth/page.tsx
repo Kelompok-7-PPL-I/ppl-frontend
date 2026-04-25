@@ -35,9 +35,19 @@ export default function AuthPage() {
 
   // Reset messages when switching between Login/Register
   useEffect(() => {
+    window.scrollTo(0, 0);
     setError(null);
     setSuccessMsg(null);
   }, [view]);
+
+useEffect(() => {
+    window.history.pushState(null, '', window.location.href)
+    const handlePopState = () => {
+        window.location.href = '/'
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+}, [])
 
   // Password Requirements Logic
   const requirements = [
