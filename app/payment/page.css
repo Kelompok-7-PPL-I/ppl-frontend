@@ -1,195 +1,387 @@
-.payment-view {
-  background-color: #ffffff;
-  min-height: 100vh;
-  padding: 60px 0;
-  font-family: 'Inter', -apple-system, sans-serif;
-  color: #000;
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ─── Design Tokens ───────────────────────────────────────────── */
+:root {
+  --green-dark:   #043915;
+  --green-mid:    #1a6b3a;
+  --green-light:  #e8f5ee;
+  --green-soft:   #f0faf4;
+  --gold:         #FFD400;
+  --gold-hover:   #f0c800;
+  --cream:        #fdf8ee;
+  --cream-dark:   #f5edd8;
+  --text-primary: #0d1f14;
+  --text-second:  #5a6b5e;
+  --text-muted:   #9aaa9e;
+  --border:       #dce8df;
+  --white:        #ffffff;
+  --red:          #e63946;
+  --shadow-card:  0 2px 8px rgba(4,57,21,0.06), 0 8px 24px rgba(4,57,21,0.05);
+  --radius-card:  20px;
+  --radius-pill:  999px;
+  --font:         'Plus Jakarta Sans', sans-serif;
+  --transition:   all 0.2s ease;
 }
 
-.payment-container {
-  max-width: 1050px;
-  margin: 0 auto;
-  padding: 0 25px;
-}
-
-.back-link-red {
-  color: #ff0000;
-  background: none;
-  border: none;
-  font-weight: 700;
-  font-size: 16px;
-  cursor: pointer;
+/* ─── Reset ───────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
   padding: 0;
-  margin-bottom: 15px;
-  display: block;
+  font-family: var(--font);
 }
 
-.payment-main-title {
-  font-size: 24px;
+/* ─── Page ────────────────────────────────────────────────────── */
+.payment-view {
+  background-color: var(--cream);
+  min-height: 100vh;
+  color: var(--text-primary);
+}
+
+/* ─── Sticky Header ───────────────────────────────────────────── */
+.payment-header {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--green-dark);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 32px;
+  box-shadow: 0 2px 20px rgba(4,57,21,0.25);
+  border-bottom: 2px solid rgba(255, 212, 0, 0.25);
+}
+
+.back-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1.5px solid rgba(255,255,255,0.18);
+  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--white);
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.back-btn:hover {
+  background: rgba(255,255,255,0.16);
+  border-color: rgba(255,255,255,0.30);
+}
+
+.header-title {
+  font-size: 18px;
   font-weight: 800;
-  margin-bottom: 20px;
+  color: var(--white);
+  letter-spacing: -0.3px;
 }
 
+/* ─── Container ───────────────────────────────────────────────── */
+.payment-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 32px;
+}
+
+/* ─── Grid ────────────────────────────────────────────────────── */
 .payment-content-grid {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
-  gap: 70px;
+  gap: 32px;
   align-items: start;
 }
 
-/* Kotak Ringkasan Pembayaran */
+/* ─── Summary Box ─────────────────────────────────────────────── */
 .payment-summary-box {
-  border: 1.5px solid #000;
-  border-radius: 24px;
-  padding: 20px;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 22px 24px;
   margin-bottom: 20px;
+  box-shadow: var(--shadow-card);
 }
 
 .summary-item-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 8px 0;
+  padding: 6px 0;
+}
+
+.summary-divider-line {
+  border-top: 1px dashed var(--border);
+  margin: 12px 0;
 }
 
 .summary-label {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-second);
 }
 
 .summary-value-highlight {
-  background-color: #FFD400;
-  padding: 8px 12px;
+  background: var(--gold);
+  color: var(--green-dark);
+  padding: 8px 16px;
   border-radius: 10px;
-  font-weight: 600;
-  font-size: 18px;
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 8px rgba(255,212,0,0.30);
 }
 
+/* ─── Timer ───────────────────────────────────────────────────── */
 .timer-container {
   text-align: right;
 }
 
 .timer-countdown {
-  font-size: 18px;
-  font-weight: 800;
-  color: #ff0000;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--green-dark);
+  letter-spacing: -0.5px;
+  display: block;
+  transition: color 0.3s ease;
+}
+
+.timer-countdown.urgent {
+  color: var(--red);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
 }
 
 .timer-deadline {
-  font-size: 12px;
-  color: #777;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  font-weight: 500;
 }
 
-/* Bagian Instruksi */
+/* ─── Instruksi ───────────────────────────────────────────────── */
+.qris-instructions {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 22px 24px;
+  box-shadow: var(--shadow-card);
+}
+
 .instructions-title {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 18px;
+  letter-spacing: -0.1px;
 }
 
 .instructions-list {
   list-style: none;
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .instructions-list li {
   display: flex;
-  gap: 20px;
-  margin-bottom: 16px;
+  gap: 14px;
   align-items: flex-start;
 }
 
 .step-badge {
-  background-color: #042911;
-  color: #fff;
-  min-width: 34px;
-  height: 34px;
+  background: var(--green-dark);
+  color: var(--white);
+  min-width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .instructions-list p {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #222;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-second);
+  font-weight: 500;
 }
 
-/* Sisi QR Code */
+/* ─── Simulate Buttons ────────────────────────────────────────── */
+.simulate-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn-simulate-success,
+.btn-simulate-failed {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: var(--transition);
+}
+
+.btn-simulate-success {
+  background: var(--green-soft);
+  color: var(--green-dark);
+  border: 1.5px solid var(--green-light);
+}
+
+.btn-simulate-success:hover {
+  background: var(--green-light);
+}
+
+.btn-simulate-failed {
+  background: #fef0f1;
+  color: var(--red);
+  border: 1.5px solid #fad4d6;
+}
+
+.btn-simulate-failed:hover {
+  background: #fde0e2;
+}
+
+/* ─── QR Side ─────────────────────────────────────────────────── */
 .payment-qr-side {
   display: flex;
   justify-content: center;
+  position: sticky;
+  top: 90px;
 }
 
 .qr-wrapper {
   width: 100%;
-  max-width: 400px;
-  text-align: center;
+  max-width: 360px;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 28px 24px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.qr-label-top {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
 .qr-code-frame {
-  background: #fff;
-  padding: 16px;
-  border: 5px solid #000;
+  background: var(--white);
+  border: 3px solid var(--green-dark);
   border-radius: 16px;
-  margin-bottom: 20px;
+  padding: 14px;
+  width: 100%;
 }
 
 .main-qr-image {
   width: 100%;
   height: auto;
   display: block;
+  border-radius: 8px;
 }
 
 .qr-id-number {
-  font-size: 16px;
-  color: #b5b5b5;
+  font-size: 12px;
+  color: var(--text-muted);
   letter-spacing: 1.5px;
-  margin-bottom: 16px;
-  font-weight: 400;
+  font-weight: 500;
 }
 
+/* ─── QR Buttons ──────────────────────────────────────────────── */
 .btn-save-qr {
   width: 100%;
-  background-color: #FFD400;
+  background: var(--gold);
+  color: var(--green-dark);
   border: none;
-  padding: 16px;
-  border-radius: 16px;
-  font-weight: 600;
+  padding: 14px;
+  border-radius: 14px;
+  font-family: var(--font);
+  font-weight: 900;
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 12px rgba(255,212,0,0.30);
+  letter-spacing: -0.1px;
 }
 
 .btn-save-qr:hover {
-  filter: brightness(0.92);
-  transform: translateY(-2px);
+  background: var(--gold-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 18px rgba(255,212,0,0.40);
 }
 
-/* Mobile Responsive */
+.btn-reload-qr {
+  width: 100%;
+  background: none;
+  border: 1.5px solid var(--border);
+  color: var(--text-second);
+  padding: 12px;
+  border-radius: 14px;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.btn-reload-qr:hover {
+  border-color: var(--green-mid);
+  color: var(--green-dark);
+  background: var(--green-soft);
+}
+
+/* ─── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .payment-content-grid {
     grid-template-columns: 1fr;
-    gap: 50px;
+    gap: 20px;
   }
-  
+
   .payment-qr-side {
-    order: -1; /* QR Code muncul di atas pada mobile */
+    position: static;
+    order: -1;
+  }
+
+  .payment-container {
+    padding: 20px 16px;
+  }
+
+  .payment-header {
+    padding: 16px 20px;
   }
 }
 
-.back-btn {
-    color: #ff0000;
-    background: none;
-    border: none;
-    font-weight: 800;
-    font-size: 16px;
-    cursor: pointer;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+@media (max-width: 480px) {
+  .payment-header  { padding: 14px 16px; }
+  .timer-countdown { font-size: 18px; }
+  .qr-wrapper      { padding: 20px 16px; }
 }
