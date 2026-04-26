@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '@mdi/react';
 import { useRouter } from 'next/navigation';
-import { 
-  mdiMapMarker, 
-  mdiTruckDelivery, 
-  mdiClipboardTextOutline, 
+import {
+  mdiMapMarker,
+  mdiTruckDelivery,
+  mdiClipboardTextOutline,
   mdiCreditCardOutline,
   mdiChevronLeft,
   mdiPlus,
@@ -19,29 +19,73 @@ export default function CheckoutPage() {
   const [modal, setModal] = useState({ isOpen: false, type: "" });
   const [productNote, setProductNote] = useState("");
   const [noteInput, setNoteInput] = useState("");
-  
+  const [isLoading, setIsLoading] = useState(false);
+
   const [selectedAddress, setSelectedAddress] = useState(0);
   const [selectedShipping, setSelectedShipping] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState(0);
 
-  const addresses = [
-    { name: "Amanda Toshiba", phone: "+62 828 9810 6967", detail: "Jl. KH. Noer Ali No. 193, Bekasi Selatan", note: "(Gerbang warna coklat)" },
-    { name: "Amanda (Kantor)", phone: "+62 828 9810 6967", detail: "Gedung Cyber 2 Lt. 10, Kuningan, Jakarta Selatan", note: "(Titip di Resepsionis)" },
-    { name: "Rumah Orang Tua", phone: "+62 812 3456 7890", detail: "Perumahan Harapan Indah Blok B12, Bekasi", note: "(Pagar Hitam)" }
-  ];
+  // LOAD MIDTRANS SCRIPT
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
+    script.setAttribute("data-client-key", (process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "").trim());
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const [addresses, setAddresses] = useState([
+    { name: "Memuat nama...", phone: "Memuat nomor...", detail: "Memuat alamat...", note: "" }
+  ]);
 
   const shippingOptions = [
     { id: 0, name: "JNE - Reguler", price: 15000, desc: "Arrives 2-3 Days" },
-    { id: 1, name: "J&T Express", price: 12000, desc: "Arrives 2-3 Days" },
-    { id: 2, name: "SiCepat Best", price: 18000, desc: "Arrives Tomorrow" },
-    { id: 3, name: "Instant Delivery", price: 35000, desc: "Arrives in 2 Hours" }
+    { id: 1, name: "J&T Express", price: 12000, desc: "Arrives 2-3 Days" }
   ];
 
   const paymentOptions = [
-    { id: 0, name: "QRIS", desc: "Scan menggunakan Dana, GoPay, ShopeePay", provider: "All Providers" },
-    { id: 1, name: "E-Wallet", desc: "GoPay, OVO, Dana", provider: "GoPay" },
-    { id: 2, name: "Transfer Bank", desc: "BCA, Mandiri, BNI", provider: "BCA" }
+    { id: 0, name: "QRIS", desc: "Scan menggunakan Dana, GoPay", provider: "All Providers" },
+    { id: 1, name: "Transfer Bank", desc: "BCA, Mandiri, BNI", provider: "BCA" }
   ];
+
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [subtotal, setSubtotal] = useState(0);
+  const [userEmail, setUserEmail] = useState("user@example.com");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // 1. Fetch User Profile
+      const profileRes = await fetch('/api/profile');
+      if (profileRes.ok) {
+        const profile = await profileRes.json();
+        setUserEmail(profile.email);
+        setAddresses([
+          {
+            name: profile.nama || "User",
+            phone: profile.nomor_telp || "Nomor belum diatur",
+            detail: profile.alamat || "Alamat belum diatur (Update profil Anda terlebih dahulu)",
+            note: ""
+          }
+        ]);
+      }
+
+      // 2. Fetch Keranjang
+      const cartRes = await fetch('/api/cart');
+      const items = await cartRes.json();
+      if (cartRes.ok) {
+        setCartItems(items);
+        const sub = items.reduce((acc: number, curr: any) => acc + (curr.price * curr.quantity), 0);
+        setSubtotal(sub);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const totalAmount = subtotal + shippingOptions[selectedShipping].price;
 
   const openModal = (type: string) => {
     if (type === "Notes") setNoteInput(productNote);
@@ -54,8 +98,45 @@ export default function CheckoutPage() {
     closeModal();
   };
 
-  const handleCheckout = () => {
-    router.push('/payment'); 
+  // FUNGSI CHECKOUT MIDTRANS
+  const handleCheckout = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: `ORDER-${Date.now()}`,
+          totalAmount: totalAmount,
+          userDetails: {
+            nama: addresses[selectedAddress].name,
+            email: userEmail,
+            nomor_telp: addresses[selectedAddress].phone
+          }
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.token) {
+        if ((window as any).snap) {
+          (window as any).snap.pay(data.token, {
+            onSuccess: (result: any) => { alert("Bayar Berhasil!"); router.push('/DashboardProduct'); },
+            onPending: (result: any) => { alert("Selesaikan pembayaran ya!"); },
+            onError: (result: any) => { alert("Yah, gagal bayar."); }
+          });
+        } else {
+          alert("Sistem Midtrans belum siap. Coba refresh halaman.");
+        }
+      } else if (data.error) {
+        alert("Gagal Checkout: " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Sistem sibuk, coba lagi nanti.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -87,7 +168,6 @@ export default function CheckoutPage() {
               <div className="card-inner-white">
                 <h3 className="user-title">{addresses[selectedAddress].name}</h3>
                 <p className="address-desc">{addresses[selectedAddress].detail}</p>
-                <p className="address-note">{addresses[selectedAddress].note}</p>
                 <p className="user-phone">{addresses[selectedAddress].phone}</p>
               </div>
             </div>
@@ -120,24 +200,30 @@ export default function CheckoutPage() {
                   Detail Pesanan
                 </span>
               </div>
-              <div className="card-inner-white product-layout">
-                <div className="product-image-box">
-                  <img src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=200" alt="Jagung Manis" />
-                </div>
-                <div className="product-details">
-                  <div className="flex-space">
-                    <h3 className="method-title">Jagung Manis</h3>
-                    <span className="bold-price">Rp 30.000</span>
+              
+              {cartItems.map((item, idx) => (
+                <div key={idx} className="card-inner-white product-layout" style={{ marginBottom: idx !== cartItems.length - 1 ? 15 : 0 }}>
+                  <div className="product-image-box">
+                    <img src={item.image || "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=200"} alt={item.name} />
                   </div>
-                  <div className="qty-chip">QTY 2</div>
-                  <div
-                    className="notes-action"
-                    onClick={() => openModal("Notes")}
-                  >
-                    {productNote ? `📝 ${productNote}` : "+ Tambah catatan"}
+                  <div className="product-details">
+                    <div className="flex-space">
+                      <h3 className="method-title">{item.name}</h3>
+                      <span className="bold-price">Rp {Number(item.price).toLocaleString("id-ID")}</span>
+                    </div>
+                    <div className="qty-chip">QTY {item.quantity}</div>
+                    {/* Only show Note button for the first item as a global order note representation */}
+                    {idx === 0 && (
+                      <div
+                        className="notes-action"
+                        onClick={() => openModal("Notes")}
+                      >
+                        {productNote ? `📝 ${productNote}` : "+ Tambah catatan"}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
 
             {/* Payment Method */}
@@ -149,9 +235,11 @@ export default function CheckoutPage() {
                 </span>
                 <button className="change-btn" onClick={() => openModal("Payment")}>Ganti</button>
               </div>
-              <div className="card-inner-white">
-                <h3 className="method-title">{paymentOptions[selectedPayment].name}</h3>
-                <p className="arrival-txt">{paymentOptions[selectedPayment].provider}</p>
+              <div className="card-inner-white flex-space">
+                <div>
+                  <h3 className="method-title">{paymentOptions[selectedPayment].name}</h3>
+                  <p className="arrival-txt">{paymentOptions[selectedPayment].provider}</p>
+                </div>
               </div>
             </div>
 
@@ -163,27 +251,27 @@ export default function CheckoutPage() {
               <h2 className="summary-heading">Ringkasan Pembayaran</h2>
 
               <div className="summary-row">
-                <span>Subtotal (1 item)</span>
-                <span>Rp 30.000</span>
+                <span>Subtotal ({cartItems.length} item)</span>
+                <span>Rp {subtotal.toLocaleString("id-ID")}</span>
               </div>
               <div className="summary-row">
                 <span>Biaya Pengiriman</span>
                 <span>Rp {shippingOptions[selectedShipping].price.toLocaleString("id-ID")}</span>
-              </div>
-              <div className="summary-row">
-                <span>Biaya Layanan</span>
-                <span>Rp 2.000</span>
               </div>
 
               <hr className="summary-divider" />
 
               <div className="total-meta">TOTAL PEMBAYARAN</div>
               <div className="total-value">
-                Rp {(32000 + shippingOptions[selectedShipping].price).toLocaleString("id-ID")}
+                Rp {totalAmount.toLocaleString("id-ID")}
               </div>
 
-              <button className="main-checkout-btn" onClick={handleCheckout}>
-                Bayar Sekarang
+              <button 
+                className="main-checkout-btn" 
+                onClick={handleCheckout}
+                disabled={isLoading}
+              >
+                {isLoading ? "LOADING..." : "CHECKOUT"}
               </button>
             </div>
           </aside>
@@ -200,6 +288,7 @@ export default function CheckoutPage() {
                 {modal.type === "Address" && "Pilih Alamat"}
                 {modal.type === "Shipping" && "Pilih Pengiriman"}
                 {modal.type === "Payment" && "Pilih Pembayaran"}
+                {modal.type === "Notes" && "Catatan Pesanan"}
               </h3>
               <button className="close-x" onClick={closeModal}>
                 <Icon path={mdiClose} size={0.7} />
@@ -251,8 +340,8 @@ export default function CheckoutPage() {
                       {selectedAddress === idx && <div className="check-dot" />}
                     </div>
                   ))}
-                  <button className="add-btn-modal">
-                    <Icon path={mdiPlus} size={0.75} /> Tambah Alamat Baru
+                  <button className="add-btn-modal" onClick={() => { closeModal(); router.push('/profile'); }}>
+                    <Icon path={mdiPlus} size={0.8} /> Ubah / Tambah Alamat di Profil
                   </button>
                 </>
               )}
@@ -294,6 +383,7 @@ export default function CheckoutPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

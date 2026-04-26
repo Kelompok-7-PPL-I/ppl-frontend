@@ -7,7 +7,8 @@ import { mdiChevronLeft, mdiDeleteOutline, mdiMinus, mdiPlus, mdiCartOutline } f
 import './page.css';
 
 interface CartItem {
-  id: number;
+  id_keranjang: number;
+  id_produk: number;
   name: string;
   price: number;
   quantity: number;
@@ -21,28 +22,53 @@ export default function CartPage() {
   const [toast, setToast] = useState('');
   const [confirmId, setConfirmId] = useState<number | null>(null);
 
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    { id: 1, name: "Jagung Susu Keju Premium", price: 30000, quantity: 2, image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400", checked: false },
-    { id: 2, name: "Tepung Mokaf Organik 500g", price: 25000, quantity: 1, image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400", checked: false },
-    { id: 3, name: "Beras Sorgum Merah 1kg", price: 45000, quantity: 1, image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400", checked: false },
-  ]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => setIsClient(true), []);
+  const fetchCart = async () => {
+    try {
+      const res = await fetch('/api/cart');
+      const data = await res.json();
+      if (res.ok) {
+        setCartItems(data);
+      }
+    } catch (err) {
+      console.error("Gagal mengambil keranjang", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setIsClient(true);
+    fetchCart();
+  }, []);
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(''), 2000);
   };
 
-  const updateQty = (id: number, delta: number) => {
-    setCartItems(prev => prev.map(item =>
-      item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
+  const updateQty = async (id_keranjang: number, delta: number) => {
+    const item = cartItems.find(i => i.id_keranjang === id_keranjang);
+    if (!item) return;
+    const newQty = Math.max(1, item.quantity + delta);
+
+    // Optimistic update
+    setCartItems(prev => prev.map(i =>
+      i.id_keranjang === id_keranjang ? { ...i, quantity: newQty } : i
     ));
+
+    await fetch('/api/cart', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_keranjang, quantity: newQty })
+    });
   };
 
-  const toggleCheck = (id: number) => {
+  const toggleCheck = (id_keranjang: number) => {
     setCartItems(prev => prev.map(item =>
-      item.id === id ? { ...item, checked: !item.checked } : item
+      item.id_keranjang === id_keranjang ? { ...item, checked: !item.checked } : item
     ));
   };
 
@@ -51,10 +77,12 @@ export default function CartPage() {
     setCartItems(prev => prev.map(item => ({ ...item, checked: !allChecked })));
   };
 
-  const removeItem = (id: number) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
+  const removeItem = async (id_keranjang: number) => {
+    // Optimistic remove
+    setCartItems(prev => prev.filter(item => item.id_keranjang !== id_keranjang));
     setConfirmId(null);
     showToast('Produk dihapus dari keranjang');
+    await fetch(`/api/cart?id=${id_keranjang}`, { method: 'DELETE' });
   };
 
   const subtotal = cartItems
@@ -99,7 +127,7 @@ export default function CartPage() {
       <div className="cart-container">
 
         {/* Empty State */}
-        {cartItems.length === 0 && (
+        {!isLoading && cartItems.length === 0 && (
           <div className="cart-empty">
             <div className="cart-empty-icon">
               <Icon path={mdiCartOutline} size={1.6} color="#c8b97a" />
@@ -111,11 +139,13 @@ export default function CartPage() {
 
         {/* Cart Items */}
         <div className="cart-list">
-          {cartItems.map((item) => (
-            <div key={item.id} className="cart-item-wrapper">
+          {isLoading ? (
+            <p style={{textAlign:'center', marginTop:20}}>Memuat keranjang...</p>
+          ) : cartItems.map((item) => (
+            <div key={item.id_keranjang} className="cart-item-wrapper">
               <div
                 className={`item-checkbox-custom ${item.checked ? 'checked' : ''}`}
-                onClick={() => toggleCheck(item.id)}
+                onClick={() => toggleCheck(item.id_keranjang)}
               />
               <div className={`item-card ${item.checked ? 'selected' : ''}`}>
                 <img src={item.image} alt={item.name} className="item-img" />
@@ -126,7 +156,7 @@ export default function CartPage() {
                     <h3 className="item-name">{item.name}</h3>
                     <button
                       className="btn-hapus-icon"
-                      onClick={() => setConfirmId(item.id)}
+                      onClick={() => setConfirmId(item.id_keranjang)}
                       title="Hapus produk"
                     >
                       <Icon path={mdiDeleteOutline} size={0.7} />
@@ -141,7 +171,7 @@ export default function CartPage() {
                     <div className="qty-box">
                       <button
                         className="qty-btn"
-                        onClick={() => updateQty(item.id, -1)}
+                        onClick={() => updateQty(item.id_keranjang, -1)}
                         disabled={item.quantity <= 1}
                       >
                         <Icon path={mdiMinus} size={0.55} />
@@ -149,14 +179,13 @@ export default function CartPage() {
                       <span className="qty-number">{item.quantity}</span>
                       <button
                         className="qty-btn"
-                        onClick={() => updateQty(item.id, 1)}
+                        onClick={() => updateQty(item.id_keranjang, 1)}
                       >
                         <Icon path={mdiPlus} size={0.55} />
                       </button>
                     </div>
                     <span className="item-total-price">{formatPrice(item.price * item.quantity)}</span>
                   </div>
-
                 </div>
               </div>
             </div>

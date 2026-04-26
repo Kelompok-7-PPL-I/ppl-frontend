@@ -5,7 +5,9 @@ import GoogleProvider from "next-auth/providers/google";
 import prisma from "@/lib/prisma";
 import argon2 from "argon2";
 
-const handler = NextAuth({
+import { NextAuthOptions } from "next-auth";
+
+export const authOptions: NextAuthOptions = {
     providers: [
         // 1. PROVIDER GOOGLE
         GoogleProvider({
@@ -86,12 +88,14 @@ const handler = NextAuth({
             if (user) {
                 // 'user' di sini datang dari authorize() atau data Google pertama kali
                 token.peran = (user as any).peran || "user";
-            } else if (!token.peran) {
-                // Jika token sudah ada tapi peran belum nempel, ambil dari DB
+                token.id = user.id;
+            } else if (!token.peran || !token.id) {
+                // Jika token sudah ada tapi peran/id belum nempel, ambil dari DB
                 const dbUser = await prisma.pengguna.findUnique({
                     where: { email: token.email! },
                 });
                 token.peran = dbUser?.peran || "user";
+                token.id = dbUser?.id || "";
             }
             return token;
         },
@@ -100,6 +104,7 @@ const handler = NextAuth({
         async session({ session, token }) {
             if (session.user) {
                 (session.user as any).peran = token.peran;
+                (session.user as any).id = token.id;
             }
             return session;
         },
@@ -111,6 +116,8 @@ const handler = NextAuth({
     pages: {
         signIn: "/auth", // Sesuai folder halaman login kamu
     },
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };

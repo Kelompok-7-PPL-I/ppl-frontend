@@ -54,6 +54,10 @@ export default function DetailProduct() {
   const visibleThumbs = images.slice(0, 3);
   const extraCount = images.length - 3;
 
+  // Extract weight unit from description (e.g., "Per 1 kg - ..." -> "1 kg")
+  const descPrefix = product?.desc?.split(" - ")[0] || "";
+  const unitText = descPrefix.replace(/^Per\s+/i, "");
+
   const handleDecrease = () => setQuantity((q) => Math.max(1, q - 1));
   const handleIncrease = () => setQuantity((q) => q + 1);
 
@@ -80,9 +84,23 @@ const handlePrev = () => {
   }
 };
 
-  const handleAddToCart = () => {
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
+  const handleAddToCart = async () => {
+    try {
+      const res = await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_produk: product.id, quantity })
+      });
+      if (res.ok) {
+        setAddedToCart(true);
+        setTimeout(() => setAddedToCart(false), 2000);
+      } else {
+        alert("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan sistem.");
+    }
   };
 
 if (!product) {
@@ -180,6 +198,11 @@ if (!product) {
                 +
               </button>
             </div>
+            {unitText && (
+              <span className="weight-unit" style={{ marginLeft: '12px', fontSize: '1rem', color: '#666', alignSelf: 'center', fontWeight: 500 }}>
+                ({unitText})
+              </span>
+            )}
 
             <button
               className={`add-cart-btn ${addedToCart ? "added" : ""}`}
