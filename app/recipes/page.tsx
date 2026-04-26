@@ -7,6 +7,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { createClient } from '@/utils/supabase/client';
 import "./page.css"
 import { useRouter } from "next/navigation";
+import { signOut as nextAuthSignOut } from "next-auth/react";
 
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"]});
 
@@ -42,6 +43,13 @@ export default function RecipesPage(){
       }
       return 1;
     });
+
+    const ProfileIcon = () => (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="#ffcc00" stroke="#ffcc00" strokeWidth="0">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    );
     
     // FETCH DATA DARI SUPABASE
     useEffect(() => {
@@ -111,6 +119,16 @@ export default function RecipesPage(){
       }
     }, [isLoading, currentPage]);
     
+    const handleLogout = async () => {
+        // Log out dari Supabase
+        await supabase.auth.signOut();
+        // Log out dari NextAuth (tanpa paksa reload biar router yang handle)
+        await nextAuthSignOut({ redirect: false });
+        
+        router.push("/auth");
+        router.refresh();
+      };
+
     const handleToggleLike = (id: number) => {
     setLocalLikes((prev) =>
         prev.includes(id)
@@ -282,7 +300,13 @@ export default function RecipesPage(){
             </div>
           )}
         </div>
-
+        <div className="profile-dropdown-container">
+            <div className="nav-link profile-trigger"><ProfileIcon /><span className="nav-link-label">Profil</span></div>
+            <div className="dropdown-menu-profile">
+              <Link href="/profile" className="dropdown-item">Profil Saya</Link>
+              <button onClick={handleLogout} className="dropdown-item">Keluar</button>
+            </div>
+          </div>
         <div className="logo-wrapper">
           <Image src="/images/logo.png" alt="Website Logo" width={48} height={48} className="logo-img" />
         </div>
