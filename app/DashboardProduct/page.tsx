@@ -30,13 +30,13 @@ interface Banner {
 const banners: Banner[] = [
   { 
     id: 0, 
-    title: "DISCOVER\nNEW RECIPES", 
+    title: "TEMUKAN\nRESEP BARU", 
     bg: "url('https://i.pinimg.com/1200x/93/5c/63/935c63beb807c40e73966b6043af6f6a.jpg')", 
-    buttonText: "Find out",
+    buttonText: "Temukan",
     link: "/recipes" 
   },
-  { id: 1, title: "SPECIAL\nDISCOUNT", bg: "#1f6e2b" },
-  { id: 2, title: "FREE\nDELIVERY", bg: "#329c45" },
+  { id: 1, title: "DISKON\nSPESIAL", bg: "#1f6e2b" },
+  { id: 2, title: "PENGIRIMAN\nGRATIS", bg: "#329c45" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -94,7 +94,22 @@ function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike
         <p className="card-price">{formatRupiah(product.price)}</p>
         <div className="card-actions">
           <Link href={`/product/${product.id}`} className="btn-detail">Detail</Link>
-          <Link href={`/checkout`} className="btn-buy">Buy Now</Link>
+          <Link href={`/checkout`} className="btn-buy">Beli Sekarang</Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+  function ProductSkeleton() {
+  return (
+    <div className="product-card">
+      <div className="card-image-wrap skeleton-box" style={{ height: "200px" }}></div>
+      <div className="card-body">
+        <div className="skeleton-box" style={{ height: "20px", width: "80%", marginBottom: "10px" }}></div>
+        <div className="skeleton-box" style={{ height: "15px", width: "40%", marginBottom: "20px" }}></div>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <div className="skeleton-box" style={{ height: "35px", flex: 1 }}></div>
+          <div className="skeleton-box" style={{ height: "35px", flex: 1 }}></div>
         </div>
       </div>
     </div>
@@ -192,12 +207,26 @@ export default function DashboardProduct() {
             )}
           </div>
           <button className="banner-arrow banner-arrow-right" onClick={nextBanner}><ChevronRight /></button>
+        <div className="banner-dots">
+          {banners.map((_, index) => (
+            <button
+              key={index}
+              className={`banner-dot ${index === activeBanner ? 'dot-active' : ''}`}
+              onClick={() => setActiveBanner(index)} // Agar titik bisa diklik
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
         </div>
       </section>
 
       <section className="products-section">
         {isLoading ? (
-          <p>Memuat produk...</p>
+          <div className="products-grid">
+          {[...Array(6)].map((_, i) => (
+            <ProductSkeleton key={i} />
+          ))}
+        </div>
         ) : isError ? (
           <p>Terjadi kesalahan saat memuat data.</p>
         ) : (

@@ -84,9 +84,32 @@ const handlePrev = () => {
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
   };
-
+  
 if (!product) {
-  return <p>Loading...</p>;
+  return (
+    <div className="detail-root">
+      <header className="detail-header skeleton-header">
+        <div className="skeleton skeleton-logo"></div>
+      </header>
+      <main className="detail-main">
+        <section className="gallery-section">
+          <div className="main-image-wrap skeleton"></div>
+          <div className="thumbnails-row">
+            <div className="thumb-btn skeleton"></div>
+            <div className="thumb-btn skeleton"></div>
+            <div className="thumb-btn skeleton"></div>
+          </div>
+        </section>
+        <section className="info-section">
+          <div className="skeleton skeleton-title"></div>
+          <div className="skeleton skeleton-price"></div>
+          <div className="skeleton skeleton-desc"></div>
+          <div className="skeleton skeleton-desc"></div>
+          <div className="skeleton skeleton-button"></div>
+        </section>
+      </main>
+    </div>
+  );
 }
 
   return (
@@ -185,11 +208,11 @@ if (!product) {
               className={`add-cart-btn ${addedToCart ? "added" : ""}`}
               onClick={handleAddToCart}
             >
-              {addedToCart ? "✓ Added!" : "Add To Cart"}
+              {addedToCart ? "✓ Added!" : "Tambahkan Ke Keranjang"}
             </button>
           </div>
           <Link href="/checkout" className="buy-now-btn">
-            Buy Now
+            Beli Sekarang
           </Link>
         </section>
       </main>
