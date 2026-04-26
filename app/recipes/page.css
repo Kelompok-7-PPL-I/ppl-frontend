@@ -6,7 +6,7 @@ body {
 .recipes-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 48px 0px;
+  padding: 28px 48px;
   color: #333;
   z-index: 1;
 }
@@ -17,18 +17,21 @@ body {
 }
 
 .back-button {
+  white-space: nowrap;
   color: #d32f2f;
   font-weight: 700;
   text-decoration: none;
   font-size: 1rem;
   border-bottom: 2px solid #d32f2f;
   padding-bottom: 2px;
+  flex-shrink: 0;
 }
 
 /* Kontrol Pencarian & Filter */
 .controls-row {
   display: flex;
   gap: 2rem;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 3rem;
   position: relative;
@@ -37,7 +40,7 @@ body {
 
 .search-box, .filter-box {
   position: relative;
-  flex: 1;
+  flex: 2;
   max-width: 400px;
   z-index: 100;
 }
@@ -66,22 +69,29 @@ body {
   color: #888;
 }
 
-.no-results {
-  text-align: center;
-  color: #999;
-  font-size: 15px;
-  padding: 40px 0;
-}
-
 .custom-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  height: 48px;
+  padding: 0 45px 0 20px !important;
   width: 100%;
-  padding: 12px 45px 12px 20px; 
   border-radius: 50px;
   background: #f1f3f4;
   cursor: pointer;
   font-size: 0.95rem;
   color: #555;
+  overflow: hidden;
+  position: relative;
   pointer-events: auto !important;
+}
+
+.no-results {
+  text-align: center;
+  color: #999;
+  font-size: 15px;
+  padding: 40px 0;
 }
 
 .dropdown-menu {
@@ -143,24 +153,27 @@ body {
   width: 18px;
   height: 18px;
   color: #888;
-  pointer-events: none;
 }
 
-.custom-select {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 48px;
-  padding: 8px 16px;
-  /* (Pertahankan border/background aslimu di sini) */
+.filter-box svg.icon-select:not(.clear-all) {
+  pointer-events: none; 
 }
 
 .selected-tags-wrapper {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-right: 10px;
+  margin-right: 5px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.selected-tags-wrapper::-webkit-scrollbar {
+  display: none;
 }
 
 .tag-pill-ui {
@@ -173,6 +186,8 @@ body {
   font-size: 0.85rem;
   font-weight: 500;
   color: #333;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tag-dot {
@@ -201,6 +216,8 @@ body {
 .add-tag-text, .placeholder-text {
   color: #777;
   font-size: 0.9rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .clear-all {
@@ -212,8 +229,85 @@ body {
   color: #333;
 }
 
+.clear-all-btn-wrapper {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background-color: #f1f3f4; 
+  padding-left: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.profile-label {
+  color: #ffcc00;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.nav-link-label{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 16px;
+  transition: transform 0.2s;
+  color: #333;
+}
+
+.nav-link.profile-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.profile-dropdown-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dropdown-menu-profile {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 125%;
+  background-color: white;
+  min-width: 140px;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  z-index: 150;
+  padding: 8px 0;
+  border: 1px solid #eee;
+}
+
+.profile-dropdown-container:hover .dropdown-menu-profile {
+  display: block;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 10px 16px;
+  text-decoration: none;
+  color: #333;
+  font-size: 14px;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdown-item:hover {
+  background-color: #f5f5f5;
+  color: #2a8a3a;
+}
+
 .logo-wrapper {
-  margin-left: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -246,7 +340,7 @@ body {
 /* Hero Carousel */
 .hero-carousel {
   display: flex;
-  gap: 2rem;
+  gap: 1.25rem;
   overflow-x: auto;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
@@ -543,25 +637,91 @@ body {
   transform: translateX(4px);
 }
 
+@media (max-width: 1024px) {
+  .recipes-container {
+    padding: 32px 24px;
+  }
+}
+
+
 /* Responsif Sederhana */
 @media (max-width: 768px) {
-  .controls-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .logo-wrapper {
-    margin-left: 0;
-    align-self: flex-end;
+  .recipes-container {
+    padding: 20px 16px;
   }
 
+  /* Header Layout Mobile */
+  .controls-row {
+    display: grid; /* Menggunakan Grid agar lebih mudah mengatur posisi */
+    grid-template-columns: auto 1fr auto; /* Kolom: Back, Logo, Profil */
+    gap: 15px;
+    margin-bottom: 2rem;
+  }
+
+  /* Baris Pertama: Back Button, Logo di tengah, Profil di kanan */
+  .back-button {
+    grid-row: 1;
+    grid-column: 1;
+    align-self: center;
+  }
+
+  .logo-wrapper {
+    grid-row: 1;
+    grid-column: 2;
+    justify-self: center; /* Logo jadi di tengah atas */
+    margin: 0;
+  }
+
+  .profile-dropdown-container {
+    grid-row: 1;
+    grid-column: 3;
+    align-self: center;
+  }
+
+  .nav-link-label {
+    display: none; /* Sembunyikan tulisan 'Profil', sisakan ikon saja di mobile */
+  }
+
+  /* Baris Kedua & Ketiga: Search dan Filter Full Width */
+  .search-box, 
+  .filter-box {
+    grid-column: 1 / span 3; /* Memanjang memenuhi lebar layar */
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .search-box {
+    grid-row: 2;
+  }
+
+  .filter-box {
+    grid-row: 3;
+  }
+
+  /* Recipe Card Mobile */
   .recipe-card {
     flex-direction: column;
+    padding: 1rem;
   }
-  
+
   .recipe-image-wrapper {
     width: 100%;
-    height: 200px;
+    height: 180px;
+  }
+
+  .recipe-header h2 {
+    font-size: 1.2rem;
+  }
+}
+
+/* Tambahan untuk layar sangat kecil (HP Portrait) */
+@media (max-width: 480px) {
+  .controls-row {
+    gap: 10px;
+  }
+  
+  .custom-select {
+    font-size: 0.85rem;
   }
 }
 
@@ -585,13 +745,11 @@ body {
   transition: all 0.2s ease-in-out;
 }
 
-/* Efek saat tombol di-hover (kecuali kalau sedang disabled) */
 .pagination-btn:hover:not(:disabled) {
   background-color: #f0f0f0;
   border-color: #999;
 }
 
-/* Tampilan tombol saat berada di ujung halaman (disabled) */
 .pagination-btn:disabled {
   background-color: #f9f9f9;
   color: #bbb;
@@ -626,14 +784,14 @@ body {
   background-repeat: no-repeat;
   background-size: 2000px 100%;
   animation: shimmer 1.5s infinite linear;
-  border-radius: 8px; /* Sesuaikan radius dengan desain aslimu */
+  border-radius: 8px;
 }
 
 /* Specific Skeleton Parts */
 .skeleton-img {
   width: 100%;
   height: 100%;
-  border-radius: 16px 16px 0 0; /* Mengikuti bentuk recipe-image-wrapper biasanya */
+  border-radius: 16px 16px 0 0; 
 }
 
 .skeleton-title {
