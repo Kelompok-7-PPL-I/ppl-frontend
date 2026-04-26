@@ -7,7 +7,8 @@ import { mdiDeleteOutline, mdiPlus, mdiMinus, mdiChevronLeft} from '@mdi/js';
 import './page.css';
 
 interface CartItem {
-  id: number;
+  id_keranjang: number;
+  id_produk: number;
   name: string;
   price: number;
   quantity: number;
@@ -18,25 +19,48 @@ interface CartItem {
 export default function CartPage() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
-  
-  // Data simulasi (Mock Data)
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    { id: 1, name: "Jagung Susu Keju", price: 30000, quantity: 2, image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400", checked: false },
-    { id: 2, name: "Jagung Susu Keju", price: 30000, quantity: 2, image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400", checked: false },
-    { id: 3, name: "Jagung Susu Keju", price: 30000, quantity: 2, image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400", checked: false },
-  ]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => setIsClient(true), []);
-
-  const updateQty = (id: number, delta: number) => {
-    setCartItems(prev => prev.map(item => 
-      item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-    ));
+  const fetchCart = async () => {
+    try {
+      const res = await fetch('/api/cart');
+      const data = await res.json();
+      if (res.ok) {
+        setCartItems(data);
+      }
+    } catch (err) {
+      console.error("Gagal mengambil keranjang", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const toggleCheck = (id: number) => {
+  useEffect(() => {
+    setIsClient(true);
+    fetchCart();
+  }, []);
+
+  const updateQty = async (id_keranjang: number, delta: number) => {
+    const item = cartItems.find(i => i.id_keranjang === id_keranjang);
+    if (!item) return;
+    const newQty = Math.max(1, item.quantity + delta);
+
+    // Optimistic update
+    setCartItems(prev => prev.map(i => 
+      i.id_keranjang === id_keranjang ? { ...i, quantity: newQty } : i
+    ));
+
+    await fetch('/api/cart', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_keranjang, quantity: newQty })
+    });
+  };
+
+  const toggleCheck = (id_keranjang: number) => {
     setCartItems(prev => prev.map(item => 
-      item.id === id ? { ...item, checked: !item.checked } : item
+      item.id_keranjang === id_keranjang ? { ...item, checked: !item.checked } : item
     ));
   };
 
@@ -45,8 +69,11 @@ export default function CartPage() {
     setCartItems(prev => prev.map(item => ({ ...item, checked: !allChecked })));
   };
 
-  const removeItem = (id: number) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
+  const removeItem = async (id_keranjang: number) => {
+    // Optimistic remove
+    setCartItems(prev => prev.filter(item => item.id_keranjang !== id_keranjang));
+    
+    await fetch(`/api/cart?id=${id_keranjang}`, { method: 'DELETE' });
   };
 
   const subtotal = cartItems
@@ -62,20 +89,20 @@ export default function CartPage() {
              <Icon path={mdiChevronLeft} size={1} /> Back
           </button>
         <div className="cart-list">
-          {cartItems.map((item) => (
-            <div key={item.id} className="cart-item-wrapper">
+          {isLoading ? <p style={{textAlign:'center', marginTop:20}}>Memuat keranjang...</p> : cartItems.length === 0 ? <p style={{textAlign:'center', marginTop:20}}>Keranjang kosong</p> : cartItems.map((item) => (
+            <div key={item.id_keranjang} className="cart-item-wrapper">
               <input 
                 type="checkbox" 
                 className="item-checkbox" 
                 checked={item.checked} 
-                onChange={() => toggleCheck(item.id)}
+                onChange={() => toggleCheck(item.id_keranjang)}
               />
               <div className="item-card">
                 <img src={item.image} alt={item.name} className="item-img" />
                 <div className="item-info">
                   <div className="item-header">
                     <h3 className="item-name">{item.name}</h3>
-                    <button className="btn-hapus-top" onClick={() => removeItem(item.id)}>
+                    <button className="btn-hapus-top" onClick={() => removeItem(item.id_keranjang)}>
                       <Icon path={mdiDeleteOutline} size={0.7} color="red" />
                       HAPUS
                     </button>
@@ -83,18 +110,18 @@ export default function CartPage() {
                   
                   <div className="item-controls">
                     <div className="qty-box">
-                      <button onClick={() => updateQty(item.id, -1)}>
+                      <button onClick={() => updateQty(item.id_keranjang, -1)}>
                         <Icon path={mdiMinus} size={0.8} color="black" />
                       </button>
                       <span className="qty-number">{item.quantity}</span>
-                      <button onClick={() => updateQty(item.id, 1)}>
+                      <button onClick={() => updateQty(item.id_keranjang, 1)}>
                         <Icon path={mdiPlus} size={0.8} color="black" />
                       </button>
                     </div>
                     <span className="item-price-text">{formatPrice(item.price)}</span>
                   </div>
                   
-                  <button className="btn-hapus-text" onClick={() => removeItem(item.id)}>Hapus</button>
+                  <button className="btn-hapus-text" onClick={() => removeItem(item.id_keranjang)}>Hapus</button>
                 </div>
               </div>
             </div>

@@ -11,7 +11,7 @@ datasource db {
 
 // ─── PENGGUNA & AUTH ─────────────────────────────────────────────────────────
 model Pengguna {
-  id             String          @id @db.Uuid
+  id             String          @id @default(uuid()) @db.Uuid
   nama           String?         @db.VarChar
   email          String          @unique @db.VarChar
   password       String?         @db.VarChar
@@ -49,6 +49,7 @@ model Produk {
   keranjang    Keranjang[]
   ulasan       Ulasan[]
   favorit      FavoritProduk[]
+  resep_bahan_produk ResepBahanProduk[]
 
   @@map("produk")
   @@schema("public")
@@ -70,8 +71,21 @@ model Resep {
   id_kategori       Int?
   kategori          Kategori?      @relation(fields: [id_kategori], references: [id_kategori])
   favorit           FavoritResep[]
+  resep_bahan_produk ResepBahanProduk[]
 
   @@map("resep")
+  @@schema("public")
+}
+
+model ResepBahanProduk {
+  id        Int    @id @default(autoincrement())
+  id_resep  Int
+  id_produk Int
+
+  resep     Resep  @relation(fields: [id_resep], references: [id_resep])
+  produk    Produk @relation(fields: [id_produk], references: [id_produk])
+
+  @@map("resep_bahan_produk")
   @@schema("public")
 }
 
@@ -117,10 +131,12 @@ model FavoritResep {
 // ─── TRANSAKSI & KERANJANG ───────────────────────────────────────────────────
 model Pesanan {
   id_pesanan        Int           @id @default(autoincrement())
+  order_id          String        @unique
   id_user           String        @db.Uuid
   tanggal_pesanan   DateTime      @default(now()) @db.Timestamptz
   total_harga       Decimal       @db.Decimal(12, 2)
   status_pembayaran String        @db.VarChar
+  snap_token        String?       @db.Text
   metode_bayar      String?       @db.VarChar
 
   pengguna     Pengguna      @relation(fields: [id_user], references: [id])

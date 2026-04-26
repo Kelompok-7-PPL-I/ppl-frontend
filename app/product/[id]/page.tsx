@@ -80,9 +80,23 @@ const handlePrev = () => {
   }
 };
 
-  const handleAddToCart = () => {
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
+  const handleAddToCart = async () => {
+    try {
+      const res = await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_produk: product.id, quantity })
+      });
+      if (res.ok) {
+        setAddedToCart(true);
+        setTimeout(() => setAddedToCart(false), 2000);
+      } else {
+        alert("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan sistem.");
+    }
   };
 
 if (!product) {
