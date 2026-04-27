@@ -1,17 +1,12 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
 
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET
-  });
-
+  // 1. Inisialisasi Supabase Client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -34,13 +29,14 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // 2. Cek User dari Supabase (Pengganti getToken)
   const { data: { user: supabaseUser } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  // Gabungkan status login: Next Auth ATAU Supabase
-  const isLogged = !!token || !!supabaseUser;
+  // Status login hanya berdasarkan Supabase 
+  const isLogged = !!supabaseUser;
 
-  // Sesuaikan proteksi dengan rute-rute yang ada di project kamu
+  // Rute yang butuh login
   const isProtectedPath = 
     path.startsWith('/admin') || 
     path.startsWith('/DashboardProduct') || 
@@ -48,49 +44,53 @@ export async function middleware(request: NextRequest) {
     path.startsWith('/cart') || 
     path.startsWith('/checkout') || 
     path.startsWith('/payment') || 
-    path.startsWith('/profile')||
+    path.startsWith('/profile') ||
     path.startsWith('/recipes');
     
   const isAuthPath = path === '/auth';
 
+  // REDIRECT: Jika belum login tapi maksa masuk halaman terproteksi
   if (!isLogged && isProtectedPath) {
     return NextResponse.redirect(new URL('/auth', request.url))
   }
 
+  // LOGIKA ROLE: Jika sudah login
+  if (isLogged) {
+    // Ambil role dari metadata user atau database
+    let userRole = supabaseUser?.user_metadata?.role || 'customer';
 
-if (isLogged) {
-  let userRole = (token?.peran as string) || supabaseUser?.user_metadata?.role || 'customer';
+    // Opsional: Ambil role real-time dari tabel 'pengguna' di database
+    if (path.startsWith('/admin') || isAuthPath) {
+      const { data: pengguna } = await supabase
+        .from('pengguna') 
+        .select('peran') 
+        .eq('id', supabaseUser.id)
+        .single();
 
-  if (path.startsWith('/admin') || isAuthPath) {
-    const { data: pengguna } = await supabase
-      .from('pengguna') 
-      .select('peran') 
-      .eq('id', token?.sub || supabaseUser?.id)
-      .single();
+      if (pengguna?.peran) {
+        userRole = pengguna.peran;
+      }
+    }
 
-    if (pengguna?.peran) {
-      userRole = pengguna.peran;
+    // PROTEKSI ADMIN: Selain admin dilarang masuk /admin
+    if (path.startsWith('/admin') && userRole !== 'admin') {
+      return NextResponse.redirect(new URL('/DashboardProduct', request.url))
+    }
+
+    // REDIRECT AUTH: Jika sudah login tapi ke halaman login (/auth), lempar ke dashboard
+    if (isAuthPath) {
+      const targetPath = userRole === 'admin' ? '/admin' : '/DashboardProduct';
+      return NextResponse.redirect(new URL(targetPath, request.url))
     }
   }
-
-  if (path.startsWith('/admin') && userRole !== 'admin') {
-    return NextResponse.redirect(new URL('/DashboardProduct', request.url))
-  }
-
-  if (isAuthPath) {
-    const targetPath = userRole === 'admin' ? '/admin' : '/DashboardProduct';
-    return NextResponse.redirect(new URL(targetPath, request.url))
-  }
-}
 
   return response
 }
 
-export default middleware;
-
 export const config = {
   matcher: [
-    // Hindari path API dan file statik Next.js
     '/((?!api|_next/static|_next/image|favicon.ico|logos|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
+
+export default middleware;

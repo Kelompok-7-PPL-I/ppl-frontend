@@ -5,7 +5,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight, Check, X, ArrowLeft, Mail } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { signIn, getSession } from "next-auth/react";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -78,31 +77,28 @@ useEffect(() => {
     setError(null);
 
     try {
-      const result = await signIn("credentials", {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password: loginPassword,
-        redirect: false,
       });
 
-      if (result?.error) {
-        throw new Error(result.error);
-      }
+      if (authError) throw authError;
 
-      if (result?.ok) {
+      if (data?.user) {
         // 1. Tampilkan pesan sukses
         setSuccessMsg("Login berhasil! Mengalihkan ke dashboard...");
 
+        // Cek role dari metadata atau database
+        const userRole = data.user.user_metadata?.role || 'customer';
+
         // 2. Cek session untuk menentukan role dan redirect
-        setTimeout(async () => {
-          const session = await getSession();
-          
-          if (session?.user?.peran === 'admin') {
+        setTimeout(() => {
+          if (userRole === 'admin') {
             router.push('/admin');
           } else {
             router.push('/DashboardProduct');
           }
-          
-          router.refresh(); 
+          router.refresh();
         }, 1500);
       }
     } catch (err: any) {
@@ -188,10 +184,17 @@ useEffect(() => {
     setLoading(true);
     setError(null);
     try {
-      // Menggunakan NextAuth untuk memicu login Google
-      await signIn("google", { callbackUrl: "/DashboardProduct" });
+      // GANTI: Gunakan Supabase Google Provider
+      const { error: googleError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`, // Pastikan buat file callback ini nanti
+        },
+      });
+      
+      if (googleError) throw googleError;
     } catch (err: any) {
-      setError("Gagal masuk dengan Google. Silakan coba lagi.");
+      setError("Gagal masuk dengan Google.");
       setLoading(false);
     }
   };
@@ -309,9 +312,9 @@ useEffect(() => {
                         placeholder="Nama Belakang" 
                         className="input-field" 
                         value={regData.lastName}
+                        onChange={(e) => setRegData({...regData, lastName: e.target.value})}
                         autoComplete="off"
                         required 
-                        onChange={(e) => setRegData({...regData, lastName: e.target.value})}
                       />
                     </div>
                     
@@ -330,8 +333,9 @@ useEffect(() => {
                         placeholder="Password" 
                         className="input-field" 
                         value={regData.password}
-                        required 
                         onChange={(e) => setRegData({...regData, password: e.target.value})}
+                        autoComplete="new-password"
+                        required 
                       />
                       <button type="button" className="password-toggle" onClick={() => setShowRegPassword(!showRegPassword)}>
                         {showRegPassword ? <EyeOff size={20} /> : <Eye size={20} />}

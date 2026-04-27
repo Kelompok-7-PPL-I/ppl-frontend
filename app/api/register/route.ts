@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import argon2 from "argon2"; // Import Argon2 menggantikan Bcrypt
 import prisma from "@/lib/prisma";
 import { sendEmail } from "@/lib/nodemailer";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // Pastikan ada di .env.local
+);
 
 export async function POST(request: Request) {
     try {
@@ -15,6 +21,17 @@ export async function POST(request: Request) {
 
         if (existingUser) {
             return NextResponse.json({ message: "Email sudah terdaftar!" }, { status: 400 });
+        }
+
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email: email,
+            password: password,
+            email_confirm: true, // Langsung konfirmasi agar tidak perlu cek email verifikasi
+            user_metadata: { full_name: name }
+        });
+
+        if (authError) {
+            throw authError;
         }
 
         // 2. Enkripsi Tingkat Dewa dengan Argon2

@@ -4,7 +4,6 @@ import { createClient } from '@/utils/supabase/client';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { signOut as nextAuthSignOut, getSession } from "next-auth/react";
 
 export default function ProfileLayout({
   children, // Ini adalah "lubang" tempat page.tsx akan dimasukkan
@@ -18,24 +17,30 @@ export default function ProfileLayout({
 
   useEffect(() => {
     const fetchProfile = async () => {
-      // Dapatkan session dari NextAuth dulu karena login Credentials nyimpannya di sana
-      const session = await getSession();
-      const email = session?.user?.email;
+      // GANTI: Ambil session langsung dari Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
 
-      if (email) {
-        const { data } = await supabase.from('pengguna').select('*').eq('email', email).single();
+      if (user) {
+        // Ambil data profil dari tabel 'pengguna' berdasarkan ID atau Email
+        const { data } = await supabase
+          .from('pengguna')
+          .select('*')
+          .eq('email', user.email)
+          .single();
         setProfile(data);
+      } else {
+        // Jika tidak ada session, tendang ke halaman login
+        router.push('/auth');
       }
     };
     fetchProfile();
-  }, [supabase]);
+  }, [supabase, router]);
 
   const handleLogout = async () => {
-    // Log out dari Supabase
     await supabase.auth.signOut();
-    // Log out dari NextAuth
-    await nextAuthSignOut({ redirect: false });
-    router.push('/');
+    router.push('/auth'); // Redirect ke halaman auth
+    router.refresh();
   };
 
   // Fungsi pintar untuk mengubah warna menu secara otomatis
@@ -58,19 +63,19 @@ export default function ProfileLayout({
         
         <nav className="flex-1 px-4 space-y-2">
           <Link href="/profile" className={navClass('/profile')}>
-            👤 Personal Details
+            👤 Informasi Pribadi
           </Link>
           <Link href="/profile/orders" className={navClass('/profile/orders')}>
-            📦 View Orders
+            📦 Lihat Pesanan
           </Link>
           <Link href="/profile/favorites/products" className={navClass('/profile/favorites/products')}>
-            ❤️ Favorite Products
+            ❤️ Produk Favorit
           </Link>
           <Link href="/profile/favorites/recipes" className={navClass('/profile/favorites/recipes')}>
-            🍳 Favorite Recipes
+            🍳 Resep Favorit
           </Link>
           <button onClick={handleLogout} className="w-full text-left px-4 py-3 hover:bg-red-700 rounded-full font-bold text-sm transition mt-10 text-white">
-            🚪 Logout
+            🚪 Keluar
           </button>
         </nav>
       </aside>

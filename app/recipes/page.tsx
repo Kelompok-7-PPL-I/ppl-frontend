@@ -110,13 +110,79 @@ export default function RecipesPage(){
         }
       }
     }, [isLoading, currentPage]);
+
+    useEffect(() => {
+      const syncLikes = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: userData } = await supabase
+            .from('pengguna')
+            .select('id')
+            .eq('email', user.email)
+            .single();
+
+          if (userData) {
+            const { data: likes } = await supabase
+              .from('favorit_resep')
+              .select('id_resep')
+              .eq('id_user', userData.id);
+
+            if (likes) {
+              setLocalLikes(likes.map(l => l.id_resep));
+            }
+          }
+        }
+      };
+      syncLikes();
+    }, []);
     
-    const handleToggleLike = (id: number) => {
-    setLocalLikes((prev) =>
-        prev.includes(id)
-        ? prev.filter((favId) => favId !== id)
-        : [...prev, id]
-    );
+    const handleToggleLike = async (id_resep: number) => {
+      const isCurrentlyLiked = localLikes.includes(id_resep);
+      
+      // Update UI Cepat (Optimistic)
+      setLocalLikes((prev) =>
+        isCurrentlyLiked ? prev.filter((id) => id !== id_resep) : [...prev, id_resep]
+      );
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("User tidak terautentikasi");
+
+        const { data: userData } = await supabase
+          .from('pengguna')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+
+        if (!userData) throw new Error("Data pengguna tidak ditemukan");
+
+        if (isCurrentlyLiked) {
+          // HAPUS
+          const { error } = await supabase
+            .from('favorit_resep')
+            .delete()
+            .eq('id_user', userData.id)
+            .eq('id_resep', id_resep);
+          
+          if (error) throw error;
+        } else {
+          // TAMBAH
+          const { error } = await supabase
+            .from('favorit_resep')
+            .insert([{ id_user: userData.id, id_resep: id_resep }]);
+          
+          if (error) throw error;
+        }
+      } catch (error: any) {
+        // Tampilkan pesan error asli dari Supabase di console
+        console.error("Detail Error Supabase:", error.message || error);
+        
+        // Kembalikan state UI jika gagal
+        setLocalLikes((prev) =>
+          isCurrentlyLiked ? [...prev, id_resep] : prev.filter((id) => id !== id_resep)
+        );
+        alert(`Gagal update: ${error.message || "Terjadi kesalahan sistem"}`);
+      }
     };
 
     const handleSelectTag = (tag: string) => {

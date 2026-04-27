@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
 import "./page.css";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import { signOut as nextAuthSignOut } from "next-auth/react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -105,10 +104,46 @@ export default function DashboardProduct() {
   const [search, setSearch] = useState("");
   const [activeBanner, setActiveBanner] = useState(0);
   const [localLikes, setLocalLikes] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(true); 
+  
   const supabase = createClient();
   const router = useRouter();
+  useEffect(() => {
+    const checkUserAndFetchLikes = async () => {
+      // 1. Ambil data auth user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // 2. Jika user TIDAK ADA, arahkan langsung ke login
+      if (!user) {
+        console.log;
+        router.push("/login");        
+        return;
+      }
 
-  const { data: serverProducts = [], isLoading, isError } = useQuery({
+      // 3. Jika user ADA, lanjutkan ambil data id dari tabel pengguna
+      const { data: userData } = await supabase
+        .from('pengguna')
+        .select('id')
+        .eq('email', user.email)
+        .single();
+
+      if (userData) {
+        // 4. Ambil daftar produk favorit
+        const { data } = await supabase
+          .from('favorit_produk')
+          .select('id_produk')
+          .eq('id_user', userData.id);
+        
+        if (data) {
+          setLocalLikes(data.map(item => item.id_produk));
+        }
+      }
+    };
+
+    checkUserAndFetchLikes();
+  }, []);
+
+  const { data: serverProducts = [], isLoading: isLoadingProducts, isError } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
       const { data, error } = await supabase.from("produk").select("*");
@@ -129,18 +164,79 @@ export default function DashboardProduct() {
   }));
 
   const handleLogout = async () => {
-    // Log out dari Supabase
-    await supabase.auth.signOut();
-    // Log out dari NextAuth (tanpa paksa reload biar router yang handle)
-    await nextAuthSignOut({ redirect: false });
-    
-    router.push("/auth");
+  const { error } = await supabase.auth.signOut();
+  if (!error) {
+    // Redirect ke halaman auth yang sudah kita perbaiki tadi
+    router.push("/auth"); 
     router.refresh();
-  };
+  } else {
+    console.error("Error logging out:", error.message);
+  }
+};
 
-  const handleToggleLike = (id: number) => {
-    setLocalLikes((prev) => prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id]);
-  };
+  const handleToggleFavorite = async (p: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return;
+   
+    try {
+    // 2. Cari ID unik user di tabel 'pengguna' berdasarkan email auth
+    const { data: userData, error: userError } = await supabase
+      .from('pengguna')
+      .select('id')
+      .eq('email', user.email)
+      .single();
+
+    if (userError || !userData) {
+      console.error("User tidak terdaftar di tabel pengguna:", userError);
+      return;
+    }
+
+    // 3. Tentukan apakah produk ini sudah ada di favorit (berdasarkan state lokal)
+    const isLiked = localLikes.includes(p.id);
+
+    if (isLiked) {
+      // --- LOGIC DELETE (UNFAVORITE) ---
+      const { error: deleteError } = await supabase
+        .from('favorit_produk')
+        .delete()
+        .eq('id_user', userData.id)
+        .eq('id_produk', p.id);
+
+      if (!deleteError) {
+        // Update state agar ikon hati langsung jadi abu-abu
+        setLocalLikes((prev) => prev.filter((id) => id !== p.id));
+        console.log("Berhasil dihapus dari favorit");
+      } else {
+        console.error("Gagal menghapus favorit:", deleteError.message);
+      }
+
+    } else {
+      // --- LOGIC INSERT (FAVORITE) ---
+      const { error: insertError } = await supabase
+        .from('favorit_produk')
+        .insert([
+          { 
+            id_user: userData.id, 
+            id_produk: p.id 
+          }
+        ]);
+
+      if (!insertError) {
+        // Update state agar ikon hati langsung jadi merah
+        setLocalLikes((prev) => [...prev, p.id]);
+        console.log("Berhasil ditambah ke favorit");
+      } else {
+        // Jika ternyata error karena RLS atau duplikat (padahal isLiked false)
+        console.error("Gagal menambah favorit:", insertError.message);
+        alert("Gagal menambah favorit. Periksa izin database (RLS).");
+      }
+    }
+
+  } catch (err) {
+    console.error("Terjadi kesalahan sistem:", err);
+  }
+};
 
   const nextBanner = () => setActiveBanner((i) => (i + 1) % banners.length);
   const filtered = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
@@ -196,14 +292,15 @@ export default function DashboardProduct() {
       </section>
 
       <section className="products-section">
-        {isLoading ? (
+        {isLoadingProducts ? (
           <p>Memuat produk...</p>
         ) : isError ? (
           <p>Terjadi kesalahan saat memuat data.</p>
         ) : (
           <div className="products-grid">
             {filtered.map((product) => (
-              <ProductCard key={product.id} product={product} onToggleLike={handleToggleLike} />
+              <ProductCard key={product.id} product={product} 
+              onToggleLike={() => handleToggleFavorite(product)} />
             ))}
           </div>
         )}

@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/client"; 
+import { createClient } from "@/utils/supabase/client"; // Gunakan ini
 import { usePathname, useRouter } from "next/navigation";
-import { signOut as nextAuthSignOut } from "next-auth/react";
 
 const navItems = [
   {
@@ -72,7 +70,6 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const { data: session } = useSession();
   
   // State untuk menyimpan info admin
   const [adminInfo, setAdminInfo] = useState({ nama: "Admin", email: "loading..." });
@@ -87,22 +84,12 @@ useEffect(() => {
             nama: pengguna.user_metadata?.nama || pengguna.user_metadata?.full_name || "Admin Panganesia",
             email: pengguna.email || "admin@panganesia.com"
           });
-          return; // Exit if found
-        }
-
-        if (session?.user) {
+        } else {
           setAdminInfo({
-            nama: session.user.name || "Admin Panganesia",
-            email: session.user.email || "admin@panganesia.com"
+            nama: "Admin",
+            email: "Session not found"
           });
-          return;
         }
-
-        // 3. Final Fallback: If both are null, stop the loading state
-        setAdminInfo({
-          nama: "Admin",
-          email: "Session not found"
-        });
 
       } catch (err) {
         console.error("Error fetching admin data:", err);
@@ -111,13 +98,16 @@ useEffect(() => {
     };
 
     getAdminData();
-  }, [supabase, session]); // 'session' must be in dependencies
+  }, [supabase]); 
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    await nextAuthSignOut({ redirect: false });
-    router.refresh();
-    router.push("/auth"); // Diarahkan ke auth page
+    const supabase = createClient();
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      window.location.href = '/auth';
+    } else {
+      console.error("Error signing out:", error.message);
+    }
   };
 
   return (
