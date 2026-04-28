@@ -2,30 +2,25 @@
 
 import { useState, useEffect } from "react";
 import "./page.css";
-import { createBrowserClient } from '@supabase/ssr'
-
-export const createClient = () =>
-  createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+import { createClient } from '@/utils/supabase/client';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Product {
-  id: number; // Ini akan memetakan id_produk dari DB
+  id: number;
   idProd: string;
   nama: string;
   harga: number;
   stok: number;
   deskripsi: string;
   gambar: string;
+  isPromo: boolean;
+  dibuatPada: string;
 }
 
 type ModalMode = "add" | "edit" | null;
-
 const PER_PAGE = 10;
 
-// ── Icons (Tetap Sama) ───────────────────────────────────────────────────────
+// ── Icons ────────────────────────────────────────────────────────────────────
 const SearchIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -52,23 +47,20 @@ const DeleteIcon = () => (
   </svg>
 );
 const CloseIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-const WarnIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-    <line x1="12" y1="9" x2="12" y2="13" />
-    <line x1="12" y1="17" x2="12.01" y2="17" />
   </svg>
 );
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const fmtRupiah = (n: number) =>
-  "Rp" + n.toLocaleString("id-ID").replace(/,/g, ".");
+const fmtRupiah = (n: number) => "Rp" + n.toLocaleString("id-ID").replace(/,/g, ".");
+const fmtDate = (iso: string) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+};
 
-// ── Component ────────────────────────────────────────────────────────────────
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function AdminProductsPage() {
   const supabase = createClient();
   const [products, setProducts] = useState<Product[]>([]);
@@ -77,73 +69,127 @@ export default function AdminProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [stockFilter, setStockFilter] = useState<"all" | "low" | "medium" | "high">("all");
 
-  // Modals
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editTarget, setEditTarget] = useState<Product | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
-  // Form states
-  const [addForm, setAddForm] = useState({ idProd: "", nama: "", harga: "", stok: "", deskripsi: "" });
-  const [editForm, setEditForm] = useState({ idProd: "", nama: "", harga: "", stok: "", deskripsi: "" });
+  const [form, setForm] = useState({
+    nama: "",
+    harga: "",
+    stok: "",
+    deskripsi: "",
+    isPromo: false,
+  });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ── Fetch Data From Supabase ──────────────────────────────────────────
+  // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchProducts = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('produk')
-      .select('*')
-      .order('id_produk', { ascending: false });
-
-    if (!error && data) {
-      const mapped = data.map((p: any) => ({
+    try {
+      const res = await fetch(`/api/products?t=${Date.now()}`, { cache: "no-store" });
+      if (!res.ok) throw new Error("Gagal ambil data dari API");
+      const data = await res.json();
+      const mapped: Product[] = data.map((p: any) => ({
         id: p.id_produk,
-        idProd: p.id_produk.toString(),
+        idProd: String(p.id_produk),
         nama: p.nama_produk,
-        harga: p.harga,
-        stok: p.stok,
+        harga: Number(p.harga),
+        stok: Number(p.stok),
         deskripsi: p.deskripsi || "",
         gambar: p.gambar_url || "/images/corn-1.jpg",
+        isPromo: p.is_promo ?? false,
+        dibuatPada: p.dibuat_pada || "",
       }));
       setProducts(mapped);
+    } catch (err) {
+      console.error("Gagal memuat produk:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  useEffect(() => { fetchProducts(); }, []);
 
-  // ── Image Upload Logic ───────────────────────────────────────────────
-const uploadImage = async (file: File): Promise<string> => {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${Date.now()}.${fileExt}`;
-  const filePath = `products/${fileName}`;
+  // ── Upload Gambar ─────────────────────────────────────────────────────────
+  const uploadImage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `products/${fileName}`;
+    const { error: uploadError } = await supabase.storage.from("panganesia").upload(filePath, file);
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage.from("panganesia").getPublicUrl(filePath);
+    return data.publicUrl;
+  };
 
-  const { error: uploadError } = await supabase.storage
-    .from('panganesia')
-    .upload(filePath, file);
+  // ── Close Modal ───────────────────────────────────────────────────────────
+  const closeModal = () => {
+    setModalMode(null);
+    setEditTarget(null);
+    setSelectedFile(null);
+  };
 
-  if (uploadError) throw uploadError;
+  // ── Submit (Add & Edit) ───────────────────────────────────────────────────
+  const handleSubmit = async () => {
+    if (!form.nama.trim()) return alert("Nama produk wajib diisi");
+    setIsSubmitting(true);
+    try {
+      let imageUrl = modalMode === "edit" ? editTarget?.gambar : "/images/corn-1.jpg";
+      if (selectedFile) imageUrl = await uploadImage(selectedFile);
 
-  const { data } = supabase.storage.from('panganesia').getPublicUrl(filePath);
-  
-  // Pastikan mengembalikan string, jangan biarkan ada celah null
-  return data.publicUrl;
-};
+      const method = modalMode === "add" ? "POST" : "PUT";
+      const payload = {
+        id: modalMode === "edit" ? editTarget?.id : undefined,
+        nama: form.nama,
+        harga: form.harga,
+        stok: form.stok,
+        deskripsi: form.deskripsi,
+        gambar: imageUrl,
+        is_promo: form.isPromo,
+      };
 
-  // ── Derived data ────────────────────────────────────────────────────
+      const res = await fetch("/api/products", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Gagal menyimpan ke database");
+      }
+
+      await fetchProducts();
+      closeModal();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      const res = await fetch(`/api/products?id=${deleteTarget.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Gagal menghapus");
+      await fetchProducts();
+      setDeleteTarget(null);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  // ── Filter & Pagination ───────────────────────────────────────────────────
   const filtered = products.filter((p) => {
     const matchSearch =
       p.nama.toLowerCase().includes(search.toLowerCase()) ||
-      p.idProd.toLowerCase().includes(search.toLowerCase());
-
+      p.idProd.includes(search);
     let matchStock = true;
     if (stockFilter === "low") matchStock = p.stok <= 50;
     else if (stockFilter === "medium") matchStock = p.stok > 50 && p.stok <= 200;
     else if (stockFilter === "high") matchStock = p.stok > 200;
-
     return matchSearch && matchStock;
   });
 
@@ -151,95 +197,7 @@ const uploadImage = async (file: File): Promise<string> => {
   const safePage = Math.min(currentPage, totalPages);
   const pageItems = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
-  // ── Handlers ────────────────────────────────────────────────────────
-  const openAdd = () => {
-    setAddForm({ idProd: "", nama: "", harga: "", stok: "", deskripsi: "" });
-    setSelectedFile(null);
-    setModalMode("add");
-  };
-
-  const openEdit = (p: Product) => {
-    setEditTarget(p);
-    setEditForm({
-      idProd: p.idProd,
-      nama: p.nama,
-      harga: String(p.harga),
-      stok: String(p.stok),
-      deskripsi: p.deskripsi,
-    });
-    setSelectedFile(null);
-    setModalMode("edit");
-  };
-
-  const handleAdd = async () => {
-    if (!addForm.nama.trim()) return;
-    setIsSubmitting(true);
-    try {
-      let imageUrl = "/images/corn-1.jpg";
-      if (selectedFile) {
-        const url = await uploadImage(selectedFile); 
-        imageUrl = url;
-      }
-
-      const { error } = await supabase.from('produk').insert([{
-        nama_produk: addForm.nama,
-        harga: Number(addForm.harga),
-        stok: Number(addForm.stok),
-        deskripsi: addForm.deskripsi,
-        gambar_url: imageUrl,
-        id_kategori: 1 // Ganti sesuai kebutuhan
-      }]);
-
-      if (error) throw error;
-      await fetchProducts();
-      setModalMode(null);
-    } catch (err: any) {
-      alert("Error: " + err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleEdit = async () => {
-    if (!editTarget) return;
-    setIsSubmitting(true);
-    try {
-      let imageUrl = editTarget.gambar;
-      if (selectedFile) {
-        imageUrl = await uploadImage(selectedFile);
-      }
-
-      const { error } = await supabase.from('produk').update({
-        nama_produk: editForm.nama,
-        harga: Number(editForm.harga),
-        stok: Number(editForm.stok),
-        deskripsi: editForm.deskripsi,
-        gambar_url: imageUrl
-      }).eq('id_produk', editTarget.id);
-
-      if (error) throw error;
-      await fetchProducts();
-      setModalMode(null);
-    } catch (err: any) {
-      alert("Error: " + err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      const { error } = await supabase.from('produk').delete().eq('id_produk', deleteTarget.id);
-      if (error) throw error;
-      await fetchProducts();
-      setDeleteTarget(null);
-    } catch (err: any) {
-      alert("Error: " + err.message);
-    }
-  };
-
-  const getPageNumbers = () => {
+  const getPageNumbers = (): (number | "...")[] => {
     const pages: (number | "...")[] = [];
     if (totalPages <= 5) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
@@ -258,9 +216,10 @@ const uploadImage = async (file: File): Promise<string> => {
   const startItem = (safePage - 1) * PER_PAGE + 1;
   const endItem = Math.min(safePage * PER_PAGE, filtered.length);
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* Topbar */}
+      {/* TOPBAR */}
       <div className="topbar">
         <div className="topbar-search-wrap">
           <span className="topbar-search-icon"><SearchIcon /></span>
@@ -272,86 +231,118 @@ const uploadImage = async (file: File): Promise<string> => {
             onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
           />
         </div>
-        <button className="topbar-bell" aria-label="Notifications">
-          <BellIcon />
-        </button>
+        <button className="topbar-bell" aria-label="Notifikasi"><BellIcon /></button>
       </div>
 
-      {/* Page body */}
+      {/* PAGE BODY */}
       <div className="products-page">
+
+        {/* Header */}
         <div className="products-header">
           <div className="products-header-left">
-            <h1>Products</h1>
-            <p>Kelola semua produk Panganesia</p>
+            <h1>Produk</h1>
+            <p>Kelola semua produk Panganesia (Prisma Engine)</p>
           </div>
           <div className="products-header-right">
-            <button className="btn-tambah" onClick={openAdd}>
-              + Tambah Produk
-            </button>
-            <select 
-              className="select-filter" 
-              value={stockFilter} 
+            <button
+              className="btn-tambah"
+              onClick={() => {
+                setForm({ nama: "", harga: "", stok: "", deskripsi: "", isPromo: false });
+                setModalMode("add");
+              }}
+            >+ Tambah Produk</button>
+            <select
+              className="select-filter"
+              value={stockFilter}
               onChange={(e) => { setStockFilter(e.target.value as any); setCurrentPage(1); }}
             >
-              <option value="all">All Stock</option>
-              <option value="low">Low (≤ 50)</option>
-              <option value="medium">Medium (51 - 200)</option>
-              <option value="high">High (&gt; 200)</option>
+              <option value="all">Semua</option>
+              <option value="low">Rendah (≤50)</option>
+              <option value="medium">Sedang (51-200)</option>
+              <option value="high">Tinggi (&gt;200)</option>
             </select>
           </div>
         </div>
 
-        {/* Table */}
+        {/* Tabel */}
         <div className="table-card">
-          {loading ? <div style={{padding: "20px", textAlign: "center"}}>Loading data...</div> : (
           <table className="products-table">
             <thead>
               <tr>
                 <th>No.</th>
                 <th>Nama Produk</th>
-                <th>ID Prod</th>
                 <th>Harga</th>
                 <th>Stok</th>
                 <th>Deskripsi</th>
                 <th>Gambar</th>
+                <th>Promo</th>
+                <th>Dibuat Pada</th>
                 <th>Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {pageItems.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "#aaa" }}>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "40px" }}>
+                    Mengambil data...
+                  </td>
+                </tr>
+              ) : pageItems.length === 0 ? (
+                <tr>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "40px", color: "#aaa" }}>
                     Tidak ada produk ditemukan.
                   </td>
                 </tr>
-              ) : (
-                pageItems.map((p, idx) => (
-                  <tr key={p.id}>
-                    <td>{(safePage - 1) * PER_PAGE + idx + 1}.</td>
-                    <td>{p.nama}</td>
-                    <td>{p.idProd}</td>
-                    <td>{fmtRupiah(p.harga)}</td>
-                    <td>{p.stok.toLocaleString("id-ID")}</td>
-                    <td className="td-desc">{p.deskripsi}</td>
-                    <td>
-                      <img src={p.gambar} alt="thumb" style={{width: '30px', height: '30px', borderRadius: '4px', objectFit: 'cover'}} />
-                    </td>
-                    <td>
-                      <div className="action-cell">
-                        <button className="btn-icon edit" onClick={() => openEdit(p)} aria-label="Edit">
-                          <EditIcon />
-                        </button>
-                        <button className="btn-icon delete" onClick={() => setDeleteTarget(p)} aria-label="Delete">
-                          <DeleteIcon />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ) : pageItems.map((p, idx) => (
+                <tr key={p.id}>
+                  <td>{(safePage - 1) * PER_PAGE + idx + 1}.</td>
+                  <td className="td-name">{p.nama}</td>
+                  <td>{fmtRupiah(p.harga)}</td>
+                  <td>
+                    <span className={`stok-badge ${p.stok <= 50 ? "stok-low" : p.stok <= 200 ? "stok-medium" : "stok-high"}`}>
+                      {p.stok}
+                    </span>
+                  </td>
+                  <td className="td-desc">
+                    {p.deskripsi || <span className="td-empty">—</span>}
+                  </td>
+                  <td className="img-container">
+                    <img src={p.gambar} className="img-thumb" alt={p.nama} />
+                  </td>
+                  <td>
+                    <span className={`promo-badge ${p.isPromo ? "promo-yes" : "promo-no"}`}>
+                      {p.isPromo ? "Ya" : "Tidak"}
+                    </span>
+                  </td>
+                  <td className="td-date">{fmtDate(p.dibuatPada)}</td>
+                  <td>
+                    <div className="action-cell">
+                      <button
+                        className="btn-icon edit"
+                        title="Edit"
+                        onClick={() => {
+                          setEditTarget(p);
+                          setForm({
+                            nama: p.nama,
+                            harga: String(p.harga),
+                            stok: String(p.stok),
+                            deskripsi: p.deskripsi,
+                            isPromo: p.isPromo,
+                          });
+                          setModalMode("edit");
+                        }}
+                      ><EditIcon /></button>
+                      <button
+                        className="btn-icon delete"
+                        title="Hapus"
+                        onClick={() => setDeleteTarget(p)}
+                      ><DeleteIcon /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
-          )}
         </div>
 
         {/* Pagination */}
@@ -360,122 +351,159 @@ const uploadImage = async (file: File): Promise<string> => {
             Menampilkan {filtered.length === 0 ? 0 : startItem}–{endItem} dari {filtered.length} produk
           </span>
           <div className="pagination-controls">
-            <button
-              className="pg-btn"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={safePage === 1}
-            >Prev</button>
+            <button className="pg-btn" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+              Prev
+            </button>
             {getPageNumbers().map((pg, i) =>
               pg === "..." ? (
-                <span key={`ellipsis-${i}`} className="pg-ellipsis">...</span>
+                <span key={`e-${i}`} className="pg-ellipsis">...</span>
               ) : (
                 <button
-                  key={pg}
+                  key={`p-${pg}`}
                   className={`pg-btn ${safePage === pg ? "active" : ""}`}
                   onClick={() => setCurrentPage(pg as number)}
                 >{pg}</button>
               )
             )}
-            <button
-              className="pg-btn"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={safePage === totalPages}
-            >Next</button>
+            <button className="pg-btn" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}>
+              Next
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ── Modal: Add Product ── */}
-      {modalMode === "add" && (
-        <div className="modal-backdrop" onClick={() => setModalMode(null)}>
+      {/* MODAL ADD / EDIT */}
+      {modalMode && (
+        <div className="modal-backdrop" onClick={closeModal}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setModalMode(null)}><CloseIcon /></button>
-            <div className="modal-content">  
-              <div className="modal-title">Add New Product</div>
-              <div className="modal-sub">Menambah Produk Baru ke Database</div>
+            <button className="modal-close" onClick={closeModal} title="Tutup">
+              <CloseIcon />
+            </button>
+            <div className="modal-content">
+              <div className="modal-title">
+                {modalMode === "add" ? "Tambah Produk" : "Edit Produk"}
+              </div>
+              <div className="modal-sub">
+                {modalMode === "add" ? "Isi data produk baru di bawah ini" : `Mengedit: ${editTarget?.nama}`}
+              </div>
 
               <div className="form-group">
-                <label className="form-label">Nama Produk</label>
-                <input className="form-input" value={addForm.nama} onChange={(e) => setAddForm({ ...addForm, nama: e.target.value })} />
+                <label className="form-label">
+                  Nama Produk <span className="form-required">*</span>
+                </label>
+                <input
+                  className="form-input"
+                  placeholder="Contoh: Rumput Laut Kering"
+                  value={form.nama}
+                  onChange={(e) => setForm({ ...form, nama: e.target.value })}
+                />
               </div>
-              <div className="form-group">
-                <label className="form-label">Harga</label>
-                <input className="form-input" type="number" value={addForm.harga} onChange={(e) => setAddForm({ ...addForm, harga: e.target.value })} />
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">
+                    Harga (Rp) <span className="form-required">*</span>
+                  </label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    placeholder="25000"
+                    value={form.harga}
+                    onChange={(e) => setForm({ ...form, harga: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">
+                    Stok <span className="form-required">*</span>
+                  </label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    placeholder="100"
+                    value={form.stok}
+                    onChange={(e) => setForm({ ...form, stok: e.target.value })}
+                  />
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Stok</label>
-                <input className="form-input" type="number" value={addForm.stok} onChange={(e) => setAddForm({ ...addForm, stok: e.target.value })} />
-              </div>
+
               <div className="form-group">
                 <label className="form-label">Deskripsi</label>
-                <textarea className="form-textarea" value={addForm.deskripsi} onChange={(e) => setAddForm({ ...addForm, deskripsi: e.target.value })} />
+                <textarea
+                  className="form-textarea"
+                  placeholder="Tuliskan deskripsi produk..."
+                  value={form.deskripsi}
+                  onChange={(e) => setForm({ ...form, deskripsi: e.target.value })}
+                />
               </div>
+
               <div className="form-group">
                 <label className="form-label">Gambar Produk</label>
-                <input type="file" accept="image/*" className="form-upload" onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)} />
+                {modalMode === "edit" && editTarget?.gambar && (
+                  <div className="form-img-preview">
+                    <img src={editTarget.gambar} alt="preview" className="form-img-thumb" />
+                    <span className="form-img-hint">Gambar saat ini — upload baru untuk mengganti</span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="form-upload"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                />
               </div>
-              <button className="btn-modal-submit" onClick={handleAdd} disabled={isSubmitting}>
-                {isSubmitting ? "Processing..." : "Tambah"}
-              </button>
-            </div>
-          </div>  
-        </div>
-      )}
 
-      {/* ── Modal: Edit Product ── */}
-      {modalMode === "edit" && editTarget && (
-        <div className="modal-backdrop" onClick={() => setModalMode(null)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setModalMode(null)}><CloseIcon /></button>
-            <div className="modal-content">
-              <div className="modal-title">Edit Detail Product</div>
-              <div className="modal-sub">Edit Data dari Sebuah Produk</div>
+              <div className="form-group form-group-inline">
+                <span className="form-label">Produk Promo?</span>
+                <div className="toggle-wrap">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={form.isPromo}
+                      onChange={(e) => setForm({ ...form, isPromo: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                  <span className="toggle-label">{form.isPromo ? "Ya" : "Tidak"}</span>
+                </div>
+              </div>
 
-              <div className="form-group">
-                <label className="form-label">Nama Produk</label>
-                <input className="form-input" value={editForm.nama} onChange={(e) => setEditForm({ ...editForm, nama: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Harga</label>
-                <input className="form-input" value={editForm.harga} onChange={(e) => setEditForm({ ...editForm, harga: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Stok</label>
-                <input className="form-input" value={editForm.stok} onChange={(e) => setEditForm({ ...editForm, stok: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Deskripsi</label>
-                <textarea className="form-textarea" value={editForm.deskripsi} onChange={(e) => setEditForm({ ...editForm, deskripsi: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Ganti Gambar (Opsional)</label>
-                <input type="file" accept="image/*" className="form-upload" onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)} />
-              </div>
-              <button className="btn-modal-submit" onClick={handleEdit} disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Edit"}
+              <button
+                className="btn-modal-submit"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Menyimpan..." : modalMode === "add" ? "Tambah Produk" : "Simpan Perubahan"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Modal: Delete Warning ── */}
+      {/* MODAL DELETE */}
       {deleteTarget && (
         <div className="modal-backdrop" onClick={() => setDeleteTarget(null)}>
           <div className="warning-box" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setDeleteTarget(null)} title="Tutup">
+              <CloseIcon />
+            </button>
             <div className="warning-header">
               <div className="warning-title-row">
-                <div className="warning-icon"><WarnIcon /></div>
-                <span className="warning-title">Warning!</span>
+                <div className="warning-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </div>
+                <span className="warning-title">Hapus Produk</span>
               </div>
-              <button className="modal-close" style={{ position: "static" }} onClick={() => setDeleteTarget(null)}>
-                <CloseIcon />
-              </button>
             </div>
-            <p className="warning-text">Do you want to delete this product?</p>
+            <p className="warning-text">
+              Yakin ingin menghapus <b>{deleteTarget.nama}</b>? Tindakan ini tidak bisa dibatalkan.
+            </p>
             <div className="warning-actions">
-              <button className="btn-warn-yes" onClick={handleDelete}>Yes</button>
-              <button className="btn-warn-no" onClick={() => setDeleteTarget(null)}>No</button>
+              <button className="btn-warn-yes" onClick={handleDelete}>Hapus</button>
+              <button className="btn-warn-no" onClick={() => setDeleteTarget(null)}>Batal</button>
             </div>
           </div>
         </div>

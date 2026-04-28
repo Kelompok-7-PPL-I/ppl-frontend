@@ -1,0 +1,199 @@
+body {
+  background-color: #ffffff !important;
+}
+
+.recipe-detail-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: #333;
+}
+
+/* --- HEADER --- */
+.recipe-detail-page .detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.recipe-detail-page .back-link {
+  color: #D32F2F; /* Warna merah sesuai mockup */
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.recipe-detail-page .logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recipe-detail-page .logo-img {
+  border-radius: 50%; /* Antisipasi jika logo butuh rounding */
+}
+
+/* --- HERO IMAGE --- */
+.recipe-detail-page .hero-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 350px;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.recipe-detail-page .hero-image {
+  width: 100%;
+  height: 100%;
+}
+
+/* --- META INFO --- */
+.recipe-detail-page .meta-info {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.recipe-detail-page .meta-pill {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.recipe-detail-page .time-pill {
+  background-color: #E0E0E0;
+  color: #555;
+}
+
+.recipe-detail-page .clock-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.recipe-detail-page .tag-pill {
+  background-color: #FFCE00; 
+  color: #000;
+}
+
+/* --- TITLE & DESCRIPTION --- */
+.recipe-detail-page .title-section {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.recipe-detail-page .recipe-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 1rem;
+  color: #000;
+}
+
+.recipe-detail-page .recipe-description {
+  font-size: 1rem;
+  color: #777;
+  line-height: 1.6;
+  text-align: justify;
+}
+
+/* --- CONTENT SECTIONS --- */
+.recipe-detail-page .content-section {
+  margin-bottom: 3rem;
+}
+
+.recipe-detail-page .section-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 1.5rem;
+}
+
+.recipe-detail-page .line-divider {
+  width: 80px;
+  height: 2px;
+  background-color: #555;
+}
+
+.recipe-detail-page .section-header h2 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0A3D22; /* Warna hijau gelap seperti pada green card */
+  letter-spacing: 0.5px;
+}
+
+.recipe-detail-page .nutrition-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.recipe-detail-page .nutrition-card {
+  background-color: #f3f4f6;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border-left: 4px solid #ffcc00; /* Aksen warna */
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* --- INGREDIENTS LIST --- */
+.recipe-detail-page .ingredients-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recipe-detail-page .ingredients-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1rem;
+  color: #666;
+}
+
+.recipe-detail-page .checkbox-square {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #28a745; /* Border hijau untuk checkbox */
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* --- STEPS TEXT --- */
+.recipe-detail-page .steps-text {
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.7;
+}
+
+/* --- NOT FOUND STATE --- */
+.recipe-detail-page .not-found {
+  text-align: center;
+  padding: 5rem 2rem;
+}
+
+.recipe-detail-page .not-found a {
+  color: #D32F2F;
+  text-decoration: underline;
+  margin-top: 1rem;
+  display: inline-block;
+}
+
+.recipe-detail-page .steps-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Jarak antar nomor langkah */
+}

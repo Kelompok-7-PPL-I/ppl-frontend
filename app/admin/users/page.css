@@ -1,0 +1,726 @@
+/* ── Admin Products Page ────────────────────────────────────────────── */
+
+/* ── Topbar ─────────────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 36px;
+  background: #fff;
+  border-bottom: 1px solid #ebebeb;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.topbar-search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 560px;
+}
+
+.topbar-search-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.topbar-search {
+  width: 100%;
+  padding: 11px 44px 11px 20px;
+  border: none;
+  border-radius: 50px;
+  background: #f2f3f5;
+  font-size: 14px;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  color: #333;
+  outline: none;
+  transition: box-shadow 0.2s;
+}
+
+.topbar-search:focus {
+  box-shadow: 0 0 0 2.5px rgba(46, 125, 50, 0.25);
+}
+
+.topbar-bell {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #555;
+  transition: background 0.18s;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.topbar-bell:hover {
+  background: #f2f3f5;
+}
+
+/* ── Page Body ──────────────────────────────────────────────────────── */
+.products-page {
+  padding: 36px 36px 60px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-height: calc(100vh - 81px);
+  background: #f5f6fa;
+}
+
+/* ── Page Header ────────────────────────────────────────────────────── */
+.products-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.products-header-left h1 {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: -0.4px;
+  margin-bottom: 4px;
+}
+
+.products-header-left p {
+  font-size: 14px;
+  color: #888;
+  font-weight: 500;
+}
+
+.products-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.btn-tambah {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  background: #1a3a2a;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.btn-tambah:hover {
+  background: #0f2419;
+  transform: translateY(-1px);
+}
+
+/* .btn-filter {
+  padding: 10px 32px;
+  background: transparent;
+  color: #888;
+  border: 1.5px solid #ddd;
+  border-radius: 10px;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s;
+}
+
+.btn-filter:hover {
+  border-color: #1a3a2a;
+  color: #1a3a2a;
+} */
+
+/* Styling untuk Dropdown Filter */
+.select-filter {
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background-color: #fff;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+  appearance: auto; /* Memunculkan panah dropdown bawaan browser */
+}
+
+.select-filter:hover {
+  border-color: #d1d5db;
+}
+
+.select-filter:focus {
+  box-shadow: 0 0 0 2.5px rgba(46, 125, 50, 0.25); /* Efek hijau khas tema kamu */
+}
+
+/* ── Table Card ─────────────────────────────────────────────────────── */
+.table-card {
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.products-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Table Header */
+.products-table thead tr {
+  background: #f5c800;
+}
+
+.products-table thead th {
+  padding: 15px 18px;
+  text-align: left;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1a1a1a;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  white-space: nowrap;
+}
+
+.products-table thead th:first-child {
+  padding-left: 28px;
+  width: 56px;
+}
+
+.products-table thead th:last-child {
+  padding-right: 28px;
+  text-align: center;
+}
+
+/* Table Body */
+.products-table tbody tr {
+  border-bottom: 1px solid #f4f4f4;
+  transition: background 0.15s;
+}
+
+.products-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.products-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.products-table tbody td {
+  padding: 16px 18px;
+  font-size: 13.5px;
+  color: #333;
+  font-weight: 500;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  vertical-align: middle;
+}
+
+.products-table tbody td:first-child {
+  padding-left: 28px;
+  color: #888;
+  font-weight: 600;
+}
+
+.products-table tbody td:last-child {
+  padding-right: 28px;
+  text-align: center;
+}
+
+.td-desc {
+  max-width: 220px;
+  font-size: 12.5px;
+  color: #777;
+  line-height: 1.55;
+}
+
+/* Image badge */
+.img-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  background: #f0f0f0;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: none;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+}
+
+.img-badge:hover {
+  background: #e4e4e4;
+}
+
+/* Action buttons */
+.action-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  color: #555;
+}
+
+.btn-icon:hover {
+  transform: scale(1.1);
+}
+
+.btn-icon.edit:hover {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.btn-icon.delete:hover {
+  background: #fdecea;
+  color: #c62828;
+}
+
+.pagination-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 4px 0 4px;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #888;
+  font-weight: 500;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pg-btn {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 50px; /* Membuat tombol bulat */
+  border: 1px solid #ddd;
+  background: #fff;
+  font-family: var(--font-jakarta), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pg-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #1a3a2a;
+  color: #1a3a2a;
+}
+
+.pg-btn.active {
+  background: #1a3a2a; /* Warna Hijau Gelap sesuai gambar */
+  border-color: #1a3a2a;
+  color: #fff;
+}
+
+.pg-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pg-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 50px;
+  border: 1.5px solid #ddd;
+  background: #fff;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pg-btn:hover:not(:disabled) {
+  border-color: #1a3a2a;
+  color: #1a3a2a;
+}
+
+.pg-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pg-btn.active {
+  background: #1a3a2a;
+  border-color: #1a3a2a;
+  color: #fff;
+}
+
+.pg-ellipsis {
+  font-size: 14px;
+  color: #aaa;
+  font-weight: 600;
+  padding: 0 2px;
+}
+
+/* ── Modal Backdrop ──────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.18s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Modal Box ───────────────────────────────────────────────────────── */
+.modal-box {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 460px;
+  /* padding: 32px 32px 28px 32px; */
+  position: relative;
+  animation: slideUp 0.2s ease;
+  overflow: hidden;
+  /* max-height: 90vh; */
+  /* overflow-y: auto; */
+}
+
+.modal-content {
+  padding: 32px 32px 28px 32px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f2f3f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #555;
+  transition: background 0.15s;
+}
+
+.modal-close:hover {
+  background: #e4e4e4;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: -0.3px;
+  margin-bottom: 4px;
+}
+
+.modal-sub {
+  font-size: 13px;
+  color: #999;
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+
+/* Form fields */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #333;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #f0f5f0;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+  transition: box-shadow 0.2s;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  box-shadow: 0 0 0 2.5px rgba(46, 125, 50, 0.25);
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: #bbb;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.form-upload {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #f0f5f0;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+  outline: none;
+}
+
+.btn-modal-submit {
+  width: 100%;
+  padding: 15px;
+  background: #f5c800;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.18s, transform 0.15s;
+}
+
+.btn-modal-submit:hover {
+  background: #e6b800;
+  transform: translateY(-1px);
+}
+
+/* ── Warning Modal ───────────────────────────────────────────────────── */
+.warning-box {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 340px;
+  padding: 28px 28px 24px 28px;
+  position: relative;
+  animation: slideUp 0.2s ease;
+}
+
+.warning-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.warning-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.warning-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #f5c800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.warning-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #1a1a1a;
+}
+
+.warning-text {
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.warning-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-warn-yes {
+  flex: 1;
+  padding: 11px;
+  background: #f5c800;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.btn-warn-yes:hover {
+  background: #e6b800;
+}
+
+.btn-warn-no {
+  flex: 1;
+  padding: 11px;
+  background: transparent;
+  border: 1.5px solid #ddd;
+  border-radius: 10px;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s;
+}
+
+.btn-warn-no:hover {
+  border-color: #888;
+  color: #333;
+}
+
+/* Styling untuk Role Badge */
+.role-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.role-admin {
+  background: #fdf2f2;
+  color: #c81e1e;
+  border: 1px solid #fbd5d5;
+}
+
+.role-user {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+/* Membatasi lebar alamat di tabel agar tidak kepanjangan */
+.td-desc {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Menambahkan horizontal scroll jika layar kekecilan */
+.table-card {
+  overflow-x: auto;
+}
+
+.products-table {
+  min-width: 1000px; /* Memastikan tabel punya ruang cukup untuk semua kolom */
+}
+
+/* Styling untuk Dropdown Role */
+.role-select-dropdown {
+  padding: 6px 12px;
+  border-radius: 8px; /* Lebih kotak atau bulat sesuai selera */
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  outline: none;
+  appearance: none; /* Menghilangkan panah default browser agar lebih clean */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 32px;
+  transition: all 0.2s ease;
+}
+
+/* Warna saat Role adalah Admin */
+.role-select-dropdown.is-admin {
+  background-color: #fff1f2;
+  color: #e11d48;
+  border-color: #fda4af;
+}
+
+/* Warna saat Role adalah Customer */
+.role-select-dropdown.is-user {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.role-select-dropdown:hover {
+  filter: contrast(1.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.role-select-dropdown:focus {
+  ring: 2px solid #3b82f6;
+}
