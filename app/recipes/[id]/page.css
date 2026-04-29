@@ -197,3 +197,130 @@ body {
   flex-direction: column;
   gap: 12px; /* Jarak antar nomor langkah */
 }
+
+/* --- RECIPE PRODUCTS (AUTO BUY) --- */
+.recipe-detail-page .recipe-products-section {
+  background: rgba(243, 244, 246, 0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  padding: 2rem;
+  margin-top: 2rem;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+}
+
+.recipe-detail-page .recipe-products-subtitle {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.recipe-detail-page .recipe-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.recipe-detail-page .recipe-product-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  border: 1px solid #f0f0f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.recipe-detail-page .recipe-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.recipe-detail-page .recipe-product-image-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #f9f9f9;
+}
+
+.recipe-detail-page .promo-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background-color: #e53935;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.recipe-detail-page .out-of-stock-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background-color: rgba(0,0,0,0.7);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.recipe-detail-page .recipe-product-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.recipe-detail-page .recipe-product-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 0.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.recipe-detail-page .recipe-product-price {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0A3D22;
+  margin-bottom: 1rem;
+}
+
+.recipe-detail-page .recipe-add-cart-btn {
+  width: 100%;
+  background-color: #0A3D22;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.75rem 0;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.recipe-detail-page .recipe-add-cart-btn:hover:not(:disabled) {
+  background-color: #072a18;
+  transform: scale(1.02);
+}
+
+.recipe-detail-page .recipe-add-cart-btn.added {
+  background-color: #28a745;
+}
+
+.recipe-detail-page .recipe-add-cart-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}

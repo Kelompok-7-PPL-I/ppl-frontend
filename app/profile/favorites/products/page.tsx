@@ -7,7 +7,7 @@ export default function FavoriteProductsPage() {
         <main className="flex-1 p-10 w-full">
             <header className="flex justify-between items-center mb-10">
                 <h1 className="text-2xl font-extrabold text-gray-800">Favorite Products</h1>
-                <Link href="/dashboard" className="text-[#064E3B] font-bold text-sm hover:underline">
+                <Link href="/DashboardProduct" className="text-[#064E3B] font-bold text-sm hover:underline">
                     ← Back to Shop
                 </Link>
             </header>

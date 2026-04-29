@@ -43,6 +43,8 @@ model Produk {
   gambar_url  String?         @db.VarChar
   is_promo    Boolean         @default(false)
   dibuat_pada DateTime        @default(now()) @db.Timestamptz
+  satuan_produk Int           @default(1) 
+  unit_nama     String        @default("gr") @db.VarChar
 
   // Relasi
   item_pesanan ItemPesanan[]
@@ -78,12 +80,13 @@ model Resep {
 }
 
 model ResepBahanProduk {
-  id        Int    @id @default(autoincrement())
-  id_resep  Int
-  id_produk Int
+  id            Int    @id @default(autoincrement())
+  id_resep      Int
+  id_produk     Int
+  takaran_resep Int    
 
-  resep     Resep  @relation(fields: [id_resep], references: [id_resep])
-  produk    Produk @relation(fields: [id_produk], references: [id_produk])
+  resep  Resep  @relation(fields: [id_resep], references: [id_resep])
+  produk Produk @relation(fields: [id_produk], references: [id_produk])
 
   @@map("resep_bahan_produk")
   @@schema("public")
