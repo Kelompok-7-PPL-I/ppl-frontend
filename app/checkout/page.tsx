@@ -14,71 +14,101 @@ import {
 } from '@mdi/js';
 import './page.css';
 
+// ─── Types ──────────────────────────────────────────────────────
+interface Address {
+  id_alamat: string;
+  label_alamat: string;
+  nama_penerima: string;
+  nomor_telepon: string;
+  alamat_lengkap: string;
+  kota_kabupaten: string;
+  kode_pos: string;
+  is_utama: boolean;
+}
+
+interface CartItem {
+  id: string | number;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+  note?: string; // FIX #3: per-item note
+}
+
+// ─── Component ──────────────────────────────────────────────────
 export default function CheckoutPage() {
   const router = useRouter();
+
   const [modal, setModal] = useState({ isOpen: false, type: "" });
-  const [productNote, setProductNote] = useState("");
+
+  // FIX #3: per-item notes stored in a map { itemIndex: noteText }
+  const [itemNotes, setItemNotes] = useState<Record<number, string>>({});
   const [noteInput, setNoteInput] = useState("");
+  const [activeNoteIdx, setActiveNoteIdx] = useState<number | null>(null);
+
   const [isLoading, setIsLoading] = useState(false);
 
-  const [selectedAddress, setSelectedAddress] = useState(0);
+  // FIX #1: store full address objects from alamat_pengguna table
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddressIdx, setSelectedAddressIdx] = useState(0);
+
   const [selectedShipping, setSelectedShipping] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState(0);
 
-  // LOAD MIDTRANS SCRIPT
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [subtotal, setSubtotal] = useState(0);
+  const [userEmail, setUserEmail] = useState("user@example.com");
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const shippingOptions = [
+    { id: 0, name: "JNE - Reguler", price: 15000, desc: "Arrives 2-3 Days" },
+    { id: 1, name: "J&T Express",   price: 12000, desc: "Arrives 2-3 Days" },
+  ];
+
+  const paymentOptions = [
+    { id: 0, name: "QRIS",          desc: "Scan menggunakan Dana, GoPay", provider: "All Providers" },
+    { id: 1, name: "Transfer Bank", desc: "BCA, Mandiri, BNI",           provider: "BCA" },
+  ];
+
+  // ── Load Midtrans Snap ───────────────────────────────────────
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
     script.setAttribute("data-client-key", (process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "").trim());
     script.async = true;
     document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
+    return () => { document.body.removeChild(script); };
   }, []);
 
-  const [addresses, setAddresses] = useState([
-    { name: "Memuat nama...", phone: "Memuat nomor...", detail: "Memuat alamat...", note: "" }
-  ]);
-
-  const shippingOptions = [
-    { id: 0, name: "JNE - Reguler", price: 15000, desc: "Arrives 2-3 Days" },
-    { id: 1, name: "J&T Express", price: 12000, desc: "Arrives 2-3 Days" }
-  ];
-
-  const paymentOptions = [
-    { id: 0, name: "QRIS", desc: "Scan menggunakan Dana, GoPay", provider: "All Providers" },
-    { id: 1, name: "Transfer Bank", desc: "BCA, Mandiri, BNI", provider: "BCA" }
-  ];
-
-  const [cartItems, setCartItems] = useState<any[]>([]);
-  const [subtotal, setSubtotal] = useState(0);
-  const [userEmail, setUserEmail] = useState("user@example.com");
-
+  // ── Fetch Profile + Addresses + Cart ────────────────────────
+  // FIX #1: fetch addresses from the dedicated address table via a new API endpoint
   useEffect(() => {
     const fetchData = async () => {
-      // 1. Fetch User Profile
+      // 1. Profile (to get email, userId)
       const profileRes = await fetch('/api/profile');
       if (profileRes.ok) {
         const profile = await profileRes.json();
-        setUserEmail(profile.email);
-        setAddresses([
-          {
-            name: profile.nama || "User",
-            phone: profile.nomor_telp || "Nomor belum diatur",
-            detail: profile.alamat || "Alamat belum diatur (Update profil Anda terlebih dahulu)",
-            note: ""
-          }
-        ]);
+        setUserEmail(profile.email || "user@example.com");
+        setUserId(profile.id || null);
       }
 
-      // 2. Fetch Keranjang
+      // 2. FIX #1 — Addresses from alamat_pengguna table
+      //    Create /api/addresses endpoint (see addresses route file below)
+      const addrRes = await fetch('/api/addresses');
+      if (addrRes.ok) {
+        const addrData: Address[] = await addrRes.json();
+        setAddresses(addrData);
+        // Default: select the "utama" address
+        const utamaIdx = addrData.findIndex(a => a.is_utama);
+        setSelectedAddressIdx(utamaIdx >= 0 ? utamaIdx : 0);
+      }
+
+      // 3. Cart
       const cartRes = await fetch('/api/cart');
-      const items = await cartRes.json();
       if (cartRes.ok) {
+        const items: CartItem[] = await cartRes.json();
         setCartItems(items);
-        const sub = items.reduce((acc: number, curr: any) => acc + (curr.price * curr.quantity), 0);
+        const sub = items.reduce((acc, curr) => acc + curr.price * curr.quantity, 0);
         setSubtotal(sub);
       }
     };
@@ -86,33 +116,83 @@ export default function CheckoutPage() {
   }, []);
 
   const totalAmount = subtotal + shippingOptions[selectedShipping].price;
+  const selectedAddress = addresses[selectedAddressIdx] ?? null;
 
-  const openModal = (type: string) => {
-    if (type === "Notes") setNoteInput(productNote);
+  // ── Modal helpers ────────────────────────────────────────────
+  const openModal  = (type: string, noteIdx?: number) => {
+    if (type === "Notes" && noteIdx !== undefined) {
+      setActiveNoteIdx(noteIdx);
+      setNoteInput(itemNotes[noteIdx] ?? "");
+    }
     setModal({ isOpen: true, type });
   };
-  const closeModal = () => setModal({ isOpen: false, type: "" });
+  const closeModal = () => {
+    setModal({ isOpen: false, type: "" });
+    setActiveNoteIdx(null);
+  };
 
+  // FIX #3: save note for the specific item index
   const saveNote = () => {
-    setProductNote(noteInput.trim());
+    if (activeNoteIdx !== null) {
+      setItemNotes(prev => ({ ...prev, [activeNoteIdx]: noteInput.trim() }));
+    }
     closeModal();
   };
 
-  // FUNGSI CHECKOUT MIDTRANS
+  const deleteNote = () => {
+    if (activeNoteIdx !== null) {
+      setItemNotes(prev => { const n = { ...prev }; delete n[activeNoteIdx]; return n; });
+      setNoteInput("");
+    }
+    closeModal();
+  };
+
+  // ── Checkout + FIX #4: save to pesanan & item_pesanan ───────
   const handleCheckout = async () => {
+    if (!selectedAddress) {
+      alert("Pilih alamat pengiriman terlebih dahulu.");
+      return;
+    }
     setIsLoading(true);
     try {
+      const orderId = `ORDER-${Date.now()}`;
+
+      // Build items payload with per-item notes (FIX #3 & #4)
+      const itemsPayload = cartItems.map((item, idx) => ({
+        id:       item.id,
+        name:     item.name,
+        price:    item.price,
+        quantity: item.quantity,
+        image:    item.image,
+        note:     itemNotes[idx] ?? "",
+      }));
+
+      // FIX #4: single POST that (a) creates Midtrans token AND (b) saves order to DB
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderId: `ORDER-${Date.now()}`,
-          totalAmount: totalAmount,
+          orderId,
+          totalAmount,
+          subtotal,
+          shippingCost: shippingOptions[selectedShipping].price,
+          shippingMethod: shippingOptions[selectedShipping].name,
+          paymentMethod:  paymentOptions[selectedPayment].name,
           userDetails: {
-            nama: addresses[selectedAddress].name,
-            email: userEmail,
-            nomor_telp: addresses[selectedAddress].phone
-          }
+            id:        userId,
+            nama:      selectedAddress.nama_penerima,
+            email:     userEmail,
+            nomor_telp: selectedAddress.nomor_telepon,
+          },
+          shippingAddress: {
+            label:         selectedAddress.label_alamat,
+            nama_penerima: selectedAddress.nama_penerima,
+            nomor_telepon: selectedAddress.nomor_telepon,
+            alamat_lengkap: selectedAddress.alamat_lengkap,
+            kota_kabupaten: selectedAddress.kota_kabupaten,
+            kode_pos:       selectedAddress.kode_pos,
+          },
+          items: itemsPayload,
         }),
       });
 
@@ -121,9 +201,28 @@ export default function CheckoutPage() {
       if (data.token) {
         if ((window as any).snap) {
           (window as any).snap.pay(data.token, {
-            onSuccess: (result: any) => { alert("Bayar Berhasil!"); router.push('/DashboardProduct'); },
-            onPending: (result: any) => { alert("Selesaikan pembayaran ya!"); },
-            onError: (result: any) => { alert("Yah, gagal bayar."); }
+            onSuccess: (result: any) => {
+            console.log("Midtrans onSuccess fired!", result);
+            
+            fetch(`/api/orders/${data.pesananId}/status`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "dibayar" }),
+            })
+            .then(r => r.json())
+            .then(res => {
+                console.log("Status update response:", res);
+                alert("Bayar Berhasil!");
+                router.push('/DashboardProduct'); // ← pindah SETELAH update selesai
+            })
+            .catch(err => {
+                console.error("Status update error:", err);
+                alert("Bayar Berhasil!");
+                router.push('/DashboardProduct');
+            });
+        },
+            onPending: () => { alert("Selesaikan pembayaran ya!"); },
+            onError:   () => { alert("Yah, gagal bayar."); },
           });
         } else {
           alert("Sistem Midtrans belum siap. Coba refresh halaman.");
@@ -139,10 +238,11 @@ export default function CheckoutPage() {
     }
   };
 
+  // ── Render ───────────────────────────────────────────────────
   return (
     <div className="checkout-view">
 
-      {/* ── Sticky Header ── */}
+      {/* Sticky Header */}
       <div className="checkout-header">
         <button className="back-btn" onClick={() => window.history.back()}>
           <Icon path={mdiChevronLeft} size={0.9} />
@@ -153,7 +253,7 @@ export default function CheckoutPage() {
       <div className="checkout-container">
         <div className="main-layout">
 
-          {/* ── Left: Detail Columns ── */}
+          {/* ── Left Column ── */}
           <div className="details-side">
 
             {/* Delivery Address */}
@@ -166,9 +266,29 @@ export default function CheckoutPage() {
                 <button className="change-btn" onClick={() => openModal("Address")}>Ganti</button>
               </div>
               <div className="card-inner-white">
-                <h3 className="user-title">{addresses[selectedAddress].name}</h3>
-                <p className="address-desc">{addresses[selectedAddress].detail}</p>
-                <p className="user-phone">{addresses[selectedAddress].phone}</p>
+                {selectedAddress ? (
+                  <>
+                    {/* FIX #1: show full address from alamat_pengguna */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 800, background: 'var(--green-light)',
+                        color: 'var(--green-dark)', padding: '2px 8px', borderRadius: 6, textTransform: 'uppercase'
+                      }}>
+                        {selectedAddress.label_alamat}
+                        {selectedAddress.is_utama && ' · Utama'}
+                      </span>
+                    </div>
+                    <h3 className="user-title">{selectedAddress.nama_penerima}</h3>
+                    <p className="address-desc">
+                      {selectedAddress.alamat_lengkap}, {selectedAddress.kota_kabupaten} {selectedAddress.kode_pos}
+                    </p>
+                    <p className="user-phone">{selectedAddress.nomor_telepon}</p>
+                  </>
+                ) : (
+                  <p className="address-desc" style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>
+                    Belum ada alamat. Tambahkan di profil terlebih dahulu.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -200,11 +320,19 @@ export default function CheckoutPage() {
                   Detail Pesanan
                 </span>
               </div>
-              
+
+              {/* FIX #3: Each item gets its own note button */}
               {cartItems.map((item, idx) => (
-                <div key={idx} className="card-inner-white product-layout" style={{ marginBottom: idx !== cartItems.length - 1 ? 15 : 0 }}>
+                <div
+                  key={idx}
+                  className="card-inner-white product-layout"
+                  style={{ marginBottom: idx !== cartItems.length - 1 ? 15 : 0 }}
+                >
                   <div className="product-image-box">
-                    <img src={item.image || "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=200"} alt={item.name} />
+                    <img
+                      src={item.image || "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=200"}
+                      alt={item.name}
+                    />
                   </div>
                   <div className="product-details">
                     <div className="flex-space">
@@ -212,35 +340,16 @@ export default function CheckoutPage() {
                       <span className="bold-price">Rp {Number(item.price).toLocaleString("id-ID")}</span>
                     </div>
                     <div className="qty-chip">QTY {item.quantity}</div>
-                    {/* Only show Note button for the first item as a global order note representation */}
-                    {idx === 0 && (
-                      <div
-                        className="notes-action"
-                        onClick={() => openModal("Notes")}
-                      >
-                        {productNote ? `📝 ${productNote}` : "+ Tambah catatan"}
-                      </div>
-                    )}
+                    {/* FIX #3: note button for EVERY item */}
+                    <div
+                      className="notes-action"
+                      onClick={() => openModal("Notes", idx)}
+                    >
+                      {itemNotes[idx] ? `📝 ${itemNotes[idx]}` : "+ Tambah catatan"}
+                    </div>
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* Payment Method */}
-            <div className="card-outer">
-              <div className="card-top-row">
-                <span className="section-label">
-                  <Icon className="icon" path={mdiCreditCardOutline} size={0.75} />
-                  Metode Pembayaran
-                </span>
-                <button className="change-btn" onClick={() => openModal("Payment")}>Ganti</button>
-              </div>
-              <div className="card-inner-white flex-space">
-                <div>
-                  <h3 className="method-title">{paymentOptions[selectedPayment].name}</h3>
-                  <p className="arrival-txt">{paymentOptions[selectedPayment].provider}</p>
-                </div>
-              </div>
             </div>
 
           </div>
@@ -262,12 +371,10 @@ export default function CheckoutPage() {
               <hr className="summary-divider" />
 
               <div className="total-meta">TOTAL PEMBAYARAN</div>
-              <div className="total-value">
-                Rp {totalAmount.toLocaleString("id-ID")}
-              </div>
+              <div className="total-value">Rp {totalAmount.toLocaleString("id-ID")}</div>
 
-              <button 
-                className="main-checkout-btn" 
+              <button
+                className="main-checkout-btn"
                 onClick={handleCheckout}
                 disabled={isLoading}
               >
@@ -279,16 +386,16 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* ── Modal ── */}
+      {/* ── Modals ── */}
       {modal.isOpen && (
         <div className="modal-backdrop" onClick={closeModal}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
             <div className="modal-nav">
               <h3 className="modal-h3">
-                {modal.type === "Address" && "Pilih Alamat"}
+                {modal.type === "Address"  && "Pilih Alamat"}
                 {modal.type === "Shipping" && "Pilih Pengiriman"}
-                {modal.type === "Payment" && "Pilih Pembayaran"}
-                {modal.type === "Notes" && "Catatan Pesanan"}
+                {modal.type === "Payment"  && "Pilih Pembayaran"}
+                {modal.type === "Notes"    && "Catatan Pesanan"}
               </h3>
               <button className="close-x" onClick={closeModal}>
                 <Icon path={mdiClose} size={0.7} />
@@ -297,15 +404,17 @@ export default function CheckoutPage() {
 
             <div className="modal-content scrollable-list">
 
-              {/* Notes */}
+              {/* Notes Modal (FIX #3: per-item) */}
               {modal.type === "Notes" && (
                 <div className="notes-modal-body">
-                  <p className="notes-modal-desc">Catatan ini akan diteruskan ke tim Panganesia saat memproses pesananmu.</p>
+                  <p className="notes-modal-desc">
+                    Catatan ini akan diteruskan ke tim Panganesia saat memproses pesananmu.
+                  </p>
                   <textarea
                     className="notes-textarea"
                     placeholder="Contoh: tolong dikemas rapi, jangan dilipat..."
                     value={noteInput}
-                    onChange={(e) => setNoteInput(e.target.value)}
+                    onChange={e => setNoteInput(e.target.value)}
                     maxLength={200}
                     autoFocus
                   />
@@ -313,40 +422,55 @@ export default function CheckoutPage() {
                   <button className="confirm-btn" onClick={saveNote}>
                     Simpan Catatan
                   </button>
-                  {productNote && (
-                    <button
-                      className="notes-delete-btn"
-                      onClick={() => { setProductNote(""); setNoteInput(""); closeModal(); }}
-                    >
+                  {activeNoteIdx !== null && itemNotes[activeNoteIdx] && (
+                    <button className="notes-delete-btn" onClick={deleteNote}>
                       Hapus Catatan
                     </button>
                   )}
                 </div>
               )}
 
-              {/* Address */}
+              {/* FIX #1: Address Modal — show real addresses from alamat_pengguna */}
               {modal.type === "Address" && (
                 <>
-                  {addresses.map((addr, idx) => (
-                    <div
-                      key={idx}
-                      className={`option-item ${selectedAddress === idx ? 'active' : ''}`}
-                      onClick={() => { setSelectedAddress(idx); closeModal(); }}
-                    >
-                      <div className="option-info">
-                        <strong>{addr.name}</strong>
-                        <p>{addr.detail}</p>
+                  {addresses.length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
+                      Belum ada alamat tersimpan.
+                    </p>
+                  ) : (
+                    addresses.map((addr, idx) => (
+                      <div
+                        key={addr.id_alamat}
+                        className={`option-item ${selectedAddressIdx === idx ? 'active' : ''}`}
+                        onClick={() => { setSelectedAddressIdx(idx); closeModal(); }}
+                      >
+                        <div className="option-info">
+                          <strong>
+                            {addr.nama_penerima}
+                            {addr.is_utama && (
+                              <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--green-mid)', fontWeight: 700 }}>
+                                (Utama)
+                              </span>
+                            )}
+                          </strong>
+                          <p>{addr.label_alamat} — {addr.alamat_lengkap}, {addr.kota_kabupaten}</p>
+                          <p style={{ marginTop: 2 }}>{addr.nomor_telepon}</p>
+                        </div>
+                        {/* FIX #2: check-dot is properly centred via flex on parent */}
+                        {selectedAddressIdx === idx && <div className="check-dot" />}
                       </div>
-                      {selectedAddress === idx && <div className="check-dot" />}
-                    </div>
-                  ))}
-                  <button className="add-btn-modal" onClick={() => { closeModal(); router.push('/profile'); }}>
+                    ))
+                  )}
+                  <button
+                    className="add-btn-modal"
+                    onClick={() => { closeModal(); router.push('/profile'); }}
+                  >
                     <Icon path={mdiPlus} size={0.8} /> Ubah / Tambah Alamat di Profil
                   </button>
                 </>
               )}
 
-              {/* Shipping */}
+              {/* Shipping Modal */}
               {modal.type === "Shipping" && shippingOptions.map((ship, idx) => (
                 <div
                   key={idx}
@@ -359,23 +483,9 @@ export default function CheckoutPage() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span className="price-label">Rp {ship.price.toLocaleString("id-ID")}</span>
+                    {/* FIX #2: check-dot centred via flex gap */}
                     {selectedShipping === idx && <div className="check-dot" />}
                   </div>
-                </div>
-              ))}
-
-              {/* Payment */}
-              {modal.type === "Payment" && paymentOptions.map((pay, idx) => (
-                <div
-                  key={idx}
-                  className={`option-item ${selectedPayment === idx ? 'active' : ''}`}
-                  onClick={() => { setSelectedPayment(idx); closeModal(); }}
-                >
-                  <div className="option-info">
-                    <strong>{pay.name}</strong>
-                    <p>{pay.desc}</p>
-                  </div>
-                  {selectedPayment === idx && <div className="check-dot" />}
                 </div>
               ))}
 

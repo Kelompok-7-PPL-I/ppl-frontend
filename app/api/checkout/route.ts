@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 const Midtrans = require('midtrans-client');
 
+
 export async function POST(request: Request) {
     try {
         const session = await getServerSession(authOptions);
@@ -12,13 +13,14 @@ export async function POST(request: Request) {
         }
         const id_user = (session.user as any).id;
 
-        const { totalAmount, userDetails } = await request.json();
+        const { totalAmount, userDetails, items = [] } = await request.json();
         const orderId = `PANGAN-${Date.now()}`;
 
         // 1. Ambil isi keranjang user dari DB
         const isiKeranjang = await prisma.keranjang.findMany({
             where: { id_user: id_user },
-            include: { produk: true }
+            include: { produk: true },
+            orderBy: { dibuat_pada: 'asc' } // same order as frontend
         });
 
         if (isiKeranjang.length === 0) {
@@ -26,8 +28,8 @@ export async function POST(request: Request) {
         }
 
         // 2. Transaksi Database: Buat Pesanan & ItemPesanan
-        const newOrder = await prisma.$transaction(async (tx) => {
-            const pesanan = await tx.pesanan.create({
+        const newOrder = await prisma.$transaction(async (tx: any) => {
+                const pesanan = await tx.pesanan.create({
                 data: {
                     order_id: orderId,
                     id_user: id_user,
@@ -36,13 +38,16 @@ export async function POST(request: Request) {
                 }
             });
 
-            for (const item of isiKeranjang) {
+            // FIX: save per-item note using the index matched from frontend cart order
+            for (let i = 0; i < isiKeranjang.length; i++) {
+                const item = isiKeranjang[i];
                 await tx.itemPesanan.create({
                     data: {
                         id_pesanan: pesanan.id_pesanan,
                         id_produk: item.id_produk,
                         kuantitas: item.jumlah,
-                        subtotal: Number(item.produk.harga) * item.jumlah
+                        subtotal: Number(item.produk.harga) * item.jumlah,
+                        catatan: items[i]?.note || null,
                     }
                 });
             }
@@ -80,7 +85,12 @@ export async function POST(request: Request) {
         };
 
         const transaction = await snap.createTransaction(parameter);
-        return NextResponse.json({ token: transaction.token });
+
+        // FIX: return pesananId so frontend can update status after payment
+        return NextResponse.json({
+            token: transaction.token,
+            pesananId: newOrder.id_pesanan,
+        });
 
     } catch (error: any) {
         console.error(error);
