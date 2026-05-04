@@ -4,9 +4,12 @@ import { createClient } from '@/utils/supabase/client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getSession } from "next-auth/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { MapPin, Pencil, Home, Plus } from 'lucide-react';
 
 export default function ProfilePage() {
     const supabase = createClient();
+    const queryClient = useQueryClient();
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -16,11 +19,29 @@ export default function ProfilePage() {
     const [modalType, setModalType] = useState<'kontak' | 'alamat_list' | 'alamat_form' | null>(null);    
     const [addresses, setAddresses] = useState<any[]>([]); // Simpan semua alamat
     const [selectedAddress, setSelectedAddress] = useState<any>(null); // Untuk Edit alamat spesifik
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [showWarning, setShowWarning] = useState<{ type: 'hapus' | 'close', active: boolean }>({ 
+        type: 'close', 
+        active: false 
+    });
+
+    // Form Data Kontak
     const [formData, setFormData] = useState({
         nama: '',
         nomor_telp: '',
         alamat: ''
     });
+
+    const handleOpenEditKontak = () => {
+        setFormData({
+            nama: profile?.nama || '',
+            nomor_telp: profile?.nomor_telp || '',
+            alamat: profile?.alamat || ''
+        });
+        setModalType('kontak');
+    };
+
+    // Form Data Alamat
     const [addressFormData, setAddressFormData] = useState({
         label_alamat: '',
         nama_penerima: '',
@@ -30,62 +51,82 @@ export default function ProfilePage() {
         kode_pos: '',
         is_utama: false
     });
-    const [showWarning, setShowWarning] = useState<{ type: 'hapus' | 'close', active: boolean }>({ 
-        type: 'close', 
-        active: false 
-    });
-    const [errors, setErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
-        const fetchAllData = async () => {
-            setLoading(true);
+        const fetchProfile = async () => {
             const session = await getSession();
             const email = session?.user?.email;
             
             if (email) {
-                // 1. Ambil Data Profil
-                const { data: userData } = await supabase
+                const { data, error } = await supabase
                     .from('pengguna')
                     .select('*')
                     .eq('email', email)
                     .single();
                 
-                if (userData) {
-                    setProfile(userData);
-                    
-                    // AMBIL SEMUA ALAMAT USER
-                    const { data: addrData } = await supabase
-                        .from('alamat_pengguna')
-                        .select('*')
-                        .eq('id_user', userData.id)
-                        .order('is_utama', { ascending: false });
-
-                    if (addrData) setAddresses(addrData);
+                if (!error) {
+                    setProfile(data);
                 }
-
-                // 2. Ambil Jumlah Pesanan (Manual Count)
-                const { count: orderCount } = await supabase
-                    .from('pesanan')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('id_pengguna', userData.id);
-
-                // 3. Ambil Jumlah Ulasan (Manual Count)
-                const { count: reviewCount } = await supabase
-                    .from('ulasan')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('id_pengguna', userData.id);
-
-                setStats({ 
-                    orders: orderCount || 0, 
-                    reviews: reviewCount || 0 
-                });
             }
             setLoading(false);
         };
 
-        fetchAllData();
+        fetchProfile();
     }, [supabase]);
 
+    useEffect(() => {
+        const fetchAllData = async () => {
+            setLoading(true);
+            try {
+                const session = await getSession();
+                const email = session?.user?.email;
+                
+                if (email) {
+                    // Ambil Data Profil dari tabel pengguna
+                    const { data: userData, error: userError } = await supabase
+                        .from('pengguna')
+                        .select('*')
+                        .eq('email', email)
+                        .single();
+                    
+                    if (userData) {
+                        setProfile(userData);
+                        
+                        // Ambil Daftar Alamat
+                        const { data: addrData } = await supabase
+                            .from('alamat_pengguna')
+                            .select('*')
+                            .eq('id_user', userData.id)
+                            .order('is_utama', { ascending: false });
+
+                        if (addrData) setAddresses(addrData);
+
+                        // Ambil Stats (Orders & Reviews)
+                        const { count: orderCount } = await supabase
+                            .from('pesanan')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('id_pengguna', userData.id);
+
+                        const { count: reviewCount } = await supabase
+                            .from('ulasan')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('id_pengguna', userData.id);
+
+                        setStats({ 
+                            orders: orderCount || 0, 
+                            reviews: reviewCount || 0 
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Fetch Error:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAllData();
+    }, [supabase]);
 
     useEffect(() => {
         if (selectedAddress && modalType === 'alamat_form') {
@@ -107,7 +148,6 @@ export default function ProfilePage() {
         }
     }, [selectedAddress, modalType]);
 
-    
     const handleUpdateProfile = async () => {
         setLoading(true);
         const { error } = await supabase
@@ -122,7 +162,7 @@ export default function ProfilePage() {
         if (!error) {
             setProfile({ ...profile, ...formData });
             setModalType(null); // Tutup modal setelah simpan
-
+            queryClient.invalidateQueries({ queryKey: ['currentUser'] });
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
         } else {
@@ -133,26 +173,11 @@ export default function ProfilePage() {
 
     // 1. Fungsi Ambil Daftar Alamat
     const fetchAddresses = async () => {
-        const session = await getSession();
-        const email = session?.user?.email;
-        if (!email) return;
-
-        // Ambil ID UUID dari tabel pengguna
-        const { data: userData } = await supabase
-            .from('pengguna')
-            .select('id')
-            .eq('email', email)
-            .single();
-
-        if (!userData) {
-            console.error("User data tidak ditemukan di tabel pengguna");
-            return;
-        }
-
+        if (!profile?.id) return;
         const { data, error } = await supabase
             .from('alamat_pengguna')
             .select('*')
-            .eq('id_user', userData.id) // Sekarang aman, tidak akan error null
+            .eq('id_user', profile.id)
             .order('is_utama', { ascending: false });
 
         if (!error) setAddresses(data || []);
@@ -160,84 +185,39 @@ export default function ProfilePage() {
 
     // 2. Fungsi Simpan (Tambah & Edit)
     const handleSaveAddress = async () => {
+        // Validasi Sederhana
         const newErrors: Record<string, string> = {};
-        const requiredFields = {
-            label_alamat: "Label Alamat",
-            nama_penerima: "Nama Penerima",
-            nomor_telepon: "Nomor Telepon",
-            alamat_lengkap: "Alamat Lengkap",
-            kota_kabupaten: "Kota/Kabupaten",
-            kode_pos: "Kode Pos"
-        };
-
-        Object.entries(requiredFields).forEach(([key, label]) => {
-            if (!addressFormData[key as keyof typeof addressFormData]) {
-                newErrors[key] = `${label} wajib diisi`;
-            }
-        });
+        if (!addressFormData.label_alamat) newErrors.label_alamat = "Label wajib diisi";
+        if (!addressFormData.nama_penerima) newErrors.nama_penerima = "Nama wajib diisi";
+        if (!addressFormData.nomor_telepon) newErrors.nomor_telepon = "Nomor wajib diisi";
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            return; // Berhenti jika ada error
+            return;
         }
-
-        setErrors({});
 
         setLoading(true);
         try {
-            const session = await getSession();
-            const email = session?.user?.email;
-            if (!email) throw new Error("User tidak ditemukan");
-
-            // Ambil UUID internal
-            const { data: userData } = await supabase
-                .from('pengguna')
-                .select('id')
-                .eq('email', email)
-                .single();
-            
-            if (!userData) {
-                throw new Error("Gagal mengambil ID pengguna dari database.");
-            }
-
+            // Handle sinkronisasi alamat utama
             if (addressFormData.is_utama) {
-            // Jika alamat yang sedang diproses ini diset jadi UTAMA,
-            // maka set semua alamat milik user ini menjadi FALSE dulu.
-            await supabase
-                .from('alamat_pengguna')
-                .update({ is_utama: false })
-                .eq('id_user', userData.id);
-        }
-
-            const payload = {
-                ...addressFormData,
-                id_user: userData.id
-            };
-
-            let error;
-            if (selectedAddress) {
-                // Jika sedang EDIT (id_alamat ada)
-                const { error: err } = await supabase
+                await supabase
                     .from('alamat_pengguna')
-                    .update(payload)
-                    .eq('id_alamat', selectedAddress.id_alamat);
-                error = err;
-            } else {
-                // Jika sedang TAMBAH BARU
-                const { error: err } = await supabase
-                    .from('alamat_pengguna')
-                    .insert([payload]);
-                error = err;
+                    .update({ is_utama: false })
+                    .eq('id_user', profile.id);
             }
+
+            const payload = { ...addressFormData, id_user: profile.id };
+
+            const { error } = selectedAddress 
+                ? await supabase.from('alamat_pengguna').update(payload).eq('id_alamat', selectedAddress.id_alamat)
+                : await supabase.from('alamat_pengguna').insert([payload]);
 
             if (error) throw error;
 
-            // Berhasil
-            setModalType('alamat_list'); // Kembali ke daftar alamat
-            await fetchAddresses(); // Refresh list
+            setModalType('alamat_list');
+            await fetchAddresses();
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
-            
         } catch (err: any) {
             alert("Error: " + err.message);
         } finally {
@@ -249,24 +229,21 @@ export default function ProfilePage() {
         if (!selectedAddress) return;
         setLoading(true);
         try {
-            // Hapus langsung datanya berdasarkan ID alamat
             const { error } = await supabase
                 .from('alamat_pengguna')
                 .delete()
                 .eq('id_alamat', selectedAddress.id_alamat);
 
             if (error) throw error;
-
-            // Jika berhasil:
-            setModalType('alamat_list'); // Tutup form, balik ke list
-            await fetchAddresses();      // Refresh daftar alamat
+            setModalType('alamat_list');
+            await fetchAddresses();
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
-            
         } catch (err: any) {
-            alert("Gagal menghapus alamat: " + err.message);
+            alert("Gagal menghapus: " + err.message);
         } finally {
             setLoading(false);
+            setShowWarning({ ...showWarning, active: false });
         }
     };
 
@@ -285,18 +262,18 @@ export default function ProfilePage() {
         setShowWarning({ type: 'hapus', active: true });
     };
 
-    if (loading) {
+    if (loading && !profile) {
         return (
-        <div className="flex-1 flex items-center justify-center min-h-screen">
-            <div className="w-10 h-10 border-4 border-[#064E3B] border-t-transparent rounded-full animate-spin"></div>
-        </div>
+            <div className="flex-1 flex items-center justify-center min-h-screen">
+                <div className="w-10 h-10 border-4 border-[#064E3B] border-t-transparent rounded-full animate-spin"></div>
+            </div>
         );
     }
 
     return (
-        <main className="flex-1 p-10 w-full">
+        <main className="flex-1 p-12 w-full bg-white">
         <header className="flex justify-between items-center mb-10">
-            <h1 className="text-2xl font-extrabold text-gray-800">Informasi Pribadi</h1>
+            <h1 className="text-3xl font-extrabold text-[#062F24] tracking-tight">Informasi Pribadi</h1>
             <Link href="/DashboardProduct" className="text-[#064E3B] font-bold text-sm hover:underline">
             ← Kembali ke Toko
             </Link>
@@ -317,7 +294,7 @@ export default function ProfilePage() {
             </p>
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Pesanan</p>
             </div>
-            <div className="text-center px-6 border-l border-gray-100 shrink-0">
+            <div className="text-center px-6 border-l-2 border-gray-200 shrink-0">
             <p className="text-xl font-black text-[#064E3B]">
                 {stats.reviews ?? 0}
             </p>
@@ -330,11 +307,11 @@ export default function ProfilePage() {
             {/* Section: Personal Info */}
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative">
                 <button 
-                    onClick={() => setModalType('kontak')} 
-                    className="absolute top-6 right-6 text-xl hover:scale-110 transition z-10 cursor-pointer p-2"
-                    style={{ pointerEvents: 'auto' }} // Memastikan klik terdeteksi
+                    onClick={handleOpenEditKontak}
+                    className="absolute top-6 right-6 p-2 z-10 rounded-full transition-all duration-300 hover:scale-110 hover:bg-gray-100 group"
+                    title="Edit Kontak"
                 >
-                    ✏️
+                    <Pencil className="w-5 h-5 text-gray-400 transition-colors group-hover:text-green-600" />
                 </button>                
                 <h3 className="font-bold text-gray-800 mb-6">Informasi Pribadi</h3>
                 <div className="space-y-4">
@@ -396,7 +373,7 @@ export default function ProfilePage() {
             {modalType === 'kontak' && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
-                        <h2 className="text-xl font-bold text-gray-800 mb-6">Edit Kontak ✏️</h2>
+                        <h2 className="text-xl font-bold text-gray-800 mb-6">Edit Kontak</h2>
                         <div className="space-y-4">
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Nama Lengkap</label>
@@ -411,6 +388,7 @@ export default function ProfilePage() {
                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Nomor Telepon</label>
                                 <input 
                                     type='text'
+                                    placeholder="Contoh: 08123456789"
                                     className="w-full border rounded-xl px-4 py-3 mt-1 outline-none focus:ring-2 focus:ring-green-500 bg-white text-black font-semibold"
                                     value={formData.nomor_telp}
                                     onChange={(e) => {
@@ -421,8 +399,8 @@ export default function ProfilePage() {
                             </div>
                         </div>
                         <div className="flex gap-3 mt-8">
-                            <button onClick={() => setModalType(null)} className="flex-1 py-3 text-gray-400 font-bold">Batal</button>
-                            <button onClick={handleUpdateProfile} className="flex-1 py-3 bg-[#064E3B] text-white rounded-xl font-bold">Simpan</button>
+                            <button onClick={() => setModalType(null)} className="flex-1 py-3 text-gray-400 font-bold transition-colors hover:text-red-600">Batal</button>
+                            <button onClick={handleUpdateProfile} className="flex-1 py-3 bg-[#064E3B] text-white rounded-xl font-bold transition-all hover:brightness-125 active:scale-95">Simpan</button>
                         </div>
                     </div>
                 </div>
@@ -433,7 +411,7 @@ export default function ProfilePage() {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh]">
                         <div className="p-6 border-b flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-gray-800">Alamat Saya 🏠</h2>
+                            <h2 className="text-xl font-bold text-gray-800">Alamat Saya</h2>
                             <button onClick={() => setModalType(null)} className="text-2xl text-gray-400">&times;</button>
                         </div>
                         
@@ -488,7 +466,7 @@ export default function ProfilePage() {
                         </button>
 
                         <h2 className="text-xl font-bold text-gray-800 mb-6">
-                            {selectedAddress ? "Edit Alamat ✏️" : "Tambah Alamat Baru 🏠"}
+                            {selectedAddress ? "Edit Alamat" : "Tambah Alamat Baru"}
                         </h2>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
