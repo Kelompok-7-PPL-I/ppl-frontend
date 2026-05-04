@@ -198,37 +198,52 @@ export default function CheckoutPage() {
 
       const data = await response.json();
 
+      console.log("Checkout response:", data);
+      console.log("Snap ready:", !!(window as any).snap);
+
       if (data.token) {
         if ((window as any).snap) {
           (window as any).snap.pay(data.token, {
             onSuccess: (result: any) => {
-            console.log("Midtrans onSuccess fired!", result);
-            
-            fetch(`/api/orders/${data.pesananId}/status`, {
+              console.log("Midtrans onSuccess fired!", result);
+
+              fetch(`/api/orders/${data.pesananId}/status`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status: "dibayar" }),
-            })
-            .then(r => r.json())
-            .then(res => {
-                console.log("Status update response:", res);
-                alert("Bayar Berhasil!");
-                router.push('/DashboardProduct'); // ← pindah SETELAH update selesai
-            })
-            .catch(err => {
-                console.error("Status update error:", err);
-                alert("Bayar Berhasil!");
-                router.push('/DashboardProduct');
-            });
-        },
-            onPending: () => { alert("Selesaikan pembayaran ya!"); },
-            onError:   () => { alert("Yah, gagal bayar."); },
+              })
+                .then((r) => r.json())
+                .then((res) => {
+                  console.log("Status update response:", res);
+                  alert("Bayar Berhasil!");
+                  router.push("/DashboardProduct");
+                })
+                .catch((err) => {
+                  console.error("Status update error:", err);
+                  alert("Bayar Berhasil!");
+                  router.push("/DashboardProduct");
+                });
+            },
+            onPending: () => {
+              alert("Selesaikan pembayaran ya!");
+            },
+            onError: () => {
+              alert("Yah, gagal bayar.");
+            },
+            onClose: () => {
+              console.log("User menutup popup Midtrans.");
+            },
           });
         } else {
           alert("Sistem Midtrans belum siap. Coba refresh halaman.");
         }
+      } else if (data.redirect_url) {
+        window.location.href = data.redirect_url;
       } else if (data.error) {
         alert("Gagal Checkout: " + data.error);
+      } else {
+        console.error("Invalid checkout response:", data);
+        alert("Gagal Checkout: token Midtrans tidak ditemukan.");
       }
     } catch (err) {
       console.error(err);

@@ -7,6 +7,11 @@ import Link from "next/link";
 const formatRupiah = (n: number) =>
   "Rp " + n.toLocaleString("id-ID").replace(/\./g, ".");
 
+const formatTakaran = (value: number) => {
+  if (!Number.isFinite(value)) return "0";
+  return value.toLocaleString("id-ID");
+};
+
 interface Product {
   id_produk: number;
   nama_produk: string;
@@ -15,10 +20,34 @@ interface Product {
   stok: number;
   gambar_url: string | null;
   is_promo: boolean;
-  satuan_produk: number;
+  satuan_produk: number | null;
   unit_nama: string;
   takaran_resep: number;
 }
+
+const getPurchasePlan = (product: Product) => {
+  const takaranResep = Number(product.takaran_resep) || 0;
+  const satuanProduk = Number(product.satuan_produk) || 0;
+
+  /*
+    takaran_resep = jumlah bahan yang dibutuhkan resep.
+    satuan_produk = ukuran jual per item, kalau valid > 1.
+
+    Kalau satuan_produk kosong / 0 / 1, jangan dianggap sebagai 1 gr per item,
+    karena itu bikin "Beli 50 x 1gr" dan cart quantity jadi 50.
+  */
+  if (satuanProduk > 1) {
+    return {
+      quantity: Math.max(1, Math.ceil(takaranResep / satuanProduk)),
+      satuanDisplay: satuanProduk,
+    };
+  }
+
+  return {
+    quantity: 1,
+    satuanDisplay: takaranResep,
+  };
+};
 
 export default function RecipeProducts({ products }: { products: Product[] }) {
   const [addingId, setAddingId] = useState<number | null>(null);
@@ -31,8 +60,10 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
 
   const handleBeliSemuaBahan = async () => {
     setIsAddingBulk(true);
+
     const payload = products.map((item) => {
-      const quantity = Math.ceil(item.takaran_resep / (item.satuan_produk || 1));
+      const { quantity } = getPurchasePlan(item);
+
       return {
         id_produk: item.id_produk,
         jumlah: quantity,
@@ -40,16 +71,16 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
     });
 
     try {
-      const response = await fetch('/api/cart/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/cart/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: payload }),
       });
-      
-      if(response.ok) {
-         alert("Semua bahan berhasil dimasukkan ke keranjang!");
+
+      if (response.ok) {
+        alert("Semua bahan berhasil dimasukkan ke keranjang!");
       } else {
-         alert("Gagal menambahkan bahan ke keranjang.");
+        alert("Gagal menambahkan bahan ke keranjang.");
       }
     } catch (error) {
       console.error("Gagal nambah ke keranjang", error);
@@ -61,19 +92,26 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
 
   const handleAddToCart = async (product: Product) => {
     setAddingId(product.id_produk);
+
     try {
-      const quantity = Math.ceil(product.takaran_resep / (product.satuan_produk || 1));
-      const res = await fetch('/api/cart', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_produk: product.id_produk, quantity })
+      const { quantity } = getPurchasePlan(product);
+
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_produk: product.id_produk,
+          quantity,
+        }),
       });
+
       if (res.ok) {
         setAddedIds((prev) => {
           const newSet = new Set(prev);
           newSet.add(product.id_produk);
           return newSet;
         });
+
         setTimeout(() => {
           setAddedIds((prev) => {
             const newSet = new Set(prev);
@@ -98,16 +136,31 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
         <div className="line-divider"></div>
         <h2>BAHAN YANG DIBUTUHKAN</h2>
       </div>
-      
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "1rem" }}>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1rem",
+          flexWrap: "wrap",
+          gap: "1rem",
+        }}
+      >
         <p className="recipe-products-subtitle" style={{ margin: 0 }}>
           Beli bahan-bahan segar langsung dari Panganesia untuk resep ini.
         </p>
-        <button 
-          onClick={handleBeliSemuaBahan} 
+
+        <button
+          onClick={handleBeliSemuaBahan}
           disabled={isAddingBulk}
           className="recipe-add-cart-btn"
-          style={{ width: "auto", padding: "0.5rem 1rem", margin: 0, fontWeight: "bold" }}
+          style={{
+            width: "auto",
+            padding: "0.5rem 1rem",
+            margin: 0,
+            fontWeight: "bold",
+          }}
         >
           {isAddingBulk ? "Memproses..." : "+ Beli Semua Bahan"}
         </button>
@@ -117,10 +170,14 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
         {products.map((product) => {
           const isAdded = addedIds.has(product.id_produk);
           const isAdding = addingId === product.id_produk;
+          const { quantity, satuanDisplay } = getPurchasePlan(product);
 
           return (
             <div key={product.id_produk} className="recipe-product-card">
-              <Link href={`/product/${product.id_produk}`} className="recipe-product-image-link">
+              <Link
+                href={`/product/${product.id_produk}`}
+                className="recipe-product-image-link"
+              >
                 <div className="recipe-product-image-wrapper">
                   <Image
                     src={product.gambar_url || "/images/placeholder.jpg"}
@@ -129,36 +186,65 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
                     className="recipe-product-image"
                     style={{ objectFit: "cover" }}
                   />
-                  {product.is_promo && <span className="promo-badge">PROMO</span>}
-                  {product.stok <= 0 && <span className="out-of-stock-badge">Habis</span>}
+
+                  {product.is_promo && (
+                    <span className="promo-badge">PROMO</span>
+                  )}
+
+                  {product.stok <= 0 && (
+                    <span className="out-of-stock-badge">Habis</span>
+                  )}
                 </div>
               </Link>
-              
+
               <div className="recipe-product-info">
                 <Link href={`/product/${product.id_produk}`}>
-                  <h3 className="recipe-product-name" title={product.nama_produk}>
+                  <h3
+                    className="recipe-product-name"
+                    title={product.nama_produk}
+                  >
                     {product.nama_produk}
                   </h3>
                 </Link>
-                <div className="recipe-product-price-row" style={{ marginBottom: "0.25rem" }}>
+
+                <div
+                  className="recipe-product-price-row"
+                  style={{ marginBottom: "0.25rem" }}
+                >
                   <span className="recipe-product-price">
                     {formatRupiah(Number(product.harga))}
                   </span>
                 </div>
-                
-                <div className="recipe-product-qty-info" style={{ fontSize: "0.8rem", color: "#666", marginBottom: "0.75rem", lineHeight: "1.3" }}>
-                  <strong>Butuh:</strong> {product.takaran_resep} {product.unit_nama} <br/>
+
+                <div
+                  className="recipe-product-qty-info"
+                  style={{
+                    fontSize: "0.8rem",
+                    color: "#666",
+                    marginBottom: "0.75rem",
+                    lineHeight: "1.3",
+                  }}
+                >
+                  <strong>Butuh:</strong>{" "}
+                  {formatTakaran(Number(product.takaran_resep) || 0)}{" "}
+                  {product.unit_nama}
+                  <br />
                   <span style={{ fontSize: "0.75rem" }}>
-                    (Beli {Math.ceil(product.takaran_resep / (product.satuan_produk || 1))} x {product.satuan_produk} {product.unit_nama})
+                    (Beli {quantity} x {formatTakaran(satuanDisplay)}{" "}
+                    {product.unit_nama})
                   </span>
                 </div>
-                
+
                 <button
                   className={`recipe-add-cart-btn ${isAdded ? "added" : ""}`}
                   onClick={() => handleAddToCart(product)}
                   disabled={product.stok <= 0 || isAdding || isAdded}
                 >
-                  {isAdding ? "Menambahkan..." : isAdded ? "✓ Ditambahkan" : "Beli Bahan"}
+                  {isAdding
+                    ? "Menambahkan..."
+                    : isAdded
+                    ? "✓ Ditambahkan"
+                    : "Beli Bahan"}
                 </button>
               </div>
             </div>
