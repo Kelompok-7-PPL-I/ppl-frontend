@@ -266,27 +266,40 @@ body {
   cursor: pointer;
 }
 
-.profile-dropdown-container {
+.profile-dropdown-container-recipe {
   position: relative;
   flex-shrink: 0;
+  display: inline-block;
+  cursor: pointer;
 }
 
-.dropdown-menu-profile {
+.dropdown-menu-profile-recipe {
   display: none;
   position: absolute;
   right: 0;
-  top: 125%;
+  top: calc(100% + 8px);
   background-color: white;
   min-width: 140px;
   box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
-  z-index: 150;
+  z-index: 200;
   padding: 8px 0;
   border: 1px solid #eee;
 }
 
-.profile-dropdown-container:hover .dropdown-menu-profile {
+.profile-dropdown-container-recipe:hover .dropdown-menu-profile-recipe {
   display: block;
+  pointer-events: auto;
+}
+
+.dropdown-menu-profile-recipe::before {
+  content: "";
+  position: absolute;
+  top: -20px; /* Sesuaikan dengan besar celah kosongnya */
+  left: 0;
+  right: 0;
+  height: 20px; /* Menutupi celah */
+  background: transparent; /* Tidak terlihat tapi bisa disentuh kursor */
 }
 
 .dropdown-item {
@@ -672,7 +685,7 @@ body {
     margin: 0;
   }
 
-  .profile-dropdown-container {
+  .profile-dropdown-container-recipe {
     grid-row: 1;
     grid-column: 3;
     align-self: center;

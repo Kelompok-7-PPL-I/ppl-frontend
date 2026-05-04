@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { createClient } from '@/utils/supabase/client';
-import "./page.css"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { signOut as nextAuthSignOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
+import Link from "next/link";
+import "./page.css"
 
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"]});
 
@@ -19,21 +21,19 @@ interface RecipeUI {
   description: string;
   imageUrl: string;
   showButton: boolean;
+  liked?: boolean;
 }
 
 export default function RecipesPage(){
     const router = useRouter();
     const supabase = createClient();
-  
-    const [recipes, setRecipes] = useState<RecipeUI[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const queryClient = useQueryClient();
+    const { data: session, status } = useSession();
 
-    const [localLikes, setLocalLikes] = useState<number[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const carouselRef = useRef<HTMLDivElement>(null)
-
     const itemsPerPage = 5;
 
     const [currentPage, setCurrentPage] = useState<number>(() => {
@@ -50,93 +50,117 @@ export default function RecipesPage(){
         <circle cx="12" cy="7" r="4" />
       </svg>
     );
-    
-    // FETCH DATA DARI SUPABASE
-    useEffect(() => {
-      const fetchRecipes = async () => {
-        setIsLoading(true);
+
+    const { data: userData } = useQuery({
+      queryKey: ["currentUser", session?.user?.email],
+      queryFn: async () => {
+        if (!session?.user?.email) return null;
         const { data, error } = await supabase
-          .from('resep')
-          .select('*')
-          .order('id_resep', { ascending: false });
+          .from("pengguna")
+          .select("id")
+          .eq("email", session.user.email)
+          .single();
+        return data;
+      },
+      enabled: !!session?.user?.email,
+    });
+    
+    const userId = userData?.id;
 
-        if (!error && data) {
-          // Melakukan mapping data dari DB ke struktur UI
-          const formattedRecipes = data.map((dbRecipe: any) => {
-            
-            // Mengambil informasi gizi utama (Kata sebelum tanda ":" pertama)
-            // Contoh: "Kalori: 450 kkal, ..." -> "Kalori"
-            let mainNutritionTag = "";
-            if (dbRecipe.informasi_gizi) {
-              // Split berdasarkan koma pertama untuk ambil item pertama, lalu split ":" untuk ambil kuncinya
-              const firstItem = dbRecipe.informasi_gizi.split(',')[0];
-              mainNutritionTag = firstItem.split(':')[0].trim();
-            }
+    // --- 2. QUERY DATA RESEP (Gantikan useEffect lama) ---
+    const { data: recipes = [], isLoading } = useQuery<RecipeUI[]>({
+      queryKey: ["recipes", userId],
+      queryFn: async () => {
+        const { data: dbData, error: recipeError } = await supabase
+          .from("resep")
+          .select("*")
+          .order("id_resep", { ascending: false });
 
-            // Menggabungkan tag dari kategori_jenis dan informasi_gizi (filter string kosong)
-            const recipeTags = [dbRecipe.kategori_jenis, mainNutritionTag].filter(Boolean);
+        if (recipeError) throw recipeError;
 
-            return {
-              id: dbRecipe.id_resep,
-              title: dbRecipe.judul_resep || "Resep Tanpa Judul",
-              time: `${dbRecipe.waktu_masak || 0} min`, // Menambahkan "min"
-              tags: recipeTags,
-              description: dbRecipe.deskripsi_singkat || "Tidak ada deskripsi.",
-              imageUrl: dbRecipe.gambar_url || "/images/placeholder.jpg", // Beri gambar default jika null
-              showButton: true,
-            };
-          });
-
-          setRecipes(formattedRecipes);
-        } else {
-          console.error("Gagal mengambil data resep:", error);
+        let favIds: number[] = [];
+        if (userId) {
+          const { data: favData } = await supabase
+            .from("favorit_resep")
+            .select("id_resep")
+            .eq("id_user", userId);
+          favIds = favData?.map((f) => f.id_resep) || [];
         }
-        setIsLoading(false);
-      };
 
-      fetchRecipes();
-    }, [supabase]);
+        return dbData.map((dbRecipe: any) => {
+          let mainNutritionTag = "";
+          if (dbRecipe.informasi_gizi) {
+            const firstItem = dbRecipe.informasi_gizi.split(",")[0];
+            mainNutritionTag = firstItem.split(":")[0].trim();
+          }
+          const recipeTags = [dbRecipe.kategori_jenis, mainNutritionTag].filter(Boolean);
 
-    // Selalu simpan ke session storage setiap kali user pindah halaman
+          return {
+            id: dbRecipe.id_resep,
+            title: dbRecipe.judul_resep || "Resep Tanpa Judul",
+            time: `${dbRecipe.waktu_masak || 0} min`,
+            tags: recipeTags,
+            description: dbRecipe.deskripsi_singkat || "Tidak ada deskripsi.",
+            imageUrl: dbRecipe.gambar_url || "/images/placeholder.jpg",
+            showButton: true,
+            liked: favIds.includes(dbRecipe.id_resep),
+          };
+        });
+      },
+      enabled: status !== "loading",
+    });
+
+    // --- 3. MUTATION UNTUK TOGGLE FAVORIT ---
+    const toggleLikeMutation = useMutation({
+      mutationFn: async ({ recipeId, isLiked }: { recipeId: number; isLiked: boolean }) => {
+        if (!userId) throw new Error("Must login");
+
+        if (isLiked) {
+          await supabase.from("favorit_resep").delete().eq("id_user", userId).eq("id_resep", recipeId);
+        } else {
+          await supabase.from("favorit_resep").insert([{ id_user: userId, id_resep: recipeId }]);
+        }
+      },
+      onMutate: async ({ recipeId }) => {
+        await queryClient.cancelQueries({ queryKey: ["recipes", userId] });
+        const previousRecipes = queryClient.getQueryData(["recipes", userId]);
+        queryClient.setQueryData(["recipes", userId], (old: any) =>
+          old.map((r: any) => (r.id === recipeId ? { ...r, liked: !r.liked } : r))
+        );
+        return { previousRecipes };
+      },
+      onError: (_, __, context) => {
+        queryClient.setQueryData(["recipes", userId], context?.previousRecipes);
+        alert("Gagal memperbarui favorit.");
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries({ queryKey: ["recipes", userId] });
+      },
+    });
+    
+    const handleToggleLike = (id: number) => {
+      const recipe = recipes.find((r) => r.id === id);
+      if (recipe) {
+        toggleLikeMutation.mutate({ recipeId: id, isLiked: !!recipe.liked });
+      }
+    };
+
     useEffect(() => {
       sessionStorage.setItem("recipePage", currentPage.toString());
     }, [currentPage]);
-      
-    // Kembalikan posisi scroll setelah loading selesai dan halaman yang tepat sudah di-render
+
     useEffect(() => {
       if (!isLoading) {
         const savedScroll = sessionStorage.getItem('recipeScroll');
         if (savedScroll) {
-          // Kasih delay sedikit (150ms) agar gambar dan card sempat dirender ukurannya
           setTimeout(() => {
             window.scrollTo({ top: Number(savedScroll), behavior: 'auto' });
-            
-            // Opsional tapi penting: Hapus memori scroll setelah dipakai 
-            // agar kalau user pindah halaman pakai pagination, ga tiba-tiba scroll sendiri
             sessionStorage.removeItem('recipeScroll');
           }, 150);
         }
       }
     }, [isLoading, currentPage]);
     
-    const handleLogout = async () => {
-        // Log out dari Supabase
-        await supabase.auth.signOut();
-        // Log out dari NextAuth (tanpa paksa reload biar router yang handle)
-        await nextAuthSignOut({ redirect: false });
-        
-        router.push("/auth");
-        router.refresh();
-      };
-
-    const handleToggleLike = (id: number) => {
-    setLocalLikes((prev) =>
-        prev.includes(id)
-        ? prev.filter((favId) => favId !== id)
-        : [...prev, id]
-    );
-    };
-
     const handleSelectTag = (tag: string) => {
       // Kalau tag belum ada, tambahkan. Kalau sudah ada, biarkan.
       if (!selectedTags.includes(tag)) {
@@ -144,6 +168,13 @@ export default function RecipesPage(){
         setCurrentPage(1);
       }
       setIsOpen(false); // Tutup dropdown setelah milih
+    };
+    
+    const handleLogout = async () => {
+      setIsOpen(false);
+      await supabase.auth.signOut();
+      await nextAuthSignOut({ redirect: false });
+      window.location.href = "/auth";
     };
 
     const handleRemoveTag = (e: React.MouseEvent, tagToRemove: string) => {
@@ -176,23 +207,13 @@ export default function RecipesPage(){
     const dynamicNutrition = Array.from(new Set(recipes.map(r => r.tags[1]))).filter(Boolean);
     
     const filteredRecipes = recipes.filter((recipe) => {
-        const searchMatch =
-            recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            recipe.tags.some(tag =>
-            tag.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+      const searchMatch = recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        recipe.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
 
-        const filterMatch =
-          selectedTags.length === 0 || // Kalau nggak ada tag yang dipilih, tampilkan semua
-          selectedTags.every(selectedTag => 
-            // .every() memastikan resep punya SEMUA tag yang dipilih
-            // pakai .some() di dalamnya untuk ngecek mengabaikan huruf besar/kecil
-            recipe.tags.some(recipeTag => 
-              recipeTag.toLowerCase() === selectedTag.toLowerCase()
-            )
-          );
+      const filterMatch = selectedTags.length === 0 ||
+        selectedTags.every(st => recipe.tags.some(rt => rt.toLowerCase() === st.toLowerCase()));
 
-        return searchMatch && filterMatch;
+      return searchMatch && filterMatch;
     });
     
     const totalPages = Math.ceil(filteredRecipes.length / itemsPerPage);
@@ -300,9 +321,13 @@ export default function RecipesPage(){
             </div>
           )}
         </div>
-        <div className="profile-dropdown-container">
-            <div className="nav-link profile-trigger"><ProfileIcon /><span className="nav-link-label">Profil</span></div>
-            <div className="dropdown-menu-profile">
+        <div className="profile-dropdown-container-recipe">
+            <div
+              className="nav-link profile-trigger">
+              <ProfileIcon />
+              <span className="nav-link-label">Profil</span>
+            </div>
+            <div className="dropdown-menu-profile-recipe">
               <Link href="/profile" className="dropdown-item">Profil Saya</Link>
               <button onClick={handleLogout} className="dropdown-item">Keluar</button>
             </div>
@@ -426,7 +451,7 @@ export default function RecipesPage(){
                     <h2 className="cursor-pointer hover:opacity-80 transition-opacity">{recipe.title}</h2>
                   </Link>
                   <button className="favorite-btn" onClick={() => handleToggleLike(recipe.id)}>
-                    <svg viewBox="0 0 24 24" fill={localLikes.includes(recipe.id) ? "#ff4d6d" : "none"} stroke={localLikes.includes(recipe.id) ? "#ff4d6d" : "#333"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg viewBox="0 0 24 24" fill={recipe.liked ? "#ff4d6d" : "none"} stroke={recipe.liked ? "#ff4d6d" : "#333"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                     </svg>
                   </button>
