@@ -34,12 +34,17 @@ export async function GET() {
       }),
 
       prisma.itemPesanan.groupBy({
-        by: ['id_produk'],
-        _sum: { kuantitas: true, subtotal: true },
-        orderBy: { _sum: { kuantitas: 'desc' } },
-        take: 10,
-      }),
-    ]);
+          by: ['id_produk'],
+          where: {
+            pesanan: {
+              status_pembayaran: { in: ['dibayar'] }, 
+            },
+          },
+          _sum: { kuantitas: true, subtotal: true },
+          orderBy: { _sum: { kuantitas: 'desc' } },
+          take: 10,
+        }),
+      ]);
 
     // ── Detail produk untuk leaderboard ─────────────────────────────────────
     const produkIds    = produkTerlaris.map((p) => p.id_produk);

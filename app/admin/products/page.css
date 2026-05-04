@@ -294,9 +294,11 @@
 }
 
 .img-container {
-  display: flex;
+  display: table-cell;
   align-items: center;
-  justify-content: center;
+  justify-content: center;  
+  vertical-align: middle;
+  text-align: center;
 }
 
 /* Action buttons */
@@ -324,6 +326,7 @@
 .btn-icon:hover { transform: scale(1.1); }
 .btn-icon.edit:hover   { background: #e8f5e9; color: #2e7d32; }
 .btn-icon.delete:hover { background: #fdecea; color: #c62828; }
+.btn-icon.review:hover { background: #fffbeb; color: #b45309; }
 
 /* ── Pagination ──────────────────────────────────────────────────────── */
 .pagination-row {
@@ -378,13 +381,18 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 9999;
   background: rgba(0, 0, 0, 0.45);
-  z-index: 200;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   animation: fadeIn 0.18s ease;
+  isolation: isolate;   /* ← tambah ini */
 }
 
 @keyframes fadeIn {
@@ -393,20 +401,32 @@
 }
 
 /* ── Modal Box ───────────────────────────────────────────────────────── */
+/* Jadi ini: */
 .modal-box {
   background: #fff;
   border-radius: 20px;
   width: 100%;
   max-width: 480px;
+  max-height: 85vh;           /* ← tambah ini */
+  display: flex;              /* ← tambah ini */
+  flex-direction: column;     /* ← tambah ini */
   position: relative;
   animation: slideUp 0.2s ease;
   overflow: hidden;
 }
 
+.ulasan-modal-box {
+  max-width: 680px;
+  max-height: 80vh;        /* ← tambah */
+  display: flex;           /* ← tambah */
+  flex-direction: column;  /* ← tambah */
+  overflow: hidden;        /* ← tambah */
+}
+
 .modal-content {
   padding: 32px 32px 28px 32px;
-  max-height: 90vh;
-  overflow-y: auto;
+  overflow-y: auto;   /* ← ganti dari max-height ke ini */
+  flex: 1;            /* ← tambah */
 }
 
 @keyframes slideUp {
@@ -561,7 +581,6 @@
   gap: 10px;
 }
 
-/* The label wraps ONLY the input + slider — no text inside */
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -724,3 +743,43 @@
 }
 
 .btn-warn-no:hover { border-color: #888; color: #333; }
+
+/* ── Ulasan Modal ────────────────────────────────────────────────────── */
+.ulasan-table-wrap {
+  border-radius: 12px;
+  margin-top: 4px;
+}
+
+.ulasan-table {
+  min-width: 500px;
+}
+
+.ulasan-table thead tr {
+  background: #f5c800;
+}
+
+.ulasan-loading,
+.ulasan-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #aaa;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+}
+
+/* Star rating row */
+.star-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Tambah di paling bawah page.css */
+.products-page > .modal-backdrop,
+.admin-content > .modal-backdrop,
+main > .modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  transform: none !important;
+}

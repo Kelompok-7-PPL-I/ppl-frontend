@@ -697,3 +697,108 @@
   object-fit: cover;
   border: 1px solid #eee;
 }
+
+/* ── Modal Bahan ─────────────────────────────────────────────────────── */
+.bahan-modal-box {
+  max-width: 520px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-content {
+  padding: 32px 32px 28px 32px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.btn-bahan-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #f0f5f0;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1a3a2a;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btn-bahan-detail:hover {
+  background: #d6ead6;
+}
+
+.bahan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bahan-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  transition: background 0.15s;
+}
+
+.bahan-card:hover {
+  background: #f0f5f0;
+}
+
+.bahan-img-wrap {
+  flex-shrink: 0;
+}
+
+.bahan-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid #eee;
+}
+
+.bahan-img-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: #e8e8e8;
+}
+
+.bahan-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.bahan-nama {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.bahan-qty {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #888;
+}
+
+.bahan-loading,
+.bahan-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #aaa;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+}
