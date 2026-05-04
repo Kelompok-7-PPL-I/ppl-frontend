@@ -130,9 +130,9 @@ export default function AdminOrdersPage() {
             <button className="btn-add" onClick={() => openModal()}>+ Tambah Order</button>
             <select className="select-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="all">Semua Status</option>
-              <option value="Paid">Paid</option>
+              <option value="Dibayar">Dibayar</option>
               <option value="Pending">Pending</option>
-              <option value="Failed">Failed</option>
+              <option value="Gagal">Gagal</option>
             </select>
           </div>
         </div>
@@ -203,8 +203,8 @@ export default function AdminOrdersPage() {
                   <label>Status</label>
                   <select value={formData.status_pembayaran} onChange={e => setFormData({...formData, status_pembayaran: e.target.value})}>
                     <option value="Pending">Pending</option>
-                    <option value="Paid">Paid</option>
-                    <option value="Failed">Failed</option>
+                    <option value="Dibayar">Dibayar</option>
+                    <option value="Gagal">Gagal</option>
                   </select>
                 </div>
               </div>
