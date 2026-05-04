@@ -234,9 +234,28 @@ if (!product) {
               {addedToCart ? "✓ Added!" : "Tambahkan Ke Keranjang"}
             </button>
           </div>
-          <Link href="/checkout" className="buy-now-btn">
-            Beli Sekarang
-          </Link>
+          <button
+            className="buy-now-btn"
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/cart', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id_produk: product.id, quantity })
+                });
+                if (res.ok) {
+                  router.push('/checkout');
+                } else {
+                  alert("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
+                }
+              } catch (err) {
+                console.error(err);
+                alert("Terjadi kesalahan sistem.");
+              }
+            }}
+          >
+            Buy Now
+          </button>
         </section>
       </main>
     </div>

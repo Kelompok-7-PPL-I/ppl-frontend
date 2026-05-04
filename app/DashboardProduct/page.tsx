@@ -81,26 +81,48 @@
   );
 
   // ─── Components ───────────────────────────────────────────────────────────────
-  function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike: (id: number) => void }) {
-    return (
-      <div className="product-card">
-        <div className="card-image-wrap">
-          <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: "cover" }} className="card-image" />
-          <button className="like-btn" onClick={() => onToggleLike(product.id)} aria-label="Toggle wishlist">
-            <HeartIcon filled={product.liked} />
+function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike: (id: number) => void }) {
+  const router = useRouter();
+  return (
+    <div className="product-card">
+      <div className="card-image-wrap">
+        <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: "cover" }} className="card-image" />
+        <button className="like-btn" onClick={() => onToggleLike(product.id)} aria-label="Toggle wishlist">
+          <HeartIcon filled={product.liked} />
+        </button>
+      </div>
+      <div className="card-body">
+        <h3 className="card-name">{product.name}</h3>
+        <p className="card-price">{formatRupiah(product.price)}</p>
+        <div className="card-actions">
+          <Link href={`/product/${product.id}`} className="btn-detail">Detail</Link>
+          <button
+            className="btn-buy"
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/cart', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id_produk: product.id, quantity: 1 })
+                });
+                if (res.ok) {
+                  router.push('/checkout');
+                } else {
+                  alert("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
+                }
+              } catch (err) {
+                console.error(err);
+                alert("Terjadi kesalahan sistem.");
+              }
+            }}
+          >
+            Beli Sekarang
           </button>
         </div>
-        <div className="card-body">
-          <h3 className="card-name">{product.name}</h3>
-          <p className="card-price">{formatRupiah(product.price)}</p>
-          <div className="card-actions">
-            <Link href={`/product/${product.id}`} className="btn-detail">Detail</Link>
-            <Link href={`/checkout`} className="btn-buy">Beli Sekarang</Link>
-          </div>
-        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
     function ProductSkeleton() {
     return (
       <div className="product-card">
