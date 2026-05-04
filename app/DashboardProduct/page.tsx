@@ -83,6 +83,21 @@
   // ─── Components ───────────────────────────────────────────────────────────────
 function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike: (id: number) => void }) {
   const router = useRouter();
+
+  const handleBuyNow = () => {
+  sessionStorage.setItem(
+    "buyNowItem",
+    JSON.stringify({
+      id: product.id,
+      name: product.name,
+      price: Number(product.price),
+      image: product.image,
+    })
+  );
+
+  router.push("/checkout?mode=buy-now");
+};
+
   return (
     <div className="product-card">
       <div className="card-image-wrap">
@@ -96,28 +111,29 @@ function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike
         <p className="card-price">{formatRupiah(product.price)}</p>
         <div className="card-actions">
           <Link href={`/product/${product.id}`} className="btn-detail">Detail</Link>
-          <button
-            className="btn-buy"
-            onClick={async () => {
-              try {
-                const res = await fetch('/api/cart', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ id_produk: product.id, quantity: 1 })
-                });
-                if (res.ok) {
-                  router.push('/checkout');
-                } else {
-                  alert("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
-                }
-              } catch (err) {
-                console.error(err);
-                alert("Terjadi kesalahan sistem.");
-              }
-            }}
-          >
-            Beli Sekarang
-          </button>
+        <button
+          className="btn-buy"
+          onClick={() => {
+            try {
+              sessionStorage.setItem(
+                "buyNowItem",
+                JSON.stringify({
+                  id: product.id,
+                  name: product.name,
+                  price: Number(product.price),
+                  image: product.image,
+                })
+              );
+
+              router.push("/checkout?mode=buy-now");
+            } catch (err) {
+              console.error(err);
+              alert("Terjadi kesalahan sistem.");
+            }
+          }}
+        >
+          Buy Now
+        </button>
         </div>
       </div>
     </div>

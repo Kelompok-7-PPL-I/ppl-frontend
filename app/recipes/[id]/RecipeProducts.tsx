@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -29,13 +30,6 @@ const getPurchasePlan = (product: Product) => {
   const takaranResep = Number(product.takaran_resep) || 0;
   const satuanProduk = Number(product.satuan_produk) || 0;
 
-  /*
-    takaran_resep = jumlah bahan yang dibutuhkan resep.
-    satuan_produk = ukuran jual per item, kalau valid > 1.
-
-    Kalau satuan_produk kosong / 0 / 1, jangan dianggap sebagai 1 gr per item,
-    karena itu bikin "Beli 50 x 1gr" dan cart quantity jadi 50.
-  */
   if (satuanProduk > 1) {
     return {
       quantity: Math.max(1, Math.ceil(takaranResep / satuanProduk)),
@@ -50,6 +44,8 @@ const getPurchasePlan = (product: Product) => {
 };
 
 export default function RecipeProducts({ products }: { products: Product[] }) {
+  const router = useRouter();
+
   const [addingId, setAddingId] = useState<number | null>(null);
   const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
   const [isAddingBulk, setIsAddingBulk] = useState(false);
@@ -58,34 +54,36 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
     return null;
   }
 
-  const handleBeliSemuaBahan = async () => {
+  const handleBeliSemuaBahan = () => {
     setIsAddingBulk(true);
 
-    const payload = products.map((item) => {
-      const { quantity } = getPurchasePlan(item);
-
-      return {
-        id_produk: item.id_produk,
-        jumlah: quantity,
-      };
-    });
-
     try {
-      const response = await fetch("/api/cart/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: payload }),
-      });
+      const checkoutItems = products
+        .filter((item) => item.stok > 0)
+        .map((item) => {
+          const { quantity } = getPurchasePlan(item);
 
-      if (response.ok) {
-        alert("Semua bahan berhasil dimasukkan ke keranjang!");
-      } else {
-        alert("Gagal menambahkan bahan ke keranjang.");
+          return {
+            id: item.id_produk,
+            id_produk: item.id_produk,
+            name: item.nama_produk,
+            price: Number(item.harga),
+            quantity,
+            image: item.gambar_url || "/images/placeholder.jpg",
+          };
+        });
+
+      if (checkoutItems.length === 0) {
+        alert("Tidak ada bahan yang tersedia untuk dibeli.");
+        setIsAddingBulk(false);
+        return;
       }
+
+      sessionStorage.setItem("buyNowItem", JSON.stringify(checkoutItems));
+      router.push("/checkout?mode=buy-now");
     } catch (error) {
-      console.error("Gagal nambah ke keranjang", error);
+      console.error("Gagal checkout bahan resep:", error);
       alert("Terjadi kesalahan sistem.");
-    } finally {
       setIsAddingBulk(false);
     }
   };
@@ -162,7 +160,7 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
             fontWeight: "bold",
           }}
         >
-          {isAddingBulk ? "Memproses..." : "+ Beli Semua Bahan"}
+          {isAddingBulk ? "Mengarahkan..." : "+ Beli Semua Bahan"}
         </button>
       </div>
 

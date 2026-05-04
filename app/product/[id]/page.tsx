@@ -102,6 +102,21 @@ const handlePrev = () => {
       alert("Terjadi kesalahan sistem.");
     }
   };
+
+  const handleBuyNow = () => {
+  sessionStorage.setItem(
+    "buyNowItem",
+    JSON.stringify({
+      id: product.id_produk,
+      name: product.nama_produk,
+      price: Number(product.harga),
+      quantity: quantity || 1,
+      image: product.gambar_url,
+    })
+  );
+
+  router.push("/checkout?mode=buy-now");
+};
   
 if (!product) {
   return (
@@ -236,18 +251,20 @@ if (!product) {
           </div>
           <button
             className="buy-now-btn"
-            onClick={async () => {
+            onClick={() => {
               try {
-                const res = await fetch('/api/cart', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ id_produk: product.id, quantity })
-                });
-                if (res.ok) {
-                  router.push('/checkout');
-                } else {
-                  alert("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
-                }
+                sessionStorage.setItem(
+                  "buyNowItem",
+                  JSON.stringify({
+                    id: product.id,
+                    name: product.name,
+                    price: Number(product.price),
+                    quantity: quantity,
+                    image: product.image,
+                  })
+                );
+
+                router.push("/checkout?mode=buy-now");
               } catch (err) {
                 console.error(err);
                 alert("Terjadi kesalahan sistem.");
