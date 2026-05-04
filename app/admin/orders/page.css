@@ -807,7 +807,7 @@
   text-transform: capitalize;
 }
 
-.status-badge.paid {
+.status-badge.dibayar {
   background: #ecfdf5;
   color: #059669;
 }
@@ -817,7 +817,7 @@
   color: #d97706;
 }
 
-.status-badge.failed {
+.status-badge.gagal {
   background: #fef2f2;
   color: #dc2626;
 }
