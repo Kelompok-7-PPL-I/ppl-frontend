@@ -1,0 +1,139 @@
+/* Container utama untuk membatasi lebar agar tidak melebar ke ujung layar */
+.favorite-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0;
+}
+
+/* Grid System yang sama dengan Dashboard */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 24px;
+  justify-content: start;
+  width: 100%;
+}
+
+/* Styling Card */
+.product-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  max-width: 300px;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1);
+}
+
+.card-image-wrap {
+  position: relative;
+  width: 100%;
+  height: 210px;
+  overflow: visible;
+  border-radius: 20px 20px 0 0;
+}
+
+.card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 20px 20px 0 0;
+}
+
+/* Tombol Hati (Like Button) */
+.like-btn {
+  position: absolute;
+  bottom: -16px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  background: #4caf50;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  z-index: 10;
+  transition: transform 0.2s;
+  border: none;
+}
+
+.like-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Body & Typography */
+.card-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin-top: 8px;
+}
+
+.card-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  overflow: hidden;
+  display: -webkit-box;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  line-clamp: 1; 
+  overflow: hidden;
+  line-height: 1.2;
+  height: 1.4em;
+}
+
+.card-price {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+/* Actions Buttons */
+.card-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.btn-detail, .btn-buy {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.btn-detail {
+  border: 1px solid #333;
+  color: #333;
+}
+
+.btn-detail:hover {
+  background: #f9f9f9;
+}
+
+.btn-buy {
+  background: #2a8a3a;
+  color: white;
+}
+
+.btn-buy:hover {
+  background: #1f6e2b;
+}
