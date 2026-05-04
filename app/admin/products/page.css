@@ -415,12 +415,64 @@
   overflow: hidden;
 }
 
-.ulasan-modal-box {
+/* ── Ulasan Modal ────────────────────────────────────────────────────── */
+.modal-box.ulasan-modal-box {
+  width: min(680px, calc(100vw - 40px));
   max-width: 680px;
-  max-height: 80vh;        /* ← tambah */
-  display: flex;           /* ← tambah */
-  flex-direction: column;  /* ← tambah */
-  overflow: hidden;        /* ← tambah */
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+}
+
+.ulasan-modal-box .modal-content {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 32px 38px 30px 38px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.ulasan-table-wrap {
+  width: 100%;
+  border-radius: 12px;
+  margin-top: 4px;
+  overflow-x: auto;
+}
+
+.ulasan-table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.ulasan-table thead tr {
+  background: #f5c800;
+}
+
+.ulasan-loading,
+.ulasan-empty {
+  width: 100%;
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  color: #aaa;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+}
+
+/* Star rating row */
+.star-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .modal-content {
@@ -751,7 +803,8 @@
 }
 
 .ulasan-table {
-  min-width: 500px;
+  width: 100%;
+  min-width: 0;
 }
 
 .ulasan-table thead tr {

@@ -246,10 +246,15 @@ const fetchRecipes = useCallback(async () => {
                   <button className="btn-bahan-detail" onClick={() => fetchBahan(r)}>
                     Lihat Bahan
                   </button>
-                </td>                <td><div className="text-wrapper" title={r.langkah_masak}>{r.langkah_masak || "-"}</div></td>
-                
-                <td><div className="text-wrapper">{r.informasi_gizi || "-"}</div></td>
-                
+                </td>                
+                <td>
+                  <div className="text-wrapper" title={r.langkah_masak}>{r.langkah_masak || "-"}
+                  </div>
+                </td>
+                <td>
+                  <div className="text-wrapper">{r.informasi_gizi || "-"}
+                  </div>
+                </td>
                 <td>
                   <img src={r.gambar_url || "/placeholder.jpg"} className="img-thumb" alt="" />
                 </td>
