@@ -47,6 +47,9 @@ export default function ProfilePage() {
         nama_penerima: '',
         nomor_telepon: '',
         alamat_lengkap: '',
+        provinsi: '',
+        kecamatan: '',
+        kelurahan: '',
         kota_kabupaten: '',
         kode_pos: '',
         is_utama: false
@@ -105,12 +108,12 @@ export default function ProfilePage() {
                         const { count: orderCount } = await supabase
                             .from('pesanan')
                             .select('*', { count: 'exact', head: true })
-                            .eq('id_pengguna', userData.id);
+                            .eq('id_user', userData.id);
 
                         const { count: reviewCount } = await supabase
                             .from('ulasan')
                             .select('*', { count: 'exact', head: true })
-                            .eq('id_pengguna', userData.id);
+                            .eq('id_user', userData.id);
 
                         setStats({ 
                             orders: orderCount || 0, 
@@ -135,6 +138,9 @@ export default function ProfilePage() {
                 nama_penerima: selectedAddress.nama_penerima || '',
                 nomor_telepon: selectedAddress.nomor_telepon || '',
                 alamat_lengkap: selectedAddress.alamat_lengkap || '',
+                provinsi: selectedAddress.provinsi || '',
+                kecamatan: selectedAddress.kecamatan || '',
+                kelurahan: selectedAddress.kelurahan || '',
                 kota_kabupaten: selectedAddress.kota_kabupaten || '',
                 kode_pos: selectedAddress.kode_pos || '',
                 is_utama: selectedAddress.is_utama || false
@@ -143,7 +149,7 @@ export default function ProfilePage() {
             // Reset form jika klik Tambah Baru
             setAddressFormData({
                 label_alamat: '', nama_penerima: '', nomor_telepon: '',
-                alamat_lengkap: '', kota_kabupaten: '', kode_pos: '', is_utama: false
+                alamat_lengkap: '', provinsi: '', kecamatan: '', kelurahan: '', kota_kabupaten: '', kode_pos: '', is_utama: false
             });
         }
     }, [selectedAddress, modalType]);
@@ -575,6 +581,18 @@ export default function ProfilePage() {
                             {/* Kota & Kode Pos */}
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase">
+                                    Provinsi
+                                </label>
+                                <input 
+                                    type="text" 
+                                    className="w-full border rounded-xl px-4 py-3 bg-white text-black font-semibold outline-none transition-all border-gray-200 focus:ring-2 focus:ring-green-500"                                    
+                                    value={addressFormData.provinsi} 
+                                    onChange={(e) => setAddressFormData({...addressFormData, provinsi: e.target.value})}                                
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase">
                                     Kota/Kabupaten <span className="text-red-500">*</span>
                                 </label>
 
@@ -596,6 +614,30 @@ export default function ProfilePage() {
                                         setAddressFormData({...addressFormData, kota_kabupaten: e.target.value});
                                         if (errors.kota_kabupaten) setErrors({...errors, kota_kabupaten: ''}); 
                                     }}                                
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase">
+                                    Kecamatan
+                                </label>
+                                <input 
+                                    type="text" 
+                                    className="w-full border rounded-xl px-4 py-3 bg-white text-black font-semibold outline-none transition-all border-gray-200 focus:ring-2 focus:ring-green-500"                                    
+                                    value={addressFormData.kecamatan} 
+                                    onChange={(e) => setAddressFormData({...addressFormData, kecamatan: e.target.value})}                                
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase">
+                                    Kelurahan
+                                </label>
+                                <input 
+                                    type="text" 
+                                    className="w-full border rounded-xl px-4 py-3 bg-white text-black font-semibold outline-none transition-all border-gray-200 focus:ring-2 focus:ring-green-500"                                    
+                                    value={addressFormData.kelurahan} 
+                                    onChange={(e) => setAddressFormData({...addressFormData, kelurahan: e.target.value})}                                
                                 />
                             </div>
 

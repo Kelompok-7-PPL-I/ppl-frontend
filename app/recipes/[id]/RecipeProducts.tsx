@@ -54,36 +54,41 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
     return null;
   }
 
-  const handleBeliSemuaBahan = () => {
+  const handleBeliSemuaBahan = async () => {
     setIsAddingBulk(true);
 
     try {
-      const checkoutItems = products
+      const payloadItems = products
         .filter((item) => item.stok > 0)
         .map((item) => {
           const { quantity } = getPurchasePlan(item);
-
           return {
-            id: item.id_produk,
             id_produk: item.id_produk,
-            name: item.nama_produk,
-            price: Number(item.harga),
-            quantity,
-            image: item.gambar_url || "/images/placeholder.jpg",
+            jumlah: quantity,
           };
         });
 
-      if (checkoutItems.length === 0) {
+      if (payloadItems.length === 0) {
         alert("Tidak ada bahan yang tersedia untuk dibeli.");
         setIsAddingBulk(false);
         return;
       }
 
-      sessionStorage.setItem("buyNowItem", JSON.stringify(checkoutItems));
-      router.push("/checkout?mode=buy-now");
+      const res = await fetch("/api/cart/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: payloadItems }),
+      });
+
+      if (res.ok) {
+        alert("Semua bahan berhasil dimasukkan ke keranjang!");
+      } else {
+        alert("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
+      }
     } catch (error) {
-      console.error("Gagal checkout bahan resep:", error);
+      console.error("Gagal tambah ke keranjang:", error);
       alert("Terjadi kesalahan sistem.");
+    } finally {
       setIsAddingBulk(false);
     }
   };

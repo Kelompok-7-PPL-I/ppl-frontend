@@ -20,6 +20,9 @@ interface Address {
   nama_penerima: string;
   nomor_telepon: string;
   alamat_lengkap: string;
+  provinsi?: string;
+  kecamatan?: string;
+  kelurahan?: string;
   kota_kabupaten: string;
   kode_pos: string;
   is_utama: boolean;
@@ -433,7 +436,10 @@ export default function CheckoutPage() {
 
                     <p className="address-desc">
                       {selectedAddress.alamat_lengkap},{" "}
-                      {selectedAddress.kota_kabupaten}{" "}
+                      {selectedAddress.kelurahan && `${selectedAddress.kelurahan}, `}
+                      {selectedAddress.kecamatan && `${selectedAddress.kecamatan}, `}
+                      {selectedAddress.kota_kabupaten}
+                      {selectedAddress.provinsi && `, ${selectedAddress.provinsi}`}{" "}
                       {selectedAddress.kode_pos}
                     </p>
 
@@ -697,7 +703,10 @@ export default function CheckoutPage() {
 
                           <p>
                             {addr.label_alamat} — {addr.alamat_lengkap},{" "}
+                            {addr.kelurahan && `${addr.kelurahan}, `}
+                            {addr.kecamatan && `${addr.kecamatan}, `}
                             {addr.kota_kabupaten}
+                            {addr.provinsi && `, ${addr.provinsi}`}
                           </p>
 
                           <p style={{ marginTop: 2 }}>
