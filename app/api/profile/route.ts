@@ -15,6 +15,7 @@ export async function GET(request: Request) {
         const pengguna = await prisma.pengguna.findUnique({
             where: { id: userId },
             select: {
+                id: true,
                 nama: true,
                 email: true,
                 alamat: true,

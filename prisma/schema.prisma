@@ -124,6 +124,7 @@ model Pesanan {
   tanggal_pesanan   DateTime      @default(now()) @db.Timestamptz(6)
   total_harga       Decimal       @db.Decimal(12, 2)
   status_pembayaran String        @db.VarChar
+  order_status      String?       @db.VarChar // 👉 TAMBAHKAN BARIS INI
   metode_bayar      String?       @db.VarChar
   order_id          String        @unique
   snap_token        String?
@@ -165,8 +166,8 @@ model Ulasan {
   id_ulasan      Int      @id @default(autoincrement())
   id_user        String   @db.Uuid
   id_produk      Int
-  rating         Int      @default(5)
-  komentar       String?
+  rating         Int      @default(5) // Rating bintang 1-5
+  komentar       String?  @db.Text    // Menggunakan Text agar bisa menampung komentar panjang/template
   tanggal_ulasan DateTime @default(now()) @db.Timestamptz(6)
   produk         Produk   @relation(fields: [id_produk], references: [id_produk])
   pengguna       Pengguna @relation(fields: [id_user], references: [id])
@@ -182,6 +183,9 @@ model AlamatPengguna {
   nama_penerima  String    @db.VarChar(100)
   nomor_telepon  String    @db.VarChar(20)
   alamat_lengkap String
+  provinsi       String?   @db.VarChar(100) // Kolom baru
+  kecamatan      String?   @db.VarChar(100) // Kolom baru
+  kelurahan      String?   @db.VarChar(100) // Kolom baru
   kota_kabupaten String?   @db.VarChar(100)
   kode_pos       String?   @db.VarChar(10)
   is_utama       Boolean?  @default(false)
