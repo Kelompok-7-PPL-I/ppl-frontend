@@ -123,6 +123,7 @@
 
 /* ── Banner ── */
 .banner-section {
+  position: relative;
   padding: 24px 60px 48px 60px;
 }
 
@@ -219,7 +220,7 @@
   transform: translateX(-50%);
   display: flex;
   gap: 12px;
-  z-index: 10;
+  z-index: 20;
 }
 
 .banner-dot {
@@ -233,8 +234,9 @@
   padding: 0;
 }
 
-.dot-active {
+.banner-dot.dot-active {
   background: #fff;
+  transform: scale(1.2); /* Sedikit diperbesar agar menonjol */
 }
 
 /* ── Products ── */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "./page.css";
 import { createClient } from '@/utils/supabase/client';
 
@@ -15,6 +15,16 @@ interface Product {
   gambar: string;
   isPromo: boolean;
   dibuatPada: string;
+}
+
+interface Ulasan {
+  id: number;
+  id_user: string;
+  id_produk: number;
+  rating: number;
+  komentar: string;
+  dibuat_pada: string;
+  nama_user?: string;
 }
 
 type ModalMode = "add" | "edit" | null;
@@ -51,6 +61,16 @@ const CloseIcon = () => (
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
+const StarIcon = ({ filled }: { filled: boolean }) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill={filled ? "#f5c800" : "none"} stroke={filled ? "#f5c800" : "#ccc"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+const ReviewIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtRupiah = (n: number) => "Rp" + n.toLocaleString("id-ID").replace(/,/g, ".");
@@ -59,6 +79,8 @@ const fmtDate = (iso: string) => {
   const d = new Date(iso);
   return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 };
+const renderStars = (rating: number) =>
+  Array.from({ length: 5 }, (_, i) => <StarIcon key={i} filled={i < Math.round(rating)} />);
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function AdminProductsPage() {
@@ -73,6 +95,11 @@ export default function AdminProductsPage() {
   const [editTarget, setEditTarget] = useState<Product | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
+  // Ulasan modal
+  const [ulasanTarget, setUlasanTarget] = useState<Product | null>(null);
+  const [ulasanList, setUlasanList] = useState<Ulasan[]>([]);
+  const [ulasanLoading, setUlasanLoading] = useState(false);
+
   const [form, setForm] = useState({
     nama: "",
     harga: "",
@@ -83,8 +110,8 @@ export default function AdminProductsPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ── Fetch ─────────────────────────────────────────────────────────────────
-  const fetchProducts = async () => {
+  // ── Fetch Products ─────────────────────────────────────────────────────────
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/products?t=${Date.now()}`, { cache: "no-store" });
@@ -107,9 +134,80 @@ export default function AdminProductsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchProducts(); }, []);
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+
+  // ── Sync stok dari pesanan DIBAYAR ─────────────────────────────────────────
+  useEffect(() => {
+    const syncStokFromPaidOrders = async () => {
+      try {
+        const { data: paidItems, error } = await supabase
+          .from("item_pesanan")
+          .select("id_produk, jumlah, pesanan!inner(status_bayar)")
+          .eq("pesanan.status_bayar", "DIBAYAR");
+
+        if (error || !paidItems || paidItems.length === 0) return;
+
+        const soldMap: Record<number, number> = {};
+        paidItems.forEach((item: any) => {
+          soldMap[item.id_produk] = (soldMap[item.id_produk] || 0) + item.jumlah;
+        });
+
+        for (const [idProduk, totalTerjual] of Object.entries(soldMap)) {
+          const { data: prod } = await supabase
+            .from("produk")
+            .select("stok, stok_awal")
+            .eq("id_produk", Number(idProduk))
+            .single();
+
+          if (prod && prod.stok_awal !== undefined) {
+            const newStok = Math.max(0, prod.stok_awal - totalTerjual);
+            await supabase
+              .from("produk")
+              .update({ stok: newStok })
+              .eq("id_produk", Number(idProduk));
+          }
+        }
+      } catch (err) {
+        console.warn("Sync stok error (non-fatal):", err);
+      }
+    };
+
+    syncStokFromPaidOrders();
+  }, [supabase]);
+
+  // ── Fetch Ulasan ──────────────────────────────────────────────────────────
+  // FIX: column is `tanggal_ulasan` (timestamptz) not `dibuat_pada`
+  const fetchUlasan = async (produk: Product) => {
+    setUlasanTarget(produk);
+    setUlasanList([]);
+    setUlasanLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("ulasan")
+        .select("*, pengguna(nama)")
+        .eq("id_produk", produk.id)
+        .order("tanggal_ulasan", { ascending: false }); // FIX: was "dibuat_pada"
+
+      if (error) throw error;
+
+      const mapped: Ulasan[] = (data || []).map((u: any) => ({
+        id: u.id_ulasan ?? u.id,
+        id_user: u.id_user,
+        id_produk: u.id_produk,
+        rating: u.rating,
+        komentar: u.komentar || "",
+        dibuat_pada: u.tanggal_ulasan || "", // FIX: was u.dibuat_pada
+        nama_user: u.pengguna?.nama || u.id_user,
+      }));
+      setUlasanList(mapped);
+    } catch (err) {
+      console.error("Gagal memuat ulasan:", err);
+    } finally {
+      setUlasanLoading(false);
+    }
+  };
 
   // ── Upload Gambar ─────────────────────────────────────────────────────────
   const uploadImage = async (file: File): Promise<string> => {
@@ -132,21 +230,29 @@ export default function AdminProductsPage() {
   // ── Submit (Add & Edit) ───────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!form.nama.trim()) return alert("Nama produk wajib diisi");
+    if (!form.harga || isNaN(Number(form.harga))) return alert("Harga harus berupa angka");
+    if (!form.stok || isNaN(Number(form.stok))) return alert("Stok harus berupa angka");
+    
     setIsSubmitting(true);
     try {
       let imageUrl = modalMode === "edit" ? editTarget?.gambar : "/images/corn-1.jpg";
       if (selectedFile) imageUrl = await uploadImage(selectedFile);
 
       const method = modalMode === "add" ? "POST" : "PUT";
-      const payload = {
-        id: modalMode === "edit" ? editTarget?.id : undefined,
-        nama: form.nama,
-        harga: form.harga,
-        stok: form.stok,
+
+      const payload: Record<string, any> = {
+        nama_produk: form.nama,
+        harga: Number(form.harga),
+        stok: Number(form.stok),
         deskripsi: form.deskripsi,
-        gambar: imageUrl,
+        gambar_url: imageUrl,
         is_promo: form.isPromo,
       };
+
+      if (modalMode === "edit" && editTarget) {
+        payload.id = editTarget.id;
+        payload.id_produk = editTarget.id;
+      }
 
       const res = await fetch("/api/products", {
         method,
@@ -155,7 +261,7 @@ export default function AdminProductsPage() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
+        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(errorData.error || "Gagal menyimpan ke database");
       }
 
@@ -248,6 +354,7 @@ export default function AdminProductsPage() {
               className="btn-tambah"
               onClick={() => {
                 setForm({ nama: "", harga: "", stok: "", deskripsi: "", isPromo: false });
+                setSelectedFile(null);
                 setModalMode("add");
               }}
             >+ Tambah Produk</button>
@@ -276,6 +383,7 @@ export default function AdminProductsPage() {
                 <th>Deskripsi</th>
                 <th>Gambar</th>
                 <th>Promo</th>
+                <th>Ulasan</th>
                 <th>Dibuat Pada</th>
                 <th>Aksi</th>
               </tr>
@@ -283,13 +391,13 @@ export default function AdminProductsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center", padding: "40px" }}>
+                  <td colSpan={10} style={{ textAlign: "center", padding: "40px" }}>
                     Mengambil data...
                   </td>
                 </tr>
               ) : pageItems.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center", padding: "40px", color: "#aaa" }}>
+                  <td colSpan={10} style={{ textAlign: "center", padding: "40px", color: "#aaa" }}>
                     Tidak ada produk ditemukan.
                   </td>
                 </tr>
@@ -314,6 +422,16 @@ export default function AdminProductsPage() {
                       {p.isPromo ? "Ya" : "Tidak"}
                     </span>
                   </td>
+                  {/* Kolom Ulasan */}
+                  <td className="img-container">
+                    <button
+                      className="btn-icon review"
+                      title="Lihat Ulasan"
+                      onClick={() => fetchUlasan(p)}
+                    >
+                      <ReviewIcon />
+                    </button>
+                  </td>
                   <td className="td-date">{fmtDate(p.dibuatPada)}</td>
                   <td>
                     <div className="action-cell">
@@ -329,6 +447,7 @@ export default function AdminProductsPage() {
                             deskripsi: p.deskripsi,
                             isPromo: p.isPromo,
                           });
+                          setSelectedFile(null);
                           setModalMode("edit");
                         }}
                       ><EditIcon /></button>
@@ -395,7 +514,7 @@ export default function AdminProductsPage() {
                   className="form-input"
                   placeholder="Contoh: Rumput Laut Kering"
                   value={form.nama}
-                  onChange={(e) => setForm({ ...form, nama: e.target.value })}
+                  onChange={(e) => setForm((prev) => ({ ...prev, nama: e.target.value }))}
                 />
               </div>
 
@@ -409,7 +528,7 @@ export default function AdminProductsPage() {
                     type="number"
                     placeholder="25000"
                     value={form.harga}
-                    onChange={(e) => setForm({ ...form, harga: e.target.value })}
+                    onChange={(e) => setForm((prev) => ({ ...prev, harga: e.target.value }))}
                   />
                 </div>
                 <div className="form-group">
@@ -421,7 +540,7 @@ export default function AdminProductsPage() {
                     type="number"
                     placeholder="100"
                     value={form.stok}
-                    onChange={(e) => setForm({ ...form, stok: e.target.value })}
+                    onChange={(e) => setForm((prev) => ({ ...prev, stok: e.target.value }))}
                   />
                 </div>
               </div>
@@ -432,7 +551,7 @@ export default function AdminProductsPage() {
                   className="form-textarea"
                   placeholder="Tuliskan deskripsi produk..."
                   value={form.deskripsi}
-                  onChange={(e) => setForm({ ...form, deskripsi: e.target.value })}
+                  onChange={(e) => setForm((prev) => ({ ...prev, deskripsi: e.target.value }))}
                 />
               </div>
 
@@ -459,7 +578,7 @@ export default function AdminProductsPage() {
                     <input
                       type="checkbox"
                       checked={form.isPromo}
-                      onChange={(e) => setForm({ ...form, isPromo: e.target.checked })}
+                      onChange={(e) => setForm((prev) => ({ ...prev, isPromo: e.target.checked }))}
                     />
                     <span className="toggle-slider" />
                   </label>
@@ -504,6 +623,56 @@ export default function AdminProductsPage() {
             <div className="warning-actions">
               <button className="btn-warn-yes" onClick={handleDelete}>Hapus</button>
               <button className="btn-warn-no" onClick={() => setDeleteTarget(null)}>Batal</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ULASAN */}
+      {ulasanTarget && (
+        <div className="modal-backdrop" onClick={() => setUlasanTarget(null)}>
+          <div className="modal-box ulasan-modal-box" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setUlasanTarget(null)} title="Tutup">
+              <CloseIcon />
+            </button>
+            <div className="modal-content">
+              <div className="modal-title">Ulasan Produk</div>
+              <div className="modal-sub">{ulasanTarget.nama}</div>
+
+              {ulasanLoading ? (
+                <div className="ulasan-loading">Memuat ulasan...</div>
+              ) : ulasanList.length === 0 ? (
+                <div className="ulasan-empty">Belum ada ulasan untuk produk ini.</div>
+              ) : (
+                <div className="table-card ulasan-table-wrap">
+                  <table className="products-table ulasan-table">
+                    <thead>
+                      <tr>
+                        <th>No.</th>
+                        <th>Pengguna</th>
+                        <th>Rating</th>
+                        <th>Komentar</th>
+                        <th>Tanggal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ulasanList.map((u, idx) => (
+                        <tr key={u.id}>
+                          <td>{idx + 1}.</td>
+                          <td className="td-name" style={{ fontSize: "13px" }}>{u.nama_user}</td>
+                          <td>
+                            <div className="star-row">{renderStars(u.rating)}</div>
+                          </td>
+                          <td className="td-desc" style={{ maxWidth: "260px" }}>
+                            {u.komentar || <span className="td-empty">—</span>}
+                          </td>
+                          <td className="td-date">{fmtDate(u.dibuat_pada)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>

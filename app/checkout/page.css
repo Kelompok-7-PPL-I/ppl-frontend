@@ -498,6 +498,11 @@
 }
 
 /* ─── Check Dot ───────────────────────────────────────────────── */
+/* ─── FIX #2: Check Dot — properly centred checkmark ──────────
+   Replace the existing .check-dot rule in your page.css
+   ─────────────────────────────────────────────────────────── */
+
+/* OLD (buggy) — remove this:
 .check-dot {
   width: 18px;
   height: 18px;
@@ -518,6 +523,34 @@
   border-top: none;
   border-left: none;
   transform: rotate(45deg);
+}
+*/
+
+/* NEW (fixed) — use flexbox to centre the pseudo-element */
+.check-dot {
+  width: 20px;
+  height: 20px;
+  background: var(--green-dark);
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  /* FIX: use flex to perfectly centre the checkmark */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.check-dot::after {
+  content: '';
+  /* Centre the tick inside the circle using flex child sizing */
+  width: 5px;
+  height: 9px;
+  border: 2.5px solid var(--gold);
+  border-top: none;
+  border-left: none;
+  /* Slight upward nudge so the tick looks optically centred */
+  transform: rotate(45deg) translateY(-1px);
+  display: block;
 }
 
 /* ─── Add Button Modal ────────────────────────────────────────── */

@@ -103,8 +103,46 @@ const handlePrev = () => {
     }
   };
 
+  const handleBuyNow = () => {
+  sessionStorage.setItem(
+    "buyNowItem",
+    JSON.stringify({
+      id: product.id_produk,
+      name: product.nama_produk,
+      price: Number(product.harga),
+      quantity: quantity || 1,
+      image: product.gambar_url,
+    })
+  );
+
+  router.push("/checkout?mode=buy-now");
+};
+  
 if (!product) {
-  return <p>Loading...</p>;
+  return (
+    <div className="detail-root">
+      <header className="detail-header skeleton-header">
+        <div className="skeleton skeleton-logo"></div>
+      </header>
+      <main className="detail-main">
+        <section className="gallery-section">
+          <div className="main-image-wrap skeleton"></div>
+          <div className="thumbnails-row">
+            <div className="thumb-btn skeleton"></div>
+            <div className="thumb-btn skeleton"></div>
+            <div className="thumb-btn skeleton"></div>
+          </div>
+        </section>
+        <section className="info-section">
+          <div className="skeleton skeleton-title"></div>
+          <div className="skeleton skeleton-price"></div>
+          <div className="skeleton skeleton-desc"></div>
+          <div className="skeleton skeleton-desc"></div>
+          <div className="skeleton skeleton-button"></div>
+        </section>
+      </main>
+    </div>
+  );
 }
 
   return (
@@ -208,12 +246,33 @@ if (!product) {
               className={`add-cart-btn ${addedToCart ? "added" : ""}`}
               onClick={handleAddToCart}
             >
-              {addedToCart ? "✓ Added!" : "Add To Cart"}
+              {addedToCart ? "✓ Added!" : "Tambahkan Ke Keranjang"}
             </button>
           </div>
-          <Link href="/checkout" className="buy-now-btn">
+          <button
+            className="buy-now-btn"
+            onClick={() => {
+              try {
+                sessionStorage.setItem(
+                  "buyNowItem",
+                  JSON.stringify({
+                    id: product.id,
+                    name: product.name,
+                    price: Number(product.price),
+                    quantity: quantity,
+                    image: product.image,
+                  })
+                );
+
+                router.push("/checkout?mode=buy-now");
+              } catch (err) {
+                console.error(err);
+                alert("Terjadi kesalahan sistem.");
+              }
+            }}
+          >
             Buy Now
-          </Link>
+          </button>
         </section>
       </main>
     </div>

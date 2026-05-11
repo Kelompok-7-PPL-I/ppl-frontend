@@ -6,7 +6,8 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "dksuiswxqpvscdhpccbk.supabase.co" },
       { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "wiratech.co.id" }, // <== baru
+      { protocol: "https", hostname: "wiratech.co.id" },
+      { protocol: "https", hostname: "picsum.photos" }, // <== tambah ini
     ],
   },
 };

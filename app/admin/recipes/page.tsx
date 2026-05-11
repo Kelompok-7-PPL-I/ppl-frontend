@@ -24,6 +24,16 @@ interface Recipe {
   created_at: string;
 }
 
+// Tambah interface baru setelah interface Recipe
+interface BahanItem {
+  id: number;
+  id_produk: number;
+  takaran_resep: number;
+  nama_produk?: string;
+  gambar_url?: string;
+}
+
+
 const PER_PAGE = 10;
 
 // ── Icons 
@@ -66,6 +76,38 @@ const WarnIcon = () => (
 );
 
 export default function AdminRecipesPage() {
+
+  // Tambah state di dalam komponen (setelah state isDeleteModalOpen)
+const [bahanTarget, setBahanTarget] = useState<Recipe | null>(null);
+const [bahanList, setBahanList] = useState<BahanItem[]>([]);
+const [bahanLoading, setBahanLoading] = useState(false);
+
+// Tambah fungsi fetchBahan
+const fetchBahan = async (resep: Recipe) => {
+  setBahanTarget(resep);
+  setBahanList([]);
+  setBahanLoading(true);
+  try {
+    const { data, error } = await supabase
+      .from("resep_bahan_produk")
+      .select("*, produk(nama_produk, gambar_url)")
+      .eq("id_resep", resep.id_resep);
+    if (error) throw error;
+    const mapped: BahanItem[] = (data || []).map((b: any) => ({
+      id: b.id,
+      id_produk: b.id_produk,
+      takaran_resep: b.takaran_resep,
+      nama_produk: b.produk?.nama_produk || `Produk #${b.id_produk}`,
+      gambar_url: b.produk?.gambar_url || "",
+    }));
+    setBahanList(mapped);
+  } catch (err) {
+    console.error("Gagal memuat bahan:", err);
+  } finally {
+    setBahanLoading(false);
+  }
+};
+
   // State Monitoring
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,14 +241,20 @@ const fetchRecipes = useCallback(async () => {
                 <td>{(safePage - 1) * PER_PAGE + i + 1}.</td>
                 <td><span className="judul-wrapper" title={r.judul_resep}>{r.judul_resep}</span></td>
                 <td><span className="cat-badge">{r.kategori_jenis}</span></td>
-                
-                {/* Deskripsi, Bahan, Langkah dibungkus div text-wrapper */}
                 <td><div className="text-wrapper" title={r.deskripsi_singkat}>{r.deskripsi_singkat || "-"}</div></td>
-                <td><div className="text-wrapper" title={r.bahan_bahan}>{r.bahan_bahan || "-"}</div></td>
-                <td><div className="text-wrapper" title={r.langkah_masak}>{r.langkah_masak || "-"}</div></td>
-                
-                <td><div className="text-wrapper">{r.informasi_gizi || "-"}</div></td>
-                
+                <td>
+                  <button className="btn-bahan-detail" onClick={() => fetchBahan(r)}>
+                    Lihat Bahan
+                  </button>
+                </td>                
+                <td>
+                  <div className="text-wrapper" title={r.langkah_masak}>{r.langkah_masak || "-"}
+                  </div>
+                </td>
+                <td>
+                  <div className="text-wrapper">{r.informasi_gizi || "-"}
+                  </div>
+                </td>
                 <td>
                   <img src={r.gambar_url || "/placeholder.jpg"} className="img-thumb" alt="" />
                 </td>
@@ -248,6 +296,44 @@ const fetchRecipes = useCallback(async () => {
         </div>
       </div>
 
+      {/* MODAL BAHAN */}
+      {bahanTarget && (
+        <div className="modal-backdrop" onClick={() => setBahanTarget(null)}>
+          <div className="modal-box bahan-modal-box" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setBahanTarget(null)}>
+              <CloseIcon />
+            </button>
+            <div className="modal-content">
+              <div className="modal-title">Bahan Resep</div>
+              <div className="modal-sub">{bahanTarget.judul_resep}</div>
+
+              {bahanLoading ? (
+                <div className="bahan-loading">Memuat bahan...</div>
+              ) : bahanList.length === 0 ? (
+                <div className="bahan-empty">Belum ada bahan terdaftar untuk resep ini.</div>
+              ) : (
+                <div className="bahan-list">
+                  {bahanList.map((b) => (
+                    <div key={b.id} className="bahan-card">
+                      <div className="bahan-img-wrap">
+                        {b.gambar_url
+                          ? <img src={b.gambar_url} alt={b.nama_produk} className="bahan-img" />
+                          : <div className="bahan-img-placeholder" />
+                        }
+                      </div>
+                      <div className="bahan-info">
+                        <span className="bahan-nama">{b.nama_produk}</span>
+                        <span className="bahan-qty">{b.takaran_resep} gram</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Peringatan Hapus */}
       {isDeleteModalOpen && targetRecipe && (
         <div className="modal-backdrop" onClick={() => setIsDeleteModalOpen(false)}>
@@ -268,6 +354,8 @@ const fetchRecipes = useCallback(async () => {
             </div>
           </div>
         </div>
+
+        
       )}
     </>
   );

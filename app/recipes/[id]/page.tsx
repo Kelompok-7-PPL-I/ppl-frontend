@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { createClient } from '@/utils/supabase/client';
 import BackButton from "./BackButton";
+import RecipeProducts from "./RecipeProducts";
 import "./page.css";
 
 // Konfigurasi Font Plus Jakarta Sans
@@ -34,6 +35,35 @@ export default async function RecipeDetail({ params }: { params: Promise<{ id: s
       </div>
     );
   }
+
+  // Ambil produk-produk terkait dari tabel resep_bahan_produk beserta takarannya
+  const { data: recipeProductsData, error: recipeProductsError } = await supabase
+    .from('resep_bahan_produk')
+    .select(`
+      takaran_resep,
+      produk (
+        id_produk,
+        nama_produk,
+        deskripsi,
+        harga,
+        stok,
+        gambar_url,
+        is_promo,
+        satuan_produk,
+        unit_nama
+      )
+    `)
+    .eq('id_resep', resolvedParams.id);
+
+  const relatedProducts = recipeProductsData
+    ? recipeProductsData.map((rp: any) => {
+        if (!rp.produk) return null;
+        return {
+          ...rp.produk,
+          takaran_resep: rp.takaran_resep
+        };
+      }).filter(Boolean)
+    : [];
 
   // Olah data bahan-bahan
   const ingredientsArray = recipe.bahan_bahan ? recipe.bahan_bahan.split(',') : [];
@@ -153,6 +183,9 @@ export default async function RecipeDetail({ params }: { params: Promise<{ id: s
           })}
         </div>
       </section>
+
+      {/* NEW SECTION: BAHAN-BAHAN TERKAIT UNTUK DIBELI */}
+      <RecipeProducts products={relatedProducts} />
     </main>
   );
 }

@@ -341,3 +341,229 @@
   cursor: not-allowed;
   font-weight: 600;
 }
+
+/* ── Tambahkan ke page.css (add & edit) ─────────────────────── */
+
+/* Bahan yang sudah dipilih */
+.bahan-dipilih-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #f8faf8;
+  border: 1px solid #e0e8e0;
+  border-radius: 10px;
+}
+
+.bahan-dipilih-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid #e8eee8;
+  border-radius: 8px;
+}
+
+.bahan-dipilih-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.bahan-dipilih-img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.bahan-dipilih-nama {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bahan-dipilih-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.bahan-takaran-input {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid #d0d8d0;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: right;
+}
+
+.bahan-takaran-input:focus {
+  outline: none;
+  border-color: #4caf50;
+}
+
+.bahan-satuan {
+  font-size: 13px;
+  color: #666;
+}
+
+.bahan-remove-btn {
+  background: none;
+  border: none;
+  color: #e53935;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.bahan-remove-btn:hover {
+  background: #ffeaea;
+}
+
+/* Tombol buka katalog */
+.btn-open-katalog {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  background: #fff;
+  border: 1.5px dashed #4caf50;
+  border-radius: 8px;
+  color: #2e7d32;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  margin-top: 4px;
+}
+
+.btn-open-katalog:hover {
+  background: #f1f8f1;
+  border-color: #2e7d32;
+}
+
+/* Panel katalog */
+.katalog-panel {
+  margin-top: 12px;
+  border: 1px solid #e0e8e0;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fafffe;
+}
+
+.katalog-search {
+  width: 100%;
+  padding: 9px 14px;
+  border: 1px solid #d0d8d0;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 14px;
+  box-sizing: border-box;
+}
+
+.katalog-search:focus {
+  outline: none;
+  border-color: #4caf50;
+}
+
+.katalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.katalog-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  padding: 20px 0;
+}
+
+.katalog-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border: 1.5px solid #e8eee8;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  background: #fff;
+  text-align: center;
+  user-select: none;
+}
+
+.katalog-item:hover {
+  border-color: #4caf50;
+  background: #f4fbf4;
+  transform: translateY(-1px);
+}
+
+.katalog-item--selected {
+  border-color: #4caf50;
+  background: #e8f5e9;
+}
+
+.katalog-item-img-wrap {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.katalog-item-img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.katalog-item-img-placeholder {
+  width: 64px;
+  height: 64px;
+  background: #f0f0f0;
+  border-radius: 8px;
+}
+
+.katalog-item-check {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  background: #4caf50;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.katalog-item-nama {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1a1a1a;
+  line-height: 1.3;
+  word-break: break-word;
+}
