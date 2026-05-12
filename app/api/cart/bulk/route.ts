@@ -9,7 +9,7 @@ export async function POST(request: Request) {
         if (!session || !session.user || !(session.user as any).id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-        
+
         const userId = (session.user as any).id;
         const { items } = await request.json();
 
@@ -17,7 +17,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
         }
 
-        const results = [];
+        // PERBAIKAN DI SINI: Tambahkan tipe : any[]
+        const results: any[] = [];
 
         // Gunakan transaksi agar semua operasi berhasil atau gagal bersamaan
         await prisma.$transaction(async (tx) => {
