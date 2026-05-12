@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { useToast } from "@/app/context/ToastContext";
 
 const formatRupiah = (n: number) =>
   "Rp " + n.toLocaleString("id-ID").replace(/\./g, ".");
@@ -45,6 +46,7 @@ const getPurchasePlan = (product: Product) => {
 
 export default function RecipeProducts({ products }: { products: Product[] }) {
   const router = useRouter();
+  const { toast } = useToast();
 
   const [addingId, setAddingId] = useState<number | null>(null);
   const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
@@ -69,7 +71,7 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
         });
 
       if (payloadItems.length === 0) {
-        alert("Tidak ada bahan yang tersedia untuk dibeli.");
+        toast.danger("Tidak ada bahan yang tersedia untuk dibeli.");
         setIsAddingBulk(false);
         return;
       }
@@ -81,13 +83,13 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
       });
 
       if (res.ok) {
-        alert("Semua bahan berhasil dimasukkan ke keranjang!");
+        toast.success("Semua bahan berhasil dimasukkan ke keranjang!");
       } else {
-        alert("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
+        toast.danger ("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
       }
     } catch (error) {
       console.error("Gagal tambah ke keranjang:", error);
-      alert("Terjadi kesalahan sistem.");
+      toast.danger("Terjadi kesalahan sistem.");
     } finally {
       setIsAddingBulk(false);
     }
@@ -123,11 +125,11 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
           });
         }, 2000);
       } else {
-        alert("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
+        toast.danger("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan sistem.");
+      toast.danger("Terjadi kesalahan sistem.");
     } finally {
       setAddingId(null);
     }

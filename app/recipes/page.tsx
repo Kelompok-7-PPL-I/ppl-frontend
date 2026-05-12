@@ -9,6 +9,7 @@ import { signOut as nextAuthSignOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
+import { useToast } from "@/app/context/ToastContext";
 import "./page.css"
 
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"]});
@@ -29,7 +30,7 @@ export default function RecipesPage(){
     const supabase = createClient();
     const queryClient = useQueryClient();
     const { data: session, status } = useSession();
-
+    const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -131,7 +132,7 @@ export default function RecipesPage(){
       },
       onError: (_, __, context) => {
         queryClient.setQueryData(["recipes", userId], context?.previousRecipes);
-        alert("Gagal memperbarui favorit.");
+        toast.danger("Gagal memperbarui favorit.");
       },
       onSettled: () => {
         queryClient.invalidateQueries({ queryKey: ["recipes", userId] });

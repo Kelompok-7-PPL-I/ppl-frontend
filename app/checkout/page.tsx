@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Icon from "@mdi/react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/app/context/ToastContext";
 import {
   mdiMapMarker,
   mdiTruckDelivery,
@@ -84,6 +85,7 @@ const calculateSubtotal = (items: CartItem[]) => {
 // ─── Component ──────────────────────────────────────────────────
 export default function CheckoutPage() {
   const router = useRouter();
+  const { toast } = useToast();
 
   const [modal, setModal] = useState({ isOpen: false, type: "" });
 
@@ -256,12 +258,12 @@ export default function CheckoutPage() {
   // ── Checkout ─────────────────────────────────────────────────
   const handleCheckout = async () => {
     if (!selectedAddress) {
-      alert("Pilih alamat pengiriman terlebih dahulu.");
+      toast.warning("Pilih alamat pengiriman terlebih dahulu.");
       return;
     }
 
     if (cartItems.length === 0 || subtotal <= 0) {
-      alert("Tidak ada produk untuk checkout.");
+      toast.warning("Tidak ada produk untuk checkout.");
       return;
     }
 
@@ -332,7 +334,7 @@ export default function CheckoutPage() {
                   sessionStorage.removeItem("checkoutItems");
                   sessionStorage.removeItem("buyNowItem");
 
-                  alert("Bayar Berhasil!");
+                  toast.success("Bayar Berhasil!");
                   router.push("/DashboardProduct");
                 })
                 .catch((err) => {
@@ -341,32 +343,32 @@ export default function CheckoutPage() {
                   sessionStorage.removeItem("checkoutItems");
                   sessionStorage.removeItem("buyNowItem");
 
-                  alert("Bayar Berhasil!");
+                  toast.success("Bayar Berhasil!");
                   router.push("/DashboardProduct");
                 });
             },
             onPending: () => {
-              alert("Selesaikan pembayaran ya!");
+              toast.warning("Selesaikan pembayaran ya!");
             },
             onError: () => {
-              alert("Yah, gagal bayar.");
+              toast.danger("Yah, gagal bayar.");
             },
             onClose: () => {
               console.log("User menutup popup Midtrans.");
             },
           });
         } else {
-          alert("Sistem Midtrans belum siap. Coba refresh halaman.");
+          toast.danger("Sistem Midtrans belum siap. Coba refresh halaman.");
         }
       } else if (data.error) {
-        alert("Gagal Checkout: " + data.error);
+        toast.danger("Gagal Checkout: " + data.error);
       } else {
         console.error("Invalid checkout response:", data);
-        alert("Gagal Checkout: token Midtrans tidak ditemukan.");
+        toast.danger("Gagal Checkout: token Midtrans tidak ditemukan.");
       }
     } catch (err) {
       console.error(err);
-      alert("Sistem sibuk, coba lagi nanti.");
+      toast.danger("Sistem sibuk, coba lagi nanti.");
     } finally {
       setIsLoading(false);
     }

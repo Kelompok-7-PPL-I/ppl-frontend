@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import "./page.css";
 import { createBrowserClient } from '@supabase/ssr';
+import { useToast } from "@/app/context/ToastContext";
 
 export const createClient = () =>
   createBrowserClient(
@@ -130,6 +131,8 @@ export default function AdminUsersPage() {
   const [favResepData, setFavResepData] = useState<FavResepItem[]>([]);
   const [ulasanData, setUlasanData] = useState<UlasanItem[]>([]);
 
+  const { toast } = useToast();
+
   const fetchUsers = async () => {
     setLoading(true);
     const { data, error } = await supabase.from('pengguna').select('*').order('dibuat_pada', { ascending: false });
@@ -214,9 +217,9 @@ export default function AdminUsersPage() {
       const { error } = await supabase.from('pengguna').update({ peran: newRole }).eq('id', idUser);
       if (error) throw error;
       setUsers(users.map(u => (u.id === idUser ? { ...u, peran: newRole } : u)));
-      alert("Role berhasil diperbarui!");
+      toast.success("Role berhasil diperbarui!");
     } catch (err: any) {
-      alert("Gagal update role: " + err.message);
+      toast.danger("Gagal update role: " + err.message);
     }
   };
 
