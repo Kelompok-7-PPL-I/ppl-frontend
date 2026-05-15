@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import "./page.css";
 import { createClient } from '@/utils/supabase/client';
+import { useToast } from "@/app/context/ToastContext";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -99,6 +100,7 @@ export default function AdminProductsPage() {
   const [ulasanTarget, setUlasanTarget] = useState<Product | null>(null);
   const [ulasanList, setUlasanList] = useState<Ulasan[]>([]);
   const [ulasanLoading, setUlasanLoading] = useState(false);
+  const { toast } = useToast();
 
   const [form, setForm] = useState({
     nama: "",
@@ -229,10 +231,10 @@ export default function AdminProductsPage() {
 
   // ── Submit (Add & Edit) ───────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!form.nama.trim()) return alert("Nama produk wajib diisi");
-    if (!form.harga || isNaN(Number(form.harga))) return alert("Harga harus berupa angka");
-    if (!form.stok || isNaN(Number(form.stok))) return alert("Stok harus berupa angka");
-    
+    if (!form.nama.trim()) return toast.warning("Nama produk wajib diisi");
+    if (!form.harga || isNaN(Number(form.harga))) return toast.warning("Harga harus berupa angka");
+    if (!form.stok || isNaN(Number(form.stok))) return toast.warning("Stok harus berupa angka");
+
     setIsSubmitting(true);
     try {
       let imageUrl = modalMode === "edit" ? editTarget?.gambar : "/images/corn-1.jpg";
@@ -268,7 +270,7 @@ export default function AdminProductsPage() {
       await fetchProducts();
       closeModal();
     } catch (err: any) {
-      alert(err.message);
+      toast.danger(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -283,7 +285,7 @@ export default function AdminProductsPage() {
       await fetchProducts();
       setDeleteTarget(null);
     } catch (err: any) {
-      alert(err.message);
+      toast.danger(err.message);
     }
   };
 

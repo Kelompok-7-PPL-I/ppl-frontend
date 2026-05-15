@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createBrowserClient } from '@supabase/ssr';
+import { useToast } from "@/app/context/ToastContext";
 import "./page.css";
 
 const supabase = createBrowserClient(
@@ -26,6 +27,7 @@ interface BahanDipilih {
 export default function EditRecipePage() {
   const router = useRouter();
   const { id } = useParams();
+  const { toast } = useToast();
 
   // ── State Form ───────────────────────────────────────────────
   const [isLoading, setIsLoading] = useState(true);
@@ -116,7 +118,7 @@ export default function EditRecipePage() {
       }
     } catch (err: any) {
       console.error("Error:", err.message);
-      alert("Resep tidak ditemukan!");
+      toast.warning("Resep tidak ditemukan!");
       router.push("/admin/recipes");
     } finally {
       setIsLoading(false);
@@ -216,11 +218,11 @@ export default function EditRecipePage() {
         if (bahanError) throw bahanError;
       }
 
-      alert("Resep berhasil diupdate!");
+      toast.success("Resep berhasil diupdate!");
       router.push("/admin/recipes");
       router.refresh();
     } catch (err: any) {
-      alert(err.message);
+      toast.danger("Error: " + err.message);
     } finally {
       setIsSubmitting(false);
     }

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { getSession } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { MapPin, Pencil, Home, Plus } from 'lucide-react';
+import { useToast } from "@/app/context/ToastContext";
 
 export default function ProfilePage() {
     const supabase = createClient();
@@ -14,6 +15,18 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const [showSuccess, setShowSuccess] = useState(false);
     const [stats, setStats] = useState({ orders: 0, reviews: 0 });
+    const { toast } = useToast();
+
+    // State untuk fetch data wilayah
+    const [provinces, setProvinces] = useState<any[]>([]);
+    const [regencies, setRegencies] = useState<any[]>([]);
+    const [districts, setDistricts] = useState<any[]>([]);
+    const [villages, setVillages] = useState<any[]>([]);
+
+    // State loading untuk dropdown
+    const [dropdownLoading, setDropdownLoading] = useState({
+        prov: false, kab: false, kec: false, kel: false
+    });
 
     // State untuk fitur edit
     const [modalType, setModalType] = useState<'kontak' | 'alamat_list' | 'alamat_form' | null>(null);    
@@ -172,7 +185,7 @@ export default function ProfilePage() {
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
         } else {
-            alert("Gagal memperbarui profil.");
+            toast.danger("Gagal memperbarui profil.");
         }
         setLoading(false);
     };
@@ -187,6 +200,103 @@ export default function ProfilePage() {
             .order('is_utama', { ascending: false });
 
         if (!error) setAddresses(data || []);
+    };
+
+    // Fetch Provinsi saat modal alamat dibuka
+    useEffect(() => {
+        if (modalType === 'alamat_form') {
+            setDropdownLoading(prev => ({ ...prev, prov: true }));
+            fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json`)
+                .then(res => res.json())
+                .then(data => {
+                    setProvinces(data);
+                    setDropdownLoading(prev => ({ ...prev, prov: false }));
+                });
+        }
+    }, [modalType]);
+
+    // 2. Fetch Kabupaten saat Provinsi Berubah
+    useEffect(() => {
+        if (addressFormData.provinsi) {
+            // Cari ID berdasarkan Nama (karena API Emsifa butuh ID untuk fetch anak-anaknya)
+            const provId = provinces.find(p => p.name === addressFormData.provinsi)?.id;
+            if (provId) {
+                setDropdownLoading(prev => ({ ...prev, kab: true }));
+                fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provId}.json`)
+                    .then(res => res.json())
+                    .then(data => {
+                        setRegencies(data);
+                        setDropdownLoading(prev => ({ ...prev, kab: false }));
+                    });
+            }
+        } else {
+            setRegencies([]);
+        }
+    }, [addressFormData.provinsi, provinces]);
+
+    // 3. Fetch Kecamatan saat Kabupaten Berubah
+    useEffect(() => {
+        if (addressFormData.kota_kabupaten) {
+            const kabId = regencies.find(r => r.name === addressFormData.kota_kabupaten)?.id;
+            if (kabId) {
+                setDropdownLoading(prev => ({ ...prev, kec: true }));
+                fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${kabId}.json`)
+                    .then(res => res.json())
+                    .then(data => {
+                        setDistricts(data);
+                        setDropdownLoading(prev => ({ ...prev, kec: false }));
+                    });
+            }
+        } else {
+            setDistricts([]);
+        }
+    }, [addressFormData.kota_kabupaten, regencies]);
+
+    // 4. Fetch Kelurahan saat Kecamatan Berubah
+    useEffect(() => {
+        if (addressFormData.kecamatan) {
+            const kecId = districts.find(d => d.name === addressFormData.kecamatan)?.id;
+            if (kecId) {
+                setDropdownLoading(prev => ({ ...prev, kel: true }));
+                fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${kecId}.json`)
+                    .then(res => res.json())
+                    .then(data => {
+                        setVillages(data);
+                        setDropdownLoading(prev => ({ ...prev, kel: false }));
+                    });
+            }
+        } else {
+            setVillages([]);
+        }
+    }, [addressFormData.kecamatan, districts]);
+
+    // --- HELPER UNTUK HANDLE PERUBAHAN ---
+    const handleRegionChange = (field: string, value: string) => {
+        // Jika provinsi berubah, reset semua anak-anaknya di bawah
+        if (field === 'provinsi') {
+            setAddressFormData({
+                ...addressFormData,
+                provinsi: value,
+                kota_kabupaten: '',
+                kecamatan: '',
+                kelurahan: ''
+            });
+        } else if (field === 'kota_kabupaten') {
+            setAddressFormData({
+                ...addressFormData,
+                kota_kabupaten: value,
+                kecamatan: '',
+                kelurahan: ''
+            });
+        } else if (field === 'kecamatan') {
+            setAddressFormData({
+                ...addressFormData,
+                kecamatan: value,
+                kelurahan: ''
+            });
+        } else {
+            setAddressFormData({ ...addressFormData, [field]: value });
+        }
     };
 
     // 2. Fungsi Simpan (Tambah & Edit)
@@ -225,7 +335,7 @@ export default function ProfilePage() {
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
         } catch (err: any) {
-            alert("Error: " + err.message);
+            toast.danger("Error: " + err.message);
         } finally {
             setLoading(false);
         }
@@ -246,7 +356,7 @@ export default function ProfilePage() {
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
         } catch (err: any) {
-            alert("Gagal menghapus: " + err.message);
+            toast.danger("Gagal menghapus: " + err.message);
         } finally {
             setLoading(false);
             setShowWarning({ ...showWarning, active: false });
@@ -581,64 +691,70 @@ export default function ProfilePage() {
                             {/* Kota & Kode Pos */}
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase">
-                                    Provinsi
+                                    Provinsi <span className="text-red-500">*</span>
                                 </label>
-                                <input 
-                                    type="text" 
-                                    className="w-full border rounded-xl px-4 py-3 bg-white text-black font-semibold outline-none transition-all border-gray-200 focus:ring-2 focus:ring-green-500"                                    
-                                    value={addressFormData.provinsi} 
-                                    onChange={(e) => setAddressFormData({...addressFormData, provinsi: e.target.value})}                                
-                                />
+                                <select 
+                                    className="w-full border rounded-xl px-4 py-3 bg-white text-black font-semibold outline-none border-gray-200 focus:ring-2 focus:ring-green-500 appearance-none"
+                                    value={addressFormData.provinsi}
+                                    onChange={(e) => handleRegionChange('provinsi', e.target.value)}
+                                >
+                                    <option value="">{dropdownLoading.prov ? 'Memuat...' : 'Pilih Provinsi'}</option>
+                                    {provinces.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                                </select>
                             </div>
 
                             <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">
+                                <label className={`text-[10px] font-bold uppercase transition-colors ${!addressFormData.provinsi ? 'text-gray-300' : 'text-gray-400'}`}>
                                     Kota/Kabupaten <span className="text-red-500">*</span>
                                 </label>
 
-                                {errors.kota_kabupaten && (
-                                    <span className="text-[10px] text-red-500 font-bold animate-pulse">
-                                        {errors.kota_kabupaten}
-                                    </span>
-                                )}
+                                <select 
+                                    disabled={!addressFormData.provinsi || dropdownLoading.kab}
+                                    className="w-full border rounded-xl px-4 py-3 font-semibold outline-none transition-all duration-200
+                                            /* Kondisi Aktif */
+                                            bg-white text-black border-gray-200 focus:ring-2 focus:ring-green-500 cursor-pointer
+                                            /* Kondisi Disabled (Mati) */
+                                            disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed disabled:opacity-70"
+                                        value={addressFormData.kota_kabupaten}
+                                        onChange={(e) => handleRegionChange('kota_kabupaten', e.target.value)}
+                                    >
+                                    <option value="">{dropdownLoading.kab ? 'Memuat...' : 'Pilih Kota/Kab'}</option>
+                                    {regencies.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+                                </select>
+                            </div>
 
-                                <input 
-                                    type="text" 
-                                    className={`w-full border rounded-xl px-4 py-3 bg-white text-black font-semibold outline-none transition-all ${
-                                        errors.kota_kabupaten 
-                                            ? 'border-red-500 bg-red-50 focus:ring-1 focus:ring-red-200' 
-                                            : 'border-gray-200 focus:ring-2 focus:ring-green-500'
-                                    }`}                                    
-                                    value={addressFormData.kota_kabupaten} 
-                                    onChange={(e) => {
-                                        setAddressFormData({...addressFormData, kota_kabupaten: e.target.value});
-                                        if (errors.kota_kabupaten) setErrors({...errors, kota_kabupaten: ''}); 
-                                    }}                                
-                                />
+                            <div>
+                                <label className={`text-[10px] font-bold uppercase transition-colors ${!addressFormData.kota_kabupaten ? 'text-gray-300' : 'text-gray-400'}`}>
+                                    Kecamatan <span className="text-red-500">*</span>
+                                </label>
+                                <select 
+                                    disabled={!addressFormData.kota_kabupaten || districts.length === 0 || dropdownLoading.kec}
+                                    className="w-full border rounded-xl px-4 py-3 font-semibold outline-none transition-all duration-200
+                                                bg-white text-black border-gray-200 focus:ring-2 focus:ring-green-500 cursor-pointer
+                                                disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed disabled:opacity-70"
+                                    value={addressFormData.kecamatan}
+                                    onChange={(e) => handleRegionChange('kecamatan', e.target.value)}
+                                >
+                                    <option value="">{dropdownLoading.kec ? 'Memuat...' : 'Pilih Kecamatan'}</option>
+                                    {districts.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                                </select>
                             </div>
 
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase">
-                                    Kecamatan
+                                    Kelurahan <span className="text-red-500">*</span>
                                 </label>
-                                <input 
-                                    type="text" 
-                                    className="w-full border rounded-xl px-4 py-3 bg-white text-black font-semibold outline-none transition-all border-gray-200 focus:ring-2 focus:ring-green-500"                                    
-                                    value={addressFormData.kecamatan} 
-                                    onChange={(e) => setAddressFormData({...addressFormData, kecamatan: e.target.value})}                                
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">
-                                    Kelurahan
-                                </label>
-                                <input 
-                                    type="text" 
-                                    className="w-full border rounded-xl px-4 py-3 bg-white text-black font-semibold outline-none transition-all border-gray-200 focus:ring-2 focus:ring-green-500"                                    
-                                    value={addressFormData.kelurahan} 
-                                    onChange={(e) => setAddressFormData({...addressFormData, kelurahan: e.target.value})}                                
-                                />
+                                <select 
+                                    disabled={!addressFormData.kecamatan || dropdownLoading.kel}
+                                    className="w-full border rounded-xl px-4 py-3 font-semibold outline-none transition-all duration-200
+                                        bg-white text-black border-gray-200 focus:ring-2 focus:ring-green-500 cursor-pointer
+                                        disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed disabled:opacity-70"
+                                    value={addressFormData.kelurahan}
+                                    onChange={(e) => handleRegionChange('kelurahan', e.target.value)}
+                                >
+                                    <option value="">{dropdownLoading.kel ? 'Memuat...' : 'Pilih Kelurahan'}</option>
+                                    {villages.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
+                                </select>
                             </div>
 
                             <div>
