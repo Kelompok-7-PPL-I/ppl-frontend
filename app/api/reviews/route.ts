@@ -12,16 +12,17 @@ export async function POST(request: Request) {
 
         const userId = (session.user as any).id;
         const body = await request.json();
-        const { id_produk, rating, komentar } = body;
+        const { id_produk, id_item, rating, komentar } = body;
 
-        if (!id_produk || !rating) {
-            return NextResponse.json({ error: "id_produk and rating are required" }, { status: 400 });
+        if (!id_produk || !id_item || !rating) {
+            return NextResponse.json({ error: "id_produk, id_item, and rating are required" }, { status: 400 });
         }
 
         const ulasan = await prisma.ulasan.create({
             data: {
                 id_user: userId,
                 id_produk: Number(id_produk),
+                id_item: Number(id_item),
                 rating: Number(rating),
                 komentar: komentar || "",
             }
@@ -30,6 +31,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, ulasan });
     } catch (error: any) {
         console.error("Error creating review:", error);
+        
+        // Tips: Cek jika error karena duplikasi id_item (P2002 adalah kode error unique constraint Prisma)
+        if (error.code === 'P2002') {
+            return NextResponse.json({ error: "Item ini sudah pernah Anda ulas sebelumnya" }, { status: 400 });
+        }
+
         return NextResponse.json({ error: "Terjadi kesalahan sistem saat menyimpan ulasan" }, { status: 500 });
     }
 }
