@@ -846,3 +846,52 @@
   flex-direction: column;
   min-width: 0;
 }
+
+/* ── Badge Ulasan ── */
+.badge-ulasan {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-ulasan:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  transform: translateY(-1px);
+}
+
+/* ── Star Rating ── */
+.detail-star-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 4px 0;
+  color: #f59e0b;
+}
+
+.star-empty {
+  color: #d1d5db;
+}
+
+.detail-rating-num {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #888;
+  margin-left: 4px;
+}
+
+.detail-card-komentar {
+  font-size: 12.5px;
+  color: #555;
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+.detail-card-tanggal {
+  font-size: 11.5px;
+  color: #bbb;
+  font-weight: 500;
+  margin-top: 3px;
+}

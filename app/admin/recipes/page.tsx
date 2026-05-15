@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import "./page.css";
 import { createBrowserClient } from '@supabase/ssr';
+import { useToast } from "@/app/context/ToastContext";
 
 // 1. Inisialisasi di LUAR komponen (Singleton) 
 // Ini mencegah error "Lock broken" karena instance hanya dibuat satu kali.
@@ -81,6 +82,7 @@ export default function AdminRecipesPage() {
 const [bahanTarget, setBahanTarget] = useState<Recipe | null>(null);
 const [bahanList, setBahanList] = useState<BahanItem[]>([]);
 const [bahanLoading, setBahanLoading] = useState(false);
+const { toast } = useToast();
 
 // Tambah fungsi fetchBahan
 const fetchBahan = async (resep: Recipe) => {
@@ -152,7 +154,7 @@ const fetchRecipes = useCallback(async () => {
       setIsDeleteModalOpen(false);
       setTargetRecipe(null);
     } catch (err: any) {
-      alert("Error: " + err.message);
+      toast.danger("Error: " + err.message);
     }
   };
 

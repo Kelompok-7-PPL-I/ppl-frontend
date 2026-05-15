@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import "./page.css";
 import { createBrowserClient } from '@supabase/ssr';
+import { useToast } from "@/app/context/ToastContext";
 
 export const createClient = () =>
   createBrowserClient(
@@ -52,7 +53,19 @@ interface FavResepItem {
   };
 }
 
-type DetailModalType = "alamat" | "fav-produk" | "fav-resep" | null;
+interface UlasanItem {
+  id_ulasan: string;
+  id_produk: string;
+  rating: number;
+  komentar: string | null;
+  tanggal_ulasan: string;
+  produk: {
+    nama_produk: string;
+    gambar_url: string;
+  };
+}
+
+type DetailModalType = "alamat" | "fav-produk" | "fav-resep" | "ulasan" | null;
 
 const PER_PAGE = 10;
 
@@ -86,6 +99,15 @@ const BookIcon = () => (
   </svg>
 );
 
+const StarIcon = ({ filled }: { filled: boolean }) => (
+  <svg width="13" height="13" viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+);
+
 // ── Format currency ──────────────────────────────────────────────────────────
 const formatRupiah = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
@@ -107,6 +129,9 @@ export default function AdminUsersPage() {
   const [alamatData, setAlamatData] = useState<AlamatItem[]>([]);
   const [favProdukData, setFavProdukData] = useState<FavProdukItem[]>([]);
   const [favResepData, setFavResepData] = useState<FavResepItem[]>([]);
+  const [ulasanData, setUlasanData] = useState<UlasanItem[]>([]);
+
+  const { toast } = useToast();
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -125,6 +150,7 @@ export default function AdminUsersPage() {
     setAlamatData([]);
     setFavProdukData([]);
     setFavResepData([]);
+    setUlasanData([]);
 
     if (type === "alamat") {
       const { data } = await supabase
@@ -147,6 +173,13 @@ export default function AdminUsersPage() {
         .select('id_fav, id_resep, resep(judul_resep, kategori_jenis, gambar_url)')
         .eq('id_user', user.id);
       setFavResepData((data as any) || []);
+    
+    } else if (type === "ulasan") {
+      const { data } = await supabase
+        .from('ulasan')
+        .select('id_ulasan, id_produk, rating, komentar, tanggal_ulasan, produk(nama_produk, gambar_url)')
+        .eq('id_user', user.id);
+      setUlasanData((data as any) || []);
     }
 
     setDetailLoading(false);
@@ -184,9 +217,9 @@ export default function AdminUsersPage() {
       const { error } = await supabase.from('pengguna').update({ peran: newRole }).eq('id', idUser);
       if (error) throw error;
       setUsers(users.map(u => (u.id === idUser ? { ...u, peran: newRole } : u)));
-      alert("Role berhasil diperbarui!");
+      toast.success("Role berhasil diperbarui!");
     } catch (err: any) {
-      alert("Gagal update role: " + err.message);
+      toast.danger("Gagal update role: " + err.message);
     }
   };
 
@@ -205,6 +238,7 @@ export default function AdminUsersPage() {
     "alamat": { title: "Alamat Tersimpan", sub: "Daftar alamat pengiriman milik pengguna ini." },
     "fav-produk": { title: "Favorit Produk", sub: "Produk yang di-favoritkan pengguna ini." },
     "fav-resep": { title: "Favorit Resep", sub: "Resep yang di-favoritkan pengguna ini." },
+    "ulasan": { title: "Ulasan Produk", sub: "Review yang telah diberikan pengguna ini." },
   };
 
   return (
@@ -251,6 +285,7 @@ export default function AdminUsersPage() {
                 <th style={{ textAlign: 'center' }}>Alamat</th>
                 <th style={{ textAlign: 'center' }}>Fav Produk</th>
                 <th style={{ textAlign: 'center' }}>Fav Resep</th>
+                <th style={{ textAlign: 'center' }}>Ulasan</th>
                 <th style={{ textAlign: 'center' }}>Aksi</th>
               </tr>
             </thead>
@@ -298,6 +333,13 @@ export default function AdminUsersPage() {
                     <td style={{ textAlign: 'center' }}>
                       <button className="detail-badge badge-fav-resep" onClick={() => openDetailModal(u, "fav-resep")}>
                         <BookIcon /> Resep
+                      </button>
+                    </td>
+
+                    {/* ── Kolom Ulasan ── */}
+                    <td style={{ textAlign: 'center' }}>
+                      <button className="detail-badge badge-ulasan" onClick={() => openDetailModal(u, "ulasan")}>
+                        <StarIcon filled={true} /> Ulasan
                       </button>
                     </td>
 
@@ -431,7 +473,42 @@ export default function AdminUsersPage() {
                           ))}
                         </div>
                   )}
-                </>
+
+                  {/* ── Ulasan Produk ── */}
+                  {detailModalType === "ulasan" && (
+                    ulasanData.length === 0
+                      ? <div className="detail-empty">Belum ada ulasan yang diberikan.</div>
+                      : <div className="detail-list">
+                          {ulasanData.map((ul) => (
+                            <div key={ul.id_ulasan} className="detail-card detail-card-product">
+                              {ul.produk?.gambar_url && (
+                                <img
+                                  src={ul.produk.gambar_url}
+                                  alt={ul.produk.nama_produk}
+                                  className="detail-product-img"
+                                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                />
+                              )}
+                              <div className="detail-product-info">
+                                <p className="detail-card-name">{ul.produk?.nama_produk || "-"}</p>
+                                <div className="detail-star-row">
+                                  {[1,2,3,4,5].map(s => (
+                                    <span key={s} className={s <= ul.rating ? "star-filled" : "star-empty"}>
+                                      <StarIcon filled={s <= ul.rating} />
+                                    </span>
+                                  ))}
+                                  <span className="detail-rating-num">{ul.rating}/5</span>
+                                </div>
+                                {ul.komentar && <p className="detail-card-komentar">"{ul.komentar}"</p>}
+                                <p className="detail-card-tanggal">
+                                  {new Date(ul.tanggal_ulasan).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                  )}
+                                  </>
               )}
             </div>
           </div>
