@@ -9,6 +9,7 @@
   import { useRouter } from "next/navigation";
   import { signOut as nextAuthSignOut } from "next-auth/react";
   import { useSession } from "next-auth/react";
+  import { useToast } from "@/app/context/ToastContext";
 
   // ─── Types ────────────────────────────────────────────────────────────────────
   interface Product {
@@ -83,7 +84,7 @@
   // ─── Components ───────────────────────────────────────────────────────────────
 function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike: (id: number) => void }) {
   const router = useRouter();
-
+  const { toast } = useToast();
   const handleBuyNow = () => {
   sessionStorage.setItem(
     "buyNowItem",
@@ -128,7 +129,7 @@ function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike
               router.push("/checkout?mode=buy-now");
             } catch (err) {
               console.error(err);
-              alert("Terjadi kesalahan sistem.");
+              toast.danger("Terjadi kesalahan sistem.");
             }
           }}
         >
@@ -162,6 +163,7 @@ function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike
     const router = useRouter();
     const queryClient = useQueryClient();
     const { data: session, status } = useSession();
+    const { toast } = useToast();
 
     // 1. Ambil ID User dari tabel 'pengguna' berdasarkan email session NextAuth
     const { data: userData } = useQuery({
@@ -245,7 +247,7 @@ function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike
       },
       onError: (_, __, ctx) => {
         queryClient.setQueryData(["products", userId], ctx?.prev);
-        alert("Gagal memperbarui favorit.");
+        toast.danger("Gagal memperbarui favorit.");
       },
       onSettled: () => {
         queryClient.invalidateQueries({ queryKey: ["products", userId] });

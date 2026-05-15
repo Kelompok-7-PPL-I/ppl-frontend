@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { getSession } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { MapPin, Pencil, Home, Plus } from 'lucide-react';
+import { useToast } from "@/app/context/ToastContext";
 
 export default function ProfilePage() {
     const supabase = createClient();
@@ -14,6 +15,7 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const [showSuccess, setShowSuccess] = useState(false);
     const [stats, setStats] = useState({ orders: 0, reviews: 0 });
+    const { toast } = useToast();
 
     // State untuk fitur edit
     const [modalType, setModalType] = useState<'kontak' | 'alamat_list' | 'alamat_form' | null>(null);    
@@ -172,7 +174,7 @@ export default function ProfilePage() {
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
         } else {
-            alert("Gagal memperbarui profil.");
+            toast.danger("Gagal memperbarui profil.");
         }
         setLoading(false);
     };
@@ -225,7 +227,7 @@ export default function ProfilePage() {
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
         } catch (err: any) {
-            alert("Error: " + err.message);
+            toast.danger("Error: " + err.message);
         } finally {
             setLoading(false);
         }
@@ -246,7 +248,7 @@ export default function ProfilePage() {
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
         } catch (err: any) {
-            alert("Gagal menghapus: " + err.message);
+            toast.danger("Gagal menghapus: " + err.message);
         } finally {
             setLoading(false);
             setShowWarning({ ...showWarning, active: false });

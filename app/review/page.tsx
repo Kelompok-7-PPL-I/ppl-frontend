@@ -3,9 +3,11 @@
 import React, { useState, Suspense } from "react";
 import { X, EyeOff } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { useToast } from "@/app/context/ToastContext";
 
 function ReviewContent() {
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const id_produk = searchParams.get("id_produk");
   const nama_produk = searchParams.get("nama_produk") || "Pesanan Panganesia";
 
@@ -33,11 +35,11 @@ function ReviewContent() {
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      alert("Silakan berikan rating bintang terlebih dahulu.");
+      toast.warning("Silakan berikan rating bintang terlebih dahulu.");
       return;
     }
     if (!id_produk) {
-      alert("Data produk tidak ditemukan.");
+      toast.warning("Data produk tidak ditemukan.");
       return;
     }
 
@@ -54,15 +56,15 @@ function ReviewContent() {
       });
 
       if (res.ok) {
-        alert("Ulasan berhasil dikirim! Terima kasih.");
+        toast.success("Ulasan berhasil dikirim! Terima kasih.");
         window.history.back();
       } else {
         const err = await res.json();
-        alert(err.error || "Gagal mengirim ulasan.");
+        toast.danger(err.error || "Gagal mengirim ulasan.");
       }
     } catch (error) {
       console.error(error);
-      alert("Terjadi kesalahan sistem saat mengirim ulasan.");
+      toast.danger("Terjadi kesalahan sistem saat mengirim ulasan.");
     } finally {
       setIsSubmitting(false);
     }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from '@supabase/ssr';
+import { useToast } from "@/app/context/ToastContext";
 import "./page.css";
 
 const supabase = createBrowserClient(
@@ -25,6 +26,7 @@ interface BahanDipilih {
 
 export default function AddRecipePage() {
   const router = useRouter();
+  const { toast } = useToast();
 
   // ── State Form ──────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -157,11 +159,11 @@ export default function AddRecipePage() {
         }
       }
 
-      alert("Resep berhasil dipublikasikan!");
+      toast.success("Resep berhasil dipublikasikan!");
       router.push("/admin/recipes");
       router.refresh();
     } catch (err: any) {
-      alert("Error: " + err.message);
+      toast.danger("Error: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
