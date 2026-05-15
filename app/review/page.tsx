@@ -6,9 +6,11 @@ import { useSearchParams } from "next/navigation";
 import { useToast } from "@/app/context/ToastContext";
 
 function ReviewContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const id_produk = searchParams.get("id_produk");
+  const id_item = searchParams.get("id_item");
   const nama_produk = searchParams.get("nama_produk") || "Pesanan Panganesia";
 
   const [rating, setRating] = useState(0);
@@ -17,6 +19,8 @@ function ReviewContent() {
   const [comment, setComment] = useState("");
   const [hideName, setHideName] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const tags = [
     { id: "quality", icon: "🥦", label: "Kualitas Bahan" },
@@ -50,8 +54,10 @@ function ReviewContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id_produk,
+          id_item: parseInt(id_item),
           rating,
-          komentar: comment + (selectedTags.length > 0 ? ` [Tags: ${selectedTags.join(", ")}]` : "")
+          komentar: comment + (selectedTags.length > 0 ? ` [Tags: ${selectedTags.join(", ")}]` : ""),
+          is_anonim: hideName
         }),
       });
 
@@ -71,155 +77,132 @@ function ReviewContent() {
   };
 
   return (
-    <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
-      {/* Header */}
-      <div className="relative p-4 flex items-start border-b border-gray-100">
-        <button 
-          className="absolute left-4 top-4 text-gray-500 hover:text-gray-700 transition-colors"
-          onClick={() => window.history.back()}
-        >
-          <X size={24} />
-        </button>
-        <div className="w-full text-center mt-1 px-8">
-          <h2 className="font-semibold text-gray-900 text-[17px] truncate" title={nama_produk}>
-            {nama_produk}
-          </h2>
-          <p className="text-gray-500 text-[13px] mt-0.5">
-            Beri ulasan untuk pesananmu
-          </p>
-        </div>
-      </div>
+      <div className="relative">
+        {/* --- NOTIFIKASI (TOAST) --- */}
+        {showSuccess && (
+          <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[999] animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="bg-[#3D663D] text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 min-w-[320px]">
+              <div className="bg-white/20 p-2 rounded-lg">
+                <CheckCircle2 size={20} className="text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-sm">Review Success!</p>
+                <p className="text-xs text-white/80">Thank you for the review</p>
+              </div>
+            </div>
+          </div>
+        )}
 
-      <div className="p-6 flex flex-col gap-8">
-        {/* Rating Section */}
-        <div className="flex flex-col items-center gap-4">
-          <h3 className="font-bold text-[16px] text-gray-900">
-            Bagaimana kualitas pesananmu?
-          </h3>
-          <div className="flex gap-2">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => setRating(star)}
-                onMouseEnter={() => setHoverRating(star)}
-                onMouseLeave={() => setHoverRating(0)}
-                className="focus:outline-none transition-transform active:scale-95"
+        {/* FORM REVIEW UTAMA */}
+        <div className={`w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row transition-all duration-500 ${showSuccess ? 'opacity-50 pointer-events-none scale-[0.98]' : ''}`}>
+          
+          {/* SISI KIRI: Info & Rating */}
+          <div className="md:w-5/12 bg-gray-50 p-6 lg:p-8 border-r border-gray-100 flex flex-col justify-between gap-8">
+            <div>
+              <button 
+                onClick={() => router.back()}
+                className="mb-6 flex items-center gap-2 text-gray-400 hover:text-gray-700 transition-colors text-xs font-semibold uppercase tracking-wider"
               >
-                <svg
-                  className={`w-10 h-10 ${
-                    star <= (hoverRating || rating)
-                      ? "text-yellow-400 drop-shadow-sm"
-                      : "text-gray-200"
-                  }`}
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
+                <X size={14} /> Kembali
               </button>
-            ))}
+
+              <div className="space-y-4">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl text-green-600">
+                  <CheckCircle2 size={24} />
+                </div>
+                <h2 className="text-xl lg:text-2xl font-extrabold text-gray-900 leading-tight">
+                  Bagaimana kualitas <span className="text-green-600 block">{nama_produk}</span>?
+                </h2>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-gray-200/50">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Rating Produk</p>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setRating(star)}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    className="focus:outline-none transition-transform hover:scale-110 active:scale-90"
+                  >
+                    <Star
+                      size={32}
+                      className={`${star <= (hoverRating || rating) ? "fill-yellow-400 text-yellow-400" : "fill-gray-200 text-gray-200"}`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
 
-        <hr className="border-gray-100" />
+          {/* SISI KANAN: Form */}
+          <div className="md:w-7/12 p-6 lg:p-8 flex flex-col gap-6">
+            <section>
+              <h3 className="text-sm font-bold text-gray-900 mb-4">Apa yang kamu suka?</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    onClick={() => toggleTag(tag.id)}
+                    className={`flex items-center gap-2 py-2 px-3 rounded-lg border transition-all ${
+                      selectedTags.includes(tag.id) ? "border-green-600 bg-green-50 text-green-700 font-bold" : "border-gray-100 text-gray-600"
+                    }`}
+                  >
+                    <span>{tag.icon}</span>
+                    <span className="text-[12px]">{tag.label}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
 
-        {/* Tags Section */}
-        <div className="flex flex-col items-center gap-4">
-          <h3 className="font-bold text-[16px] text-gray-900 text-center">
-            Apa yang kamu suka dari pesanan ini?
-          </h3>
-          <div className="flex flex-wrap justify-center gap-2.5">
-            {tags.map((tag) => {
-              const isSelected = selectedTags.includes(tag.id);
-              return (
-                <button
-                  key={tag.id}
-                  onClick={() => toggleTag(tag.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
-                    isSelected
-                      ? "border-green-600 bg-green-50 text-green-700 font-medium"
-                      : "border-gray-200 hover:border-gray-300 text-gray-700 bg-white"
-                  }`}
-                >
-                  <span className="text-[16px]">{tag.icon}</span>
-                  <span className="text-[14px]">{tag.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+            <section>
+              <h3 className="text-sm font-bold text-gray-900 mb-4">Ceritakan pengalamanmu</h3>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="w-full min-h-[100px] p-4 rounded-xl bg-gray-50 border-none outline-none text-sm text-gray-600 placeholder:text-gray-400"
+                placeholder="Misal: Sayurnya masih segar..."
+              />
+            </section>
 
-        <hr className="border-gray-100" />
+            <div className="pt-4 border-t flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex flex-col gap-1 w-full">
+                  <button onClick={() => setHideName(!hideName)} className="flex items-center gap-3">
+                    <div className={`w-9 h-5 rounded-full p-1 transition-colors ${hideName ? 'bg-green-600' : 'bg-gray-300'}`}>
+                      <div className={`w-3 h-3 bg-white rounded-full transition-transform ${hideName ? 'translate-x-4' : 'translate-x-0'}`} />
+                    </div>
+                    <span className="text-[12px] font-medium text-gray-600">Anonimkan ulasan</span>
+                  </button>
+              </div>
 
-        {/* Comment Section */}
-        <div className="flex flex-col gap-3">
-          <h3 className="font-bold text-[16px] text-gray-900 text-center">
-            Ceritakan lebih lanjut!
-          </h3>
-          <div>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Bahan-bahannya sangat segar dan sesuai takaran!"
-              className="w-full min-h-[120px] p-4 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none resize-none text-[15px] placeholder:text-gray-400"
-              maxLength={4000}
-            />
-            <div className="text-gray-400 text-[13px] mt-1 text-left">
-              {comment.length}/4000
+              <button 
+                className={`w-full sm:w-auto font-bold py-3 px-8 rounded-xl text-sm transition-all duration-300
+                  ${rating === 0 
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed" // Warna Abu-abu kalau rating 0
+                    : "bg-green-600 text-white hover:bg-green-700 shadow-md active:scale-95" // Warna Hijau kalau sudah isi
+                  } 
+                  ${(isSubmitting || showSuccess) ? "opacity-70 cursor-wait" : ""}`}
+                onClick={handleSubmit}
+                disabled={isSubmitting || showSuccess || rating === 0}
+              >
+                {isSubmitting ? (
+                  "Mengirim..."
+                ) : showSuccess ? (
+                  "Berhasil!"
+                ) : rating === 0 ? (
+                  "Kirim"
+                ) : (
+                  "Kirim"
+                )}
+              </button>
             </div>
           </div>
         </div>
       </div>
-
-      <hr className="border-gray-100" />
-
-      {/* Toggle and Submit Section */}
-      <div className="p-4 flex flex-col gap-4 bg-white relative z-10">
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-2 font-semibold text-gray-900">
-            <EyeOff size={20} className="text-gray-700" />
-            <span className="text-[14px]">Sembunyikan nama saya pada ulasan</span>
-          </div>
-          
-          <button
-            onClick={() => setHideName(!hideName)}
-            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors shrink-0 ${
-              hideName ? "bg-green-600" : "bg-gray-200"
-            }`}
-          >
-            <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${
-                hideName ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
-          </button>
-        </div>
-
-        <button 
-          className="w-full bg-[#169C2A] hover:bg-[#128221] text-white font-bold py-3.5 rounded-full text-[16px] transition-colors mt-2 disabled:bg-gray-400"
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Mengirim..." : "Kirim Ulasan"}
-        </button>
-        
-        <p className="text-center text-[11px] text-gray-500 mt-1 pb-2">
-          Dengan mengirim, Anda menyetujui{" "}
-          <a href="#" className="text-[#169C2A] hover:underline">
-            Syarat & Ketentuan
-          </a>{" "}
-          dan{" "}
-          <a href="#" className="text-[#169C2A] hover:underline">
-            Kebijakan Privasi
-          </a>
-          .
-        </p>
-      </div>
-    </div>
-  );
-}
+    );
+  }
 
 export default function ReviewPage() {
   return (

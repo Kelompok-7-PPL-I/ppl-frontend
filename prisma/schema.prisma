@@ -144,6 +144,7 @@ model ItemPesanan {
   catatan    String?
   pesanan    Pesanan @relation(fields: [id_pesanan], references: [id_pesanan])
   produk     Produk  @relation(fields: [id_produk], references: [id_produk])
+  ulasan     Ulasan?
 
   @@map("item_pesanan")
   @@schema("public")
@@ -163,14 +164,16 @@ model Keranjang {
 }
 
 model Ulasan {
-  id_ulasan      Int      @id @default(autoincrement())
-  id_user        String   @db.Uuid
+  id_ulasan      Int          @id @default(autoincrement())
+  id_user        String       @db.Uuid
   id_produk      Int
-  rating         Int      @default(5) // Rating bintang 1-5
-  komentar       String?  @db.Text    // Menggunakan Text agar bisa menampung komentar panjang/template
-  tanggal_ulasan DateTime @default(now()) @db.Timestamptz(6)
-  produk         Produk   @relation(fields: [id_produk], references: [id_produk])
-  pengguna       Pengguna @relation(fields: [id_user], references: [id])
+  id_item        Int          @unique
+  rating         Int          @default(5) // Rating bintang 1-5
+  komentar       String?      @db.Text    // Menggunakan Text agar bisa menampung komentar panjang/template
+  tanggal_ulasan DateTime     @default(now()) @db.Timestamptz(6)
+  produk         Produk       @relation(fields: [id_produk], references: [id_produk])
+  pengguna       Pengguna     @relation(fields: [id_user], references: [id])
+  item_pesanan   ItemPesanan  @relation(fields: [id_item], references: [id_item])
 
   @@map("ulasan")
   @@schema("public")
