@@ -18,11 +18,40 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const tab = searchParams.get("tab") || "Semua Pesanan";
 
+    const openOrder = searchParams.get("openOrder");
+
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = 10; // Load 10 data saja
+    const limit = 5; // Load 10 data saja
     const skip = (page - 1) * limit;
 
     try {
+
+        if (openOrder) {
+            const singleOrder = await prisma.pesanan.findFirst({
+                where: {
+                    id_user: userId, // Pastikan pesanan ini memang milik user yang login
+                    OR: [
+                        { order_id: openOrder },
+                        ...(isNaN(Number(openOrder)) ? [] : [{ id_pesanan: Number(openOrder) }])
+                    ]
+                },
+                include: {
+                    item_pesanan: { 
+                        include: { 
+                            produk: true, 
+                            ulasan: true 
+                        } 
+                    }
+                }
+            });
+
+            // Kembalikan hasilnya dalam format yang dikenali frontend (dibungkus objek success)
+            return NextResponse.json({
+                success: true,
+                orders: singleOrder ? [singleOrder] : [] // Masukkan ke dalam array agar lolos fungsi Array.isArray() di frontend
+            });
+        }
+
         let whereClause: any = { id_user: userId }; // Filter otomatis berdasarkan ID yang login
 
         // Logika tab (sama seperti sebelumnya)
@@ -50,6 +79,7 @@ export async function GET(request: Request) {
         ]);
 
         return NextResponse.json({
+            success : true,
             orders,
             totalPages: Math.ceil(totalCount / limit),
             currentPage: page

@@ -395,26 +395,53 @@ export default function ProfilePage() {
 
         {/* User Card */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-6 mb-8">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-[#064E3B] text-3xl font-bold shrink-0">
-                {profile?.nama?.charAt(0).toUpperCase() || 'U'}
-            </div>
-            <div className="flex-1">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-[#064E3B] text-3xl font-bold shrink-0">
+            {profile?.nama?.charAt(0).toUpperCase() || 'U'}
+        </div>
+        
+        <div className="flex-1">
             <h2 className="text-xl font-bold text-gray-800">{profile?.nama}</h2>
-            <p className="text-gray-500 text-xs">Bergabung dengan Panganesia sejak {profile?.dibuat_pada ? new Date(profile.dibuat_pada).toLocaleDateString() : 'Invalid Date'}</p>
-            </div>
-            <div className="text-center px-6 border-l border-gray-100 shrink-0">
-            <p className="text-xl font-black text-[#064E3B]">
-                {stats.orders ?? 0}
+            <p className="text-gray-500 text-xs">
+                Bergabung dengan Panganesia sejak {profile?.dibuat_pada ? new Date(profile.dibuat_pada).toLocaleDateString() : 'Invalid Date'}
             </p>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Pesanan</p>
+        </div>
+
+        {/* BUNGKUS KEDUA STATS DALAM SATU CONTAINER FLEX AGAR SEJAJAR */}
+        <div className="flex items-center h-12 shrink-0">
+            {/* Kolom Pesanan */}
+            <div className="text-center px-6">
+                <p className="text-xl font-black text-[#064E3B] leading-none mb-1">
+                    {stats.orders ?? 0}
+                </p>
+                <Link 
+                    href="/profile/orders"
+                    className="inline-block group cursor-pointer outline-none focus:outline-none"
+                >
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest transition-colors duration-200 group-hover:text-emerald-600">
+                        Pesanan
+                    </p>
+                </Link>
             </div>
-            <div className="text-center px-6 border-l-2 border-gray-200 shrink-0">
-            <p className="text-xl font-black text-[#064E3B]">
-                {stats.reviews ?? 0}
-            </p>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Ulasan</p>
+
+            {/* GARIS PEMBATAS VERTIKAL MANDIRI YANG PAS DI TENGAH */}
+            <div className="w-[2px] h-12 bg-gray-200"></div>
+
+            {/* Kolom Ulasan */}
+            <div className="text-center px-6">
+                <p className="text-xl font-black text-[#064E3B] leading-none mb-1">
+                    {stats.reviews ?? 0}
+                </p>
+                <Link 
+                    href="/review/history" 
+                    className="inline-block group cursor-pointer outline-none focus:outline-none"
+                >
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest transition-colors duration-200 group-hover:text-emerald-600">
+                        Ulasan
+                    </p>
+                </Link>
             </div>
         </div>
+    </div>
 
         {/* Info Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
