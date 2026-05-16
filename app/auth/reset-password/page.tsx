@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Check, X, ShieldCheck } from 'lucide-react';
+import { useToast } from "@/app/context/ToastContext";
 import './page.css';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const { toast } = useToast();
   
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -56,11 +58,11 @@ export default function ResetPasswordPage() {
         throw new Error(result.error || "Gagal mengubah password.");
       }
 
-      alert("Password berhasil diperbarui! Silakan login kembali dengan password baru.");
+      toast.success("Password berhasil diperbarui! Silakan login kembali dengan password baru.");
       router.push('/auth'); 
 
     } catch (err: any) {
-      setError(err.message);
+      toast.danger("Error: " + err.message);
       setLoading(false);
     }
   };

@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
+import { useToast } from "@/app/context/ToastContext";
 import Link from "next/link";
 import "./page.css";
 
@@ -15,6 +16,7 @@ export default function DetailProduct() {
   const router = useRouter();
   const params = useParams();
   const id = params.id;
+  const { toast } = useToast(); 
   console.log(id);
 
   const [product, setProduct] = useState<any>(null);
@@ -112,11 +114,11 @@ const handlePrev = () => {
         setAddedToCart(true);
         setTimeout(() => setAddedToCart(false), 2000);
       } else {
-        alert("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
+        toast.danger("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan sistem.");
+      toast.danger("Terjadi kesalahan sistem.");
     }
   };
 
@@ -284,7 +286,7 @@ if (!product) {
                 router.push("/checkout?mode=buy-now");
               } catch (err) {
                 console.error(err);
-                alert("Terjadi kesalahan sistem.");
+                toast.danger("Terjadi kesalahan sistem.");
               }
             }}
           >

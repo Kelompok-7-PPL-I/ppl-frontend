@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
-import { X, EyeOff, Star, CheckCircle2 } from "lucide-react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { X, EyeOff } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { useToast } from "@/app/context/ToastContext";
 
 function ReviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const id_produk = searchParams.get("id_produk");
   const id_item = searchParams.get("id_item");
   const nama_produk = searchParams.get("nama_produk") || "Pesanan Panganesia";
@@ -36,9 +38,13 @@ function ReviewContent() {
   };
 
   const handleSubmit = async () => {
-    if (rating === 0 || !id_produk || !id_item) {
-        alert("Data tidak lengkap atau rating belum diisi");
-        return;
+    if (rating === 0) {
+      toast.warning("Silakan berikan rating bintang terlebih dahulu.");
+      return;
+    }
+    if (!id_produk) {
+      toast.warning("Data produk tidak ditemukan.");
+      return;
     }
 
     setIsSubmitting(true);
@@ -56,16 +62,15 @@ function ReviewContent() {
       });
 
       if (res.ok) {
-        // TAMPILKAN NOTIFIKASI CUSTOM
-        setShowSuccess(true);
-        
-        // Tunggu 3 detik baru pindah halaman
-        setTimeout(() => {
-          router.back();
-        }, 3000);
+        toast.success("Ulasan berhasil dikirim! Terima kasih.");
+        window.history.back();
+      } else {
+        const err = await res.json();
+        toast.danger(err.error || "Gagal mengirim ulasan.");
       }
     } catch (error) {
       console.error(error);
+      toast.danger("Terjadi kesalahan sistem saat mengirim ulasan.");
     } finally {
       setIsSubmitting(false);
     }
