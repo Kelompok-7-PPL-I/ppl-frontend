@@ -5,7 +5,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const Midtrans = require("midtrans-client");
 
-type CheckoutMode = "cart" | "selected_cart" | "buy_now";
+// ── tambah "reorder" ke union type ──────────────────────────────
+type CheckoutMode = "cart" | "selected_cart" | "buy_now" | "reorder";
 
 type CheckoutBodyItem = {
   id?: string | number;
@@ -46,8 +47,11 @@ export async function POST(request: Request) {
       shippingCost?: number;
     } = body;
 
+    // ── normalise mode — termasuk "reorder" ─────────────────────
     const checkoutMode: CheckoutMode =
-      mode === "selected_cart" || mode === "buy_now" ? mode : "cart";
+      mode === "selected_cart" || mode === "buy_now" || mode === "reorder"
+        ? mode
+        : "cart";
 
     const orderId = `PANGAN-${Date.now()}`;
 
@@ -71,6 +75,7 @@ export async function POST(request: Request) {
       note: string | null;
     }[] = [];
 
+    // ── CART ────────────────────────────────────────────────────
     if (checkoutMode === "cart") {
       const isiKeranjang = await prisma.keranjang.findMany({
         where: { id_user },
@@ -90,6 +95,7 @@ export async function POST(request: Request) {
       }));
     }
 
+    // ── SELECTED CART ────────────────────────────────────────────
     if (checkoutMode === "selected_cart") {
       if (requestedItems.length === 0) {
         return NextResponse.json(
@@ -101,12 +107,7 @@ export async function POST(request: Request) {
       const selectedProductIds = requestedItems.map((item) => item.id_produk);
 
       const selectedCartItems = await prisma.keranjang.findMany({
-        where: {
-          id_user,
-          id_produk: {
-            in: selectedProductIds,
-          },
-        },
+        where: { id_user, id_produk: { in: selectedProductIds } },
         include: { produk: true },
         orderBy: { dibuat_pada: "asc" },
       });
@@ -132,6 +133,7 @@ export async function POST(request: Request) {
       });
     }
 
+    // ── BUY NOW ──────────────────────────────────────────────────
     if (checkoutMode === "buy_now") {
       if (requestedItems.length === 0) {
         return NextResponse.json(
@@ -143,11 +145,7 @@ export async function POST(request: Request) {
       const buyNowProductIds = requestedItems.map((item) => item.id_produk);
 
       const products = await prisma.produk.findMany({
-        where: {
-          id_produk: {
-            in: buyNowProductIds,
-          },
-        },
+        where: { id_produk: { in: buyNowProductIds } },
       });
 
       if (products.length === 0) {
@@ -171,6 +169,45 @@ export async function POST(request: Request) {
       });
     }
 
+    // ── REORDER ──────────────────────────────────────────────────
+    // Sama seperti buy_now: ambil harga terbaru dari DB,
+    // tapi pakai quantity dari request (bukan DB).
+    // TIDAK sentuh keranjang sama sekali.
+    if (checkoutMode === "reorder") {
+      if (requestedItems.length === 0) {
+        return NextResponse.json(
+          { error: "Tidak ada produk untuk reorder" },
+          { status: 400 }
+        );
+      }
+
+      const reorderProductIds = requestedItems.map((item) => item.id_produk);
+
+      const products = await prisma.produk.findMany({
+        where: { id_produk: { in: reorderProductIds } },
+      });
+
+      if (products.length === 0) {
+        return NextResponse.json(
+          { error: "Produk reorder tidak ditemukan" },
+          { status: 400 }
+        );
+      }
+
+      checkoutItems = products.map((product) => {
+        const requested = requestedItems.find(
+          (item) => item.id_produk === product.id_produk
+        );
+
+        return {
+          id_produk: product.id_produk,
+          harga: Number(product.harga),       // harga terbaru dari DB
+          quantity: requested?.quantity || 1,  // quantity dari pesanan lama
+          note: requested?.note || null,
+        };
+      });
+    }
+
     if (checkoutItems.length === 0) {
       return NextResponse.json(
         { error: "Tidak ada item untuk checkout" },
@@ -178,6 +215,10 @@ export async function POST(request: Request) {
       );
     }
 
+    // ── Hitung total — satu sumber kebenaran ─────────────────────
+    // subtotal dihitung dari checkoutItems (harga DB × quantity),
+    // bukan dari body.subtotal / body.totalAmount yang dikirim client.
+    // Ini mencegah manipulasi harga dari sisi client.
     const subtotal = checkoutItems.reduce(
       (acc, item) => acc + item.harga * item.quantity,
       0
@@ -186,6 +227,7 @@ export async function POST(request: Request) {
     const ongkir = Number(shippingCost) || 0;
     const totalAmount = subtotal + ongkir;
 
+    // ── Simpan pesanan ke DB ─────────────────────────────────────
     const newOrder = await prisma.$transaction(async (tx: any) => {
       const pesanan = await tx.pesanan.create({
         data: {
@@ -211,18 +253,14 @@ export async function POST(request: Request) {
       /*
         PENTING:
         Jangan kosongkan keranjang di sini.
-
-        Kalau keranjang dikosongkan di /api/checkout,
-        maka saat popup Midtrans gagal / user batal bayar,
-        cart sudah hilang dan klik kedua akan error "Keranjang kosong".
-
-        Hapus cart nanti setelah pembayaran sukses,
-        misalnya di endpoint update status pembayaran atau webhook Midtrans.
+        Hapus cart setelah pembayaran sukses di endpoint
+        update status pembayaran atau webhook Midtrans.
       */
 
       return pesanan;
     });
 
+    // ── Buat Snap token ──────────────────────────────────────────
     const snap = new Midtrans.Snap({
       isProduction: false,
       serverKey: process.env.MIDTRANS_SERVER_KEY?.trim(),
@@ -234,7 +272,7 @@ export async function POST(request: Request) {
     const parameter = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: Math.round(Number(totalAmount)),
+        gross_amount: Math.round(totalAmount),
       },
       customer_details: {
         first_name:

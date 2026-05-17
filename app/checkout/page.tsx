@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, Suspense } from "react";
 import Icon from "@mdi/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/app/context/ToastContext";
 import {
   mdiMapMarker,
@@ -38,24 +38,11 @@ interface CartItem {
   note?: string;
 }
 
-type CheckoutMode = "cart" | "selected_cart" | "buy_now";
+type CheckoutMode = "cart" | "selected_cart" | "buy_now" | "reorder";
 
 // ─── Helpers ────────────────────────────────────────────────────
-const getCheckoutMode = (): CheckoutMode => {
-  if (typeof window === "undefined") return "cart";
-
-  const params = new URLSearchParams(window.location.search);
-  const mode = params.get("mode");
-
-  if (mode === "selected-cart") return "selected_cart";
-  if (mode === "buy-now") return "buy_now";
-
-  return "cart";
-};
-
 const safeParseItems = (raw: string | null): CartItem[] => {
   if (!raw) return [];
-
   try {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [parsed];
@@ -82,22 +69,62 @@ const calculateSubtotal = (items: CartItem[]) => {
   return items.reduce((acc, curr) => acc + curr.price * curr.quantity, 0);
 };
 
+// ─── Helper: update status pembayaran ke server ──────────────────
+// Dipanggil di onSuccess Midtrans untuk kedua flow (normal & reorder).
+// Mengirim { status: "dibayar" } ke PATCH /api/orders/[id]/status
+// sesuai dengan handler yang ada di orders/[id]/status/route.ts.
+const updateOrderStatus = async (pesananId: number): Promise<boolean> => {
+  try {
+    const res = await fetch(`/api/orders/${pesananId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "dibayar" }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error("updateOrderStatus failed:", res.status, err);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("updateOrderStatus error:", err);
+    return false;
+  }
+};
+
 // ─── Component ──────────────────────────────────────────────────
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const [modal, setModal] = useState({ isOpen: false, type: "" });
+  const getCheckoutMode = (): CheckoutMode => {
+    const mode = searchParams.get("mode");
+    if (mode === "selected-cart") return "selected_cart";
+    if (mode === "buy-now") return "buy_now";
+    if (mode === "reorder") return "reorder";
+    return "cart";
+  };
 
+  const mode = getCheckoutMode();
+  const isReorderMode = mode === "reorder";
+
+  // Ref untuk menyimpan raw reorder items supaya tidak hilang saat re-render
+  const reorderItemsRef = useRef<string | null>(null);
+  // Ref untuk mencegah prefetch dipanggil lebih dari sekali
+  const prefetchCalledRef = useRef(false);
+
+  const [modal, setModal] = useState({ isOpen: false, type: "" });
   const [itemNotes, setItemNotes] = useState<Record<number, string>>({});
   const [noteInput, setNoteInput] = useState("");
   const [activeNoteIdx, setActiveNoteIdx] = useState<number | null>(null);
-
   const [isLoading, setIsLoading] = useState(false);
+  const [isSnapReady, setIsSnapReady] = useState(false);
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressIdx, setSelectedAddressIdx] = useState(0);
-
   const [selectedShipping, setSelectedShipping] = useState(0);
   const [selectedPayment] = useState(0);
 
@@ -105,6 +132,10 @@ export default function CheckoutPage() {
   const [subtotal, setSubtotal] = useState(0);
   const [userEmail, setUserEmail] = useState("user@example.com");
   const [userId, setUserId] = useState<string | null>(null);
+
+  const [snapToken, setSnapToken] = useState<string | null>(null);
+  const [pesananId, setPesananId] = useState<number | null>(null);
+  const [isPreparing, setIsPreparing] = useState(false);
 
   const shippingOptions = [
     { id: 0, name: "JNE - Reguler", price: 15000, desc: "Arrives 2-3 Days" },
@@ -126,13 +157,23 @@ export default function CheckoutPage() {
     },
   ];
 
+  const selectedAddress = addresses[selectedAddressIdx] ?? null;
+
   // ── Load Midtrans Snap ───────────────────────────────────────
   useEffect(() => {
+    if ((window as any).snap) {
+      setIsSnapReady(true);
+      return;
+    }
+
     const existingScript = document.querySelector(
       'script[src="https://app.sandbox.midtrans.com/snap/snap.js"]'
     );
 
-    if (existingScript) return;
+    if (existingScript) {
+      existingScript.addEventListener("load", () => setIsSnapReady(true));
+      return;
+    }
 
     const script = document.createElement("script");
     script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
@@ -140,22 +181,24 @@ export default function CheckoutPage() {
       "data-client-key",
       (process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "").trim()
     );
-    script.async = true;
-
-    document.body.appendChild(script);
-
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
+    script.async = false;
+    script.onload = () => {
+      console.log("Snap.js loaded, snap ready:", !!(window as any).snap);
+      setIsSnapReady(true);
     };
+    script.onerror = () => console.error("Gagal load Snap.js");
+    document.head.appendChild(script);
+    return () => {};
   }, []);
 
-  // ── Fetch Profile + Addresses + Checkout Items ───────────────
+  // ── Fetch Profile + Addresses ────────────────────────────────
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchUserData = async () => {
       try {
-        const profileRes = await fetch("/api/profile");
+        const [profileRes, addrRes] = await Promise.all([
+          fetch("/api/profile"),
+          fetch("/api/addresses"),
+        ]);
 
         if (profileRes.ok) {
           const profile = await profileRes.json();
@@ -163,57 +206,149 @@ export default function CheckoutPage() {
           setUserId(profile.id || null);
         }
 
-        const addrRes = await fetch("/api/addresses");
-
         if (addrRes.ok) {
           const addrData: Address[] = await addrRes.json();
           setAddresses(addrData);
-
           const utamaIdx = addrData.findIndex((addr) => addr.is_utama);
           setSelectedAddressIdx(utamaIdx >= 0 ? utamaIdx : 0);
         }
+      } catch (error) {
+        console.error("Gagal memuat data user:", error);
+      }
+    };
+    fetchUserData();
+  }, []);
 
-        const mode = getCheckoutMode();
-
+  // ── Fetch Items sesuai mode checkout ─────────────────────────
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
         if (mode === "selected_cart") {
           const rawItems = sessionStorage.getItem("checkoutItems");
-          const selectedItems = normalizeItems(safeParseItems(rawItems));
-
-          setCartItems(selectedItems);
-          setSubtotal(calculateSubtotal(selectedItems));
+          const items = normalizeItems(safeParseItems(rawItems));
+          setCartItems(items);
+          setSubtotal(calculateSubtotal(items));
           return;
         }
 
         if (mode === "buy_now") {
           const rawItem = sessionStorage.getItem("buyNowItem");
-          const buyNowItems = normalizeItems(safeParseItems(rawItem));
-
-          setCartItems(buyNowItems);
-          setSubtotal(calculateSubtotal(buyNowItems));
+          const items = normalizeItems(safeParseItems(rawItem));
+          setCartItems(items);
+          setSubtotal(calculateSubtotal(items));
           return;
         }
 
-        const cartRes = await fetch("/api/cart");
+        if (mode === "reorder") {
+          // Simpan ke ref sekali, lalu hapus dari sessionStorage
+          if (reorderItemsRef.current === null) {
+            reorderItemsRef.current = sessionStorage.getItem("reorderItems");
+            sessionStorage.removeItem("reorderItems");
+          }
 
+          const items = normalizeItems(safeParseItems(reorderItemsRef.current));
+
+          if (items.length > 0) {
+            setCartItems(items);
+            setSubtotal(calculateSubtotal(items));
+          } else {
+            toast.warning("Data pesanan tidak ditemukan, silakan coba lagi.");
+            router.push("/orders");
+          }
+          return;
+        }
+
+        // default: cart
+        const cartRes = await fetch("/api/cart");
         if (cartRes.ok) {
           const cartData = await cartRes.json();
           const items = normalizeItems(cartData);
-
           setCartItems(items);
           setSubtotal(calculateSubtotal(items));
         }
       } catch (error) {
-        console.error("Gagal memuat checkout data:", error);
-        setCartItems([]);
-        setSubtotal(0);
+        console.error("Gagal memuat items:", error);
       }
     };
 
-    fetchData();
-  }, []);
+    fetchItems();
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Prefetch token KHUSUS mode reorder ──────────────────────
+  useEffect(() => {
+    if (!isReorderMode) return;
+    if (prefetchCalledRef.current) return;
+    if (isPreparing) return;
+    if (snapToken) return;
+    if (!selectedAddress) return;
+    if (cartItems.length === 0) return;
+    if (subtotal === 0) return;
+    if (!userId) return;
+
+    prefetchCalledRef.current = true;
+
+    const prefetchToken = async () => {
+      setIsPreparing(true);
+      try {
+        const response = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: "reorder",
+            orderId: `ORDER-${Date.now()}`,
+            totalAmount: subtotal + shippingOptions[selectedShipping].price,
+            subtotal,
+            shippingCost: shippingOptions[selectedShipping].price,
+            shippingMethod: shippingOptions[selectedShipping].name,
+            paymentMethod: paymentOptions[selectedPayment].name,
+            userDetails: {
+              id: userId,
+              nama: selectedAddress.nama_penerima,
+              email: userEmail,
+              nomor_telp: selectedAddress.nomor_telepon,
+            },
+            shippingAddress: {
+              label: selectedAddress.label_alamat,
+              nama_penerima: selectedAddress.nama_penerima,
+              nomor_telepon: selectedAddress.nomor_telepon,
+              alamat_lengkap: selectedAddress.alamat_lengkap,
+              kota_kabupaten: selectedAddress.kota_kabupaten,
+              kode_pos: selectedAddress.kode_pos,
+            },
+            items: cartItems.map((item, idx) => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              image: item.image,
+              note: itemNotes[idx] ?? "",
+            })),
+          }),
+        });
+
+        const data = await response.json();
+        if (data.token && data.pesananId) {
+          setSnapToken(data.token);
+          setPesananId(data.pesananId);
+          console.log("Token reorder pre-fetched, pesananId:", data.pesananId);
+        } else {
+          console.error("Prefetch response tidak lengkap:", data);
+          toast.danger("Gagal menyiapkan pembayaran: " + (data.error || "pesananId tidak ditemukan"));
+          prefetchCalledRef.current = false;
+        }
+      } catch (err) {
+        console.error("Prefetch token error:", err);
+        toast.danger("Gagal menyiapkan pembayaran, coba refresh halaman.");
+        prefetchCalledRef.current = false;
+      } finally {
+        setIsPreparing(false);
+      }
+    };
+
+    prefetchToken();
+  }, [isReorderMode, selectedAddress, cartItems, subtotal, userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalAmount = subtotal + shippingOptions[selectedShipping].price;
-  const selectedAddress = addresses[selectedAddressIdx] ?? null;
 
   // ── Modal helpers ────────────────────────────────────────────
   const openModal = (type: string, noteIdx?: number) => {
@@ -221,7 +356,6 @@ export default function CheckoutPage() {
       setActiveNoteIdx(noteIdx);
       setNoteInput(itemNotes[noteIdx] ?? "");
     }
-
     setModal({ isOpen: true, type });
   };
 
@@ -237,7 +371,6 @@ export default function CheckoutPage() {
         [activeNoteIdx]: noteInput.trim(),
       }));
     }
-
     closeModal();
   };
 
@@ -248,11 +381,16 @@ export default function CheckoutPage() {
         delete nextNotes[activeNoteIdx];
         return nextNotes;
       });
-
       setNoteInput("");
     }
-
     closeModal();
+  };
+
+  // ── Bersihkan session storage setelah bayar ──────────────────
+  const clearCheckoutSession = () => {
+    sessionStorage.removeItem("checkoutItems");
+    sessionStorage.removeItem("buyNowItem");
+    sessionStorage.removeItem("reorderItems");
   };
 
   // ── Checkout ─────────────────────────────────────────────────
@@ -267,11 +405,67 @@ export default function CheckoutPage() {
       return;
     }
 
+    // ── REORDER: pakai token yang sudah di-prefetch ──────────
+    if (isReorderMode) {
+      if (isPreparing || !snapToken) {
+        toast.warning("Sistem pembayaran sedang disiapkan, tunggu sebentar lalu coba lagi.");
+        return;
+      }
+
+      if (!isSnapReady || !(window as any).snap) {
+        toast.warning("Sistem pembayaran belum siap, tunggu sebentar lalu coba lagi.");
+        return;
+      }
+
+      // Validasi pesananId ada sebelum lanjut
+      if (!pesananId) {
+        toast.danger("ID pesanan tidak ditemukan, coba refresh halaman.");
+        return;
+      }
+
+      try {
+        if (typeof (window as any).snap?.hide === "function") {
+          (window as any).snap.hide();
+        }
+      } catch (_) { /* ignore */ }
+
+      (window as any).snap.pay(snapToken, {
+        onSuccess: async (result: any) => {
+          console.log("Midtrans onSuccess (reorder), pesananId:", pesananId, result);
+          const ok = await updateOrderStatus(pesananId);
+          if (!ok) {
+            // Gagal update tapi bayar sudah berhasil — tetap redirect
+            // supaya user tidak bingung. Admin bisa fix manual di Supabase.
+            console.warn("Status update gagal, tapi pembayaran sukses. Update manual di Supabase.");
+          }
+          clearCheckoutSession();
+          toast.success("Bayar Berhasil!");
+          router.push("/DashboardProduct");
+        },
+        onPending: () => {
+          toast.warning("Selesaikan pembayaran ya!");
+        },
+        onError: () => {
+          toast.danger("Yah, gagal bayar.");
+        },
+        onClose: () => {
+          console.log("User menutup popup Midtrans (reorder).");
+        },
+      });
+
+      return;
+    }
+
+    // ── FLOW NORMAL: cart / selected_cart / buy_now ──────────
+    if (!isSnapReady) {
+      toast.warning("Sistem pembayaran belum siap, tunggu sebentar lalu coba lagi.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const orderId = `ORDER-${Date.now()}`;
-      const mode = getCheckoutMode();
 
       const itemsPayload = cartItems.map((item, idx) => ({
         id: item.id,
@@ -313,63 +507,59 @@ export default function CheckoutPage() {
 
       const data = await response.json();
 
-      console.log("Checkout response:", data);
-      console.log("Snap ready:", !!(window as any).snap);
-
-      if (data.token) {
-        if ((window as any).snap) {
-          (window as any).snap.pay(data.token, {
-            onSuccess: (result: any) => {
-              console.log("Midtrans onSuccess fired!", result);
-
-              fetch(`/api/orders/${data.pesananId}/status`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: "dibayar" }),
-              })
-                .then((res) => res.json())
-                .then((res) => {
-                  console.log("Status update response:", res);
-
-                  sessionStorage.removeItem("checkoutItems");
-                  sessionStorage.removeItem("buyNowItem");
-
-                  toast.success("Bayar Berhasil!");
-                  router.push("/DashboardProduct");
-                })
-                .catch((err) => {
-                  console.error("Status update error:", err);
-
-                  sessionStorage.removeItem("checkoutItems");
-                  sessionStorage.removeItem("buyNowItem");
-
-                  toast.success("Bayar Berhasil!");
-                  router.push("/DashboardProduct");
-                });
-            },
-            onPending: () => {
-              toast.warning("Selesaikan pembayaran ya!");
-            },
-            onError: () => {
-              toast.danger("Yah, gagal bayar.");
-            },
-            onClose: () => {
-              console.log("User menutup popup Midtrans.");
-            },
-          });
-        } else {
-          toast.danger("Sistem Midtrans belum siap. Coba refresh halaman.");
-        }
-      } else if (data.error) {
-        toast.danger("Gagal Checkout: " + data.error);
-      } else {
-        console.error("Invalid checkout response:", data);
-        toast.danger("Gagal Checkout: token Midtrans tidak ditemukan.");
+      if (!data.token) {
+        toast.danger("Gagal Checkout: " + (data.error || "token Midtrans tidak ditemukan."));
+        setIsLoading(false);
+        return;
       }
+
+      // Validasi pesananId dari response checkout
+      if (!data.pesananId) {
+        console.error("pesananId tidak ada di response checkout:", data);
+        toast.danger("Gagal Checkout: ID pesanan tidak ditemukan.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (!(window as any).snap) {
+        toast.danger("Sistem Midtrans belum siap. Coba refresh halaman.");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        if (typeof (window as any).snap?.hide === "function") {
+          (window as any).snap.hide();
+        }
+      } catch (_) { /* ignore */ }
+
+      (window as any).snap.pay(data.token, {
+        onSuccess: async (result: any) => {
+          console.log("Midtrans onSuccess, pesananId:", data.pesananId, result);
+          const ok = await updateOrderStatus(data.pesananId);
+          if (!ok) {
+            console.warn("Status update gagal, tapi pembayaran sukses. Update manual di Supabase.");
+          }
+          clearCheckoutSession();
+          toast.success("Bayar Berhasil!");
+          router.push("/DashboardProduct");
+        },
+        onPending: () => {
+          toast.warning("Selesaikan pembayaran ya!");
+          setIsLoading(false);
+        },
+        onError: () => {
+          toast.danger("Yah, gagal bayar.");
+          setIsLoading(false);
+        },
+        onClose: () => {
+          console.log("User menutup popup Midtrans.");
+          setIsLoading(false);
+        },
+      });
     } catch (err) {
       console.error(err);
       toast.danger("Sistem sibuk, coba lagi nanti.");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -396,7 +586,6 @@ export default function CheckoutPage() {
                   <Icon className="icon" path={mdiMapMarker} size={0.75} />
                   Alamat Pengiriman
                 </span>
-
                 <button
                   className="change-btn"
                   onClick={() => openModal("Address")}
@@ -474,7 +663,6 @@ export default function CheckoutPage() {
                   />
                   Metode Pengiriman
                 </span>
-
                 <button
                   className="change-btn"
                   onClick={() => openModal("Shipping")}
@@ -601,9 +789,21 @@ export default function CheckoutPage() {
               <button
                 className="main-checkout-btn"
                 onClick={handleCheckout}
-                disabled={isLoading || subtotal === 0 || cartItems.length === 0}
+                disabled={
+                  subtotal === 0 ||
+                  cartItems.length === 0 ||
+                  (isReorderMode ? isPreparing || !snapToken : isLoading)
+                }
               >
-                {isLoading ? "LOADING..." : "CHECKOUT"}
+                {isReorderMode
+                  ? isPreparing
+                    ? "Menyiapkan Pembayaran..."
+                    : snapToken
+                    ? "CHECKOUT"
+                    : "Memuat..."
+                  : isLoading
+                  ? "LOADING..."
+                  : "CHECKOUT"}
               </button>
             </div>
           </aside>
@@ -776,5 +976,27 @@ export default function CheckoutPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div
+          className="checkout-view"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100vh",
+          }}
+        >
+          <p>Memuat...</p>
+        </div>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
   );
 }
