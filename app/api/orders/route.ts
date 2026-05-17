@@ -14,12 +14,39 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const tab = searchParams.get("tab") || "Semua Pesanan";
+    const openOrder = searchParams.get("openOrder");
 
     const page = parseInt(searchParams.get("page") || "1");
     const limit = 10;
     const skip = (page - 1) * limit;
 
     try {
+        // Jika ada openOrder, kembalikan single order langsung
+        if (openOrder) {
+            const singleOrder = await prisma.pesanan.findFirst({
+                where: {
+                    id_user: userId,
+                    OR: [
+                        { order_id: openOrder },
+                        ...(isNaN(Number(openOrder)) ? [] : [{ id_pesanan: Number(openOrder) }])
+                    ]
+                },
+                include: {
+                    item_pesanan: {
+                        include: {
+                            produk: true,
+                            ulasan: true,
+                        },
+                    },
+                },
+            });
+
+            return NextResponse.json({
+                success: true,
+                orders: singleOrder ? [singleOrder] : [],
+            });
+        }
+
         let whereClause: any = { id_user: userId };
 
         if (tab === "Belum Bayar") {
@@ -68,6 +95,7 @@ export async function GET(request: Request) {
         ]);
 
         return NextResponse.json({
+            success: true,
             orders,
             totalPages: Math.ceil(totalCount / limit),
             currentPage: page,
