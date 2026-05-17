@@ -1,88 +1,104 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth"; // Import ini
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Import konfigurasi yang tadi kamu tunjukkan
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function GET(request: Request) {
-    // 1. Ambil session secara aman di sisi server
     const session = await getServerSession(authOptions);
 
-    // 2. Cek apakah ada user yang sedang login
     if (!session || !session.user) {
         return NextResponse.json({ error: "Silakan login terlebih dahulu" }, { status: 401 });
     }
 
-    // 3. Ambil ID User dari session (ini didapat dari token.id yang kamu buat di callback tadi)
-    const userId = (session.user as any).id; 
+    const userId = (session.user as any).id;
 
     const { searchParams } = new URL(request.url);
     const tab = searchParams.get("tab") || "Semua Pesanan";
-
     const openOrder = searchParams.get("openOrder");
 
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = 5; // Load 10 data saja
+    const limit = 10;
     const skip = (page - 1) * limit;
 
     try {
-
+        // Jika ada openOrder, kembalikan single order langsung
         if (openOrder) {
             const singleOrder = await prisma.pesanan.findFirst({
                 where: {
-                    id_user: userId, // Pastikan pesanan ini memang milik user yang login
+                    id_user: userId,
                     OR: [
                         { order_id: openOrder },
                         ...(isNaN(Number(openOrder)) ? [] : [{ id_pesanan: Number(openOrder) }])
                     ]
                 },
                 include: {
-                    item_pesanan: { 
-                        include: { 
-                            produk: true, 
-                            ulasan: true 
-                        } 
-                    }
-                }
+                    item_pesanan: {
+                        include: {
+                            produk: true,
+                            ulasan: true,
+                        },
+                    },
+                },
             });
 
-            // Kembalikan hasilnya dalam format yang dikenali frontend (dibungkus objek success)
             return NextResponse.json({
                 success: true,
-                orders: singleOrder ? [singleOrder] : [] // Masukkan ke dalam array agar lolos fungsi Array.isArray() di frontend
+                orders: singleOrder ? [singleOrder] : [],
             });
         }
 
-        let whereClause: any = { id_user: userId }; // Filter otomatis berdasarkan ID yang login
+        let whereClause: any = { id_user: userId };
 
-        // Logika tab (sama seperti sebelumnya)
         if (tab === "Belum Bayar") {
+            // Belum bayar = status pembayaran bukan salah satu dari yang sudah terbayar,
+            // dan pesanan belum dibatalkan
             whereClause.status_pembayaran = { notIn: ["dibayar", "settlement", "capture"] };
-        } else if (tab !== "Semua Pesanan") {
+            whereClause.order_status = { not: "dibatalkan" };
+
+        } else if (tab === "Dibatalkan") {
+            // Semua pesanan yang dibatalkan, terlepas dari status pembayaran
+            whereClause.order_status = "dibatalkan";
+
+        } else if (tab === "Dalam Proses") {
+            // Sudah bayar (bukan pending) + order sedang dikemas (default admin)
+            whereClause.status_pembayaran = { notIn: ["pending"] };
+            whereClause.order_status = "dikemas";
+
+        } else if (tab === "Dalam Pengiriman") {
+            // Sudah bayar + sudah dikirim oleh admin
             whereClause.status_pembayaran = { in: ["dibayar", "settlement", "capture"] };
-            if (tab === "Dalam Proses") whereClause.order_status = "dikemas";
-            if (tab === "Dalam Pengiriman") whereClause.order_status = "dikirim";
-            if (tab === "Selesai") whereClause.order_status = "selesai";
-            if (tab === "Dibatalkan") whereClause.order_status = "dibatalkan";
+            whereClause.order_status = "dikirim";
+
+        } else if (tab === "Selesai") {
+            // Sudah bayar + sudah selesai (dikonfirmasi user via tombol "Pesanan Diterima")
+            whereClause.status_pembayaran = { in: ["dibayar", "settlement", "capture"] };
+            whereClause.order_status = "selesai";
         }
+        // "Semua Pesanan" → whereClause hanya filter by userId, tampilkan semua
 
         const [orders, totalCount] = await Promise.all([
             prisma.pesanan.findMany({
                 where: whereClause,
                 include: {
-                    item_pesanan: { include: { produk: true, ulasan: true } }
+                    item_pesanan: {
+                        include: {
+                            produk: true,
+                            ulasan: true,
+                        },
+                    },
                 },
-                orderBy: { tanggal_pesanan: 'desc' },
-                take: limit, // Ambil 10
-                skip: skip,  // Lewati data sebelumnya
+                orderBy: { tanggal_pesanan: "desc" },
+                take: limit,
+                skip: skip,
             }),
-            prisma.pesanan.count({ where: whereClause }) // Hitung total data untuk info di frontend
+            prisma.pesanan.count({ where: whereClause }),
         ]);
 
         return NextResponse.json({
-            success : true,
+            success: true,
             orders,
             totalPages: Math.ceil(totalCount / limit),
-            currentPage: page
+            currentPage: page,
         });
     } catch (error) {
         console.error("Error fetching orders:", error);

@@ -35,13 +35,15 @@ const EditIcon  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="no
 const WarnIcon  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
 const BoxIcon   = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>;
 
-const ORDER_STATUS_LIST = ['dikemas', 'dikirim', 'selesai'] as const;
+// ── Tambah 'dibatalkan' ke list ──────────────────────────────────────────────
+const ORDER_STATUS_LIST = ['dikemas', 'dikirim', 'selesai', 'dibatalkan'] as const;
 type OrderStatus = typeof ORDER_STATUS_LIST[number];
 
 const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   dikemas: '📦 Dikemas',
   dikirim: '🚚 Dikirim',
   selesai: '✅ Selesai',
+  dibatalkan: '❌ Dibatalkan',
 };
 
 export default function AdminOrdersPage() {
@@ -83,7 +85,6 @@ export default function AdminOrdersPage() {
 
   // ── Order Status inline update ────────────────────────────────────────────
   const handleOrderStatusChange = async (id: number, newStatus: OrderStatus) => {
-    // Optimistic update
     setOrders(prev => prev.map(o => o.id_pesanan === id ? { ...o, order_status: newStatus } : o));
     await supabase.from('pesanan').update({ order_status: newStatus }).eq('id_pesanan', id);
   };
@@ -152,6 +153,9 @@ export default function AdminOrdersPage() {
   const pageItems = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
 
+  const startItem = filtered.length === 0 ? 0 : (safePage - 1) * PER_PAGE + 1;
+  const endItem = Math.min(safePage * PER_PAGE, filtered.length);
+
   return (
     <>
       <div className="topbar">
@@ -203,31 +207,35 @@ export default function AdminOrdersPage() {
                   <td style={{ fontSize: '11px', color: '#666' }}>{o.id_user}</td>
                   <td className="bold-cell">Rp {o.total_harga?.toLocaleString('id-ID')}</td>
 
-                  {/* Items button */}
                   <td>
                     <button className="btn-items" onClick={() => openItemsModal(o.id_pesanan)}>
                       <BoxIcon /> Lihat
                     </button>
                   </td>
 
-                  {/* Status Pembayaran */}
                   <td>
                     <span className={`status-badge ${o.status_pembayaran?.toLowerCase()}`}>
                       {o.status_pembayaran}
                     </span>
                   </td>
 
-                  {/* Order Status — inline dropdown */}
+                  {/* Order Status — inline dropdown, dibatalkan tidak bisa diubah */}
                   <td>
-                    <select
-                      className={`order-status-select order-status-select--${o.order_status ?? 'dikemas'}`}
-                      value={o.order_status ?? 'dikemas'}
-                      onChange={(e) => handleOrderStatusChange(o.id_pesanan, e.target.value as OrderStatus)}
-                    >
-                      {ORDER_STATUS_LIST.map(s => (
-                        <option key={s} value={s}>{ORDER_STATUS_LABEL[s]}</option>
-                      ))}
-                    </select>
+                    {o.order_status === 'dibatalkan' ? (
+                      <span className="order-status-select order-status-select--dibatalkan">
+                        ❌ Dibatalkan
+                      </span>
+                    ) : (
+                      <select
+                        className={`order-status-select order-status-select--${o.order_status ?? 'dikemas'}`}
+                        value={o.order_status ?? 'dikemas'}
+                        onChange={(e) => handleOrderStatusChange(o.id_pesanan, e.target.value as OrderStatus)}
+                      >
+                        {ORDER_STATUS_LIST.filter(s => s !== 'dibatalkan').map(s => (
+                          <option key={s} value={s}>{ORDER_STATUS_LABEL[s]}</option>
+                        ))}
+                      </select>
+                    )}
                   </td>
 
                   <td>
@@ -242,18 +250,23 @@ export default function AdminOrdersPage() {
           </table>
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="pagination-row">
             <span className="pagination-info">
-              {filtered.length} order · halaman {safePage} dari {totalPages}
+              Menampilkan {startItem}-{endItem} dari {filtered.length} order
             </span>
             <div className="pagination-controls">
-              <button className="pg-btn" disabled={safePage === 1} onClick={() => setCurrentPage(safePage - 1)}>‹</button>
+              <button className="pg-btn" disabled={safePage === 1} onClick={() => setCurrentPage(safePage - 1)}>
+                Prev
+              </button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                <button key={p} className={`pg-btn ${p === safePage ? 'active' : ''}`} onClick={() => setCurrentPage(p)}>{p}</button>
+                <button key={p} className={`pg-btn ${p === safePage ? 'active' : ''}`} onClick={() => setCurrentPage(p)}>
+                  {p}
+                </button>
               ))}
-              <button className="pg-btn" disabled={safePage === totalPages} onClick={() => setCurrentPage(safePage + 1)}>›</button>
+              <button className="pg-btn" disabled={safePage === totalPages} onClick={() => setCurrentPage(safePage + 1)}>
+                Next
+              </button>
             </div>
           </div>
         )}

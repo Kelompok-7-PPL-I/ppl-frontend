@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
-import { X, EyeOff } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { X, EyeOff, Star, CheckCircle2 } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useToast } from "@/app/context/ToastContext";
 
 function ReviewContent() {
@@ -54,7 +54,7 @@ function ReviewContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id_produk,
-          id_item: parseInt(id_item),
+          id_item: parseInt(id_item || "0"),
           rating,
           komentar: comment + (selectedTags.length > 0 ? ` [Tags: ${selectedTags.join(", ")}]` : ""),
           is_anonim: hideName

@@ -130,6 +130,8 @@ model Pesanan {
   snap_token        String?
   item_pesanan      ItemPesanan[]
   pengguna          Pengguna      @relation(fields: [id_user], references: [id])
+  alasan_pembatalan  String?   
+  tanggal_pembatalan DateTime?
 
   @@map("pesanan")
   @@schema("public")
