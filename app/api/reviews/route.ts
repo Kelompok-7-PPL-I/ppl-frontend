@@ -3,6 +3,55 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 
+// 1. METHOD GET: UNTUK MENARIK HISTORY ULASAN
+export async function GET() {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user || !(session.user as any).id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const userId = (session.user as any).id;
+
+        // Mengambil history berdasarkan struktur tabel 'ulasan'
+        const historyUlasan = await prisma.ulasan.findMany({
+            where: {
+                id_user: userId // Tipe data UUID dari session
+            },
+            include: {
+                // 1. Mengambil data nama dan gambar dari tabel 'produk'
+                produk: {
+                    select: {
+                        nama_produk: true,
+                        gambar_url: true 
+                    }
+                },
+                // 2. Mengambil data dari tabel 'item_pesanan' untuk dihubungkan ke 'pesanan'
+                item_pesanan: {
+                    include: {
+                        pesanan: {
+                            select: {
+                                id_pesanan: true,
+                                order_id: true, 
+                                tanggal_pesanan: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                tanggal_ulasan: 'desc' 
+            }
+        });
+
+        return NextResponse.json({ success: true, data: historyUlasan });
+    } catch (error: any) {
+        console.error("Error fetching review history:", error);
+        return NextResponse.json({ error: "Terjadi kesalahan sistem saat mengambil history ulasan" }, { status: 500 });
+    }
+}
+
+// 2. METHOD POST: UNTUK MEMBUAT ULASAN BARU
 export async function POST(request: Request) {
     try {
         const session = await getServerSession(authOptions);
