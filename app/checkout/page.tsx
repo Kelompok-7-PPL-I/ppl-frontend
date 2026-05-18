@@ -38,7 +38,7 @@ interface CartItem {
   note?: string;
 }
 
-type CheckoutMode = "cart" | "selected_cart" | "buy_now" | "reorder";
+type CheckoutMode = "cart" | "selected_cart" | "buy_now" | "reorder" | "recipe_checkout";
 
 // ─── Helpers ────────────────────────────────────────────────────
 const safeParseItems = (raw: string | null): CartItem[] => {
@@ -105,9 +105,9 @@ function CheckoutContent() {
     if (mode === "selected-cart") return "selected_cart";
     if (mode === "buy-now") return "buy_now";
     if (mode === "reorder") return "reorder";
+    if (mode === "recipe-checkout") return "recipe_checkout"; // ← tambah ini
     return "cart";
   };
-
   const mode = getCheckoutMode();
   const isReorderMode = mode === "reorder";
 
@@ -258,6 +258,21 @@ function CheckoutContent() {
           return;
         }
 
+        if (mode === "recipe_checkout") {
+          const rawItems = sessionStorage.getItem("recipeItems");
+          console.log("recipeItems raw:", rawItems); // ← cek ini
+          const items = normalizeItems(safeParseItems(rawItems));
+          console.log("recipeItems normalized:", items); // ← dan ini
+          if (items.length > 0) {
+            setCartItems(items);
+            setSubtotal(calculateSubtotal(items));
+          } else {
+            toast.warning("Data bahan tidak ditemukan, silakan coba lagi.");
+            router.push("/");
+          }
+          return;
+        }
+
         // default: cart
         const cartRes = await fetch("/api/cart");
         if (cartRes.ok) {
@@ -391,6 +406,7 @@ function CheckoutContent() {
     sessionStorage.removeItem("checkoutItems");
     sessionStorage.removeItem("buyNowItem");
     sessionStorage.removeItem("reorderItems");
+    sessionStorage.removeItem("recipeItems"); // ← tambah ini
   };
 
   // ── Checkout ─────────────────────────────────────────────────

@@ -297,7 +297,56 @@ body {
   margin-bottom: 1rem;
 }
 
+/* Masukkan Semua ke Keranjang — outline style */
 .recipe-detail-page .recipe-add-cart-btn {
+  background-color: transparent;
+  color: #0A3D22;
+  border: 2px solid #0A3D22;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.recipe-detail-page .recipe-add-cart-btn:hover:not(:disabled) {
+  background-color: #0A3D22;
+  color: white;
+  transform: scale(1.02);
+}
+
+.recipe-detail-page .recipe-add-cart-btn:disabled {
+  border-color: #ccc;
+  color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Beli Semua Bahan — solid style */
+.recipe-detail-page .recipe-buy-now-btn {
+  background-color: #0A3D22;
+  color: white;
+  border: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.recipe-detail-page .recipe-buy-now-btn:hover:not(:disabled) {
+  background-color: #072a18;
+  transform: scale(1.02);
+}
+
+.recipe-detail-page .recipe-buy-now-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+.recipe-detail-page .recipe-buy-now-btn {
   width: 100%;
   background-color: #0A3D22;
   color: white;
@@ -310,16 +359,16 @@ body {
   transition: all 0.2s ease;
 }
 
-.recipe-detail-page .recipe-add-cart-btn:hover:not(:disabled) {
+.recipe-detail-page .recipe-buy-now-btn:hover:not(:disabled) {
   background-color: #072a18;
   transform: scale(1.02);
 }
 
-.recipe-detail-page .recipe-add-cart-btn.added {
+.recipe-detail-page .recipe-buy-now-btn.added {
   background-color: #28a745;
 }
 
-.recipe-detail-page .recipe-add-cart-btn:disabled {
+.recipe-detail-page .recipe-buy-now-btn:disabled {
   background-color: #ccc;
   cursor: not-allowed;
   transform: none;
