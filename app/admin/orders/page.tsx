@@ -117,9 +117,29 @@ export default function AdminOrdersPage() {
     closeModal();
   };
 
+  // ── Delete: hapus ulasan → item_pesanan → pesanan ─────────────────────────
   const handleDelete = async () => {
     if (!targetOrder) return;
+
+    // 1. Ambil semua id_item milik pesanan ini
+    const { data: itemList } = await supabase
+      .from('item_pesanan')
+      .select('id_item')
+      .eq('id_pesanan', targetOrder.id_pesanan);
+
+    const itemIds = (itemList || []).map((i: { id_item: number }) => i.id_item);
+
+    // 2. Hapus ulasan yang terkait item tersebut (jika ada)
+    if (itemIds.length > 0) {
+      await supabase.from('ulasan').delete().in('id_item', itemIds);
+    }
+
+    // 3. Hapus item_pesanan
+    await supabase.from('item_pesanan').delete().eq('id_pesanan', targetOrder.id_pesanan);
+
+    // 4. Baru hapus pesanan
     await supabase.from('pesanan').delete().eq('id_pesanan', targetOrder.id_pesanan);
+
     fetchOrders();
     setIsDeleteModalOpen(false);
     setTargetOrder(null);
