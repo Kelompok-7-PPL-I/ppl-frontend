@@ -231,7 +231,7 @@ export default function RecipesPage(){
 
       <div className="controls-row">
         <a href="/DashboardProduct" className="back-button">
-          Back
+         ← Kembali
         </a>
         <div className="search-box">
           <input 

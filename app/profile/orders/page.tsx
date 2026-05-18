@@ -8,7 +8,7 @@ import { ChevronDown, ChevronUp, X, AlertTriangle, RefreshCcw, Loader2 } from 'l
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/app/context/ToastContext";
 
-import './page.css'; 
+import styles from './OrderPage.module.css';
 
 // --- Komponen Ikon SVG Placeholder ---
 const TruckIcon = () => (
@@ -501,53 +501,57 @@ export default function OrdersPage() {
     };
 
     const OrderSkeleton = () => (
-        <div className="order-card skeleton-container">
-            <div className="card-header">
-                <div className="header-left">
-                    <div className="skeleton-icon"></div>
-                    <div className="skeleton-text-container">
-                        <div className="skeleton-line short"></div>
-                        <div className="skeleton-line medium"></div>
+        <div className={`${styles['order-card']} ${styles['skeleton-container']}`}>
+            <div className={styles["card-header"]}>
+                <div className={styles["header-left"]}>
+                    <div className={styles["skeleton-icon"]}></div>
+                    <div className={styles["skeleton-text-container"]}>
+                        <div className={`${styles['skeleton-line']} ${styles.short}`}></div>
+                        <div className={`${styles['skeleton-line']} ${styles.medium}`}></div>
                     </div>
                 </div>
-                <div className="header-right">
-                    <div className="skeleton-line short"></div>
-                    <div className="skeleton-line short"></div>
-                </div>
-            </div>
-            <div className="card-body">
-                <div className="body-left">
-                    <div className="product-images">
-                        <div className="img-box skeleton-image"></div>
-                        <div className="img-box skeleton-image"></div>
-                    </div>
-                    <div className="product-info">
-                        <div className="skeleton-line long"></div>
-                        <div className="skeleton-line medium"></div>
-                    </div>
+                <div className={styles["header-right"]}>
+                    <div className={`${styles['skeleton-line']} ${styles.short}`}></div>
+                    <div className={`${styles['skeleton-line']} ${styles.short}`}></div>
                 </div>
             </div>
-            <div className="card-footer">
-                <div className="skeleton-button"></div>
-                <div className="skeleton-button"></div>
+            <div className={styles["card-body"]}>
+                <div className={styles["body-left"]}>
+                    <div className={styles["product-images"]}>
+                        <div className={`${styles['img-box']} ${styles['skeleton-image']}`}></div>
+                        <div className={`${styles['img-box']} ${styles['skeleton-image']}`}></div>
+                    </div>
+                    <div className={styles["product-info"]}>
+                        <div className={`${styles['skeleton-line']} ${styles.long}`}></div>
+                        <div className={`${styles['skeleton-line']} ${styles.medium}`}></div>
+                    </div>
+                </div>
+            </div>
+            <div className={styles["card-footer"]}>
+                <div className={styles["skeleton-button"]}></div>
+                <div className={styles["skeleton-button"]}></div>
             </div>
         </div>
     );
 
     return (
-        <main className="orders-main">
-            <header className="orders-header">
+        <main className={styles["orders-main"]}>
+            <header className={styles["orders-header"]}>
                 <div>
-                    <h1 className="orders-title">Lihat Pesanan</h1>
+                    <h1 className={styles["orders-title"]}>Lihat Pesanan</h1>
+                    <p className="text-gray-500 text-sm mt-1">Riwayat Pesanan dari Aplikasi Kami </p>
                 </div>
+                <Link href="/DashboardProduct" className="text-[#064E3B] font-bold text-sm hover:underline flex items-center gap-2">
+                    <span>← Kembali ke Toko</span>
+                </Link>
             </header>
                 
-            <div className="tabs-container">
+            <div className={styles["tabs-container"]}>
                 {tabs.map((tab) => (
                     <button
                         key={tab}
                         onClick={() => handleTabChange(tab)}
-                        className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+                        className={`${styles['tab-btn']} ${activeTab === tab ? styles.active : ''}`}
                     >
                         {tab}
                     </button>
@@ -570,7 +574,7 @@ export default function OrdersPage() {
                         <div className="p-4 max-h-[70vh] overflow-y-auto space-y-4">
                             <div className="p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200">
                                 <p className="text-[10px] text-gray-500 uppercase tracking-wider">Nomor Pesanan</p>
-                                <p className="text-sm font-mono font-bold text-green-700">{selectedOrder.no_pesanan || 'PANGAN-12345'}</p>
+                                <p className="text-sm font-mono font-bold text-green-700">{(selectedOrder.order_id || 'PANGAN-12345').toString().replace("PANGAN-", "")}</p>
                             </div>
 
                             {/* Info pembatalan & refund — hanya muncul kalau status dibatalkan */}
@@ -652,7 +656,7 @@ export default function OrdersPage() {
             )}
 
             {/* ── List Order Cards ── */}
-            <div className="orders-list">
+            <div className={styles["orders-list"]}>
                 {loading ? (
                     <>
                         <OrderSkeleton />
@@ -664,24 +668,24 @@ export default function OrdersPage() {
                         const ui = getStatusUI(order);
 
                         return (
-                            <div key={order.id_pesanan} className="order-card">
-                                <div className="card-header">
-                                    <div className="header-left">
-                                        <div className={`icon-wrapper ${ui.bg}`}>
+                            <div key={order.id_pesanan} className={styles["order-card"]}>
+                                <div className={styles["card-header"]}>
+                                    <div className={styles["header-left"]}>
+                                        <div className={`${styles['icon-wrapper']} ${styles[ui.bg]}`}>
                                             {ui.icon}
                                         </div>
                                         <div>
-                                            <p className={`status-text ${ui.color}`}>{ui.label}</p>
-                                            <p className="order-id">{order.order_id}</p>
+                                            <p className={`${styles['status-text']} ${styles[ui.color]}`}>{ui.label}</p>
+                                            <p className={styles['order-id']}>Nomor Pesanan: {(order.order_id).toString().replace("PANGAN-", "")}</p>
                                         </div>
                                     </div>
-                                    <div className="header-right">
-                                        <p className="date-label">Order Date</p>
-                                        <p className="date-value">{new Date(order.tanggal_pesanan).toLocaleDateString('id-ID')}</p>
+                                    <div className={styles["header-right"]}>
+                                        <p className={styles["date-label"]}>Order Date</p>
+                                        <p className={styles["date-value"]}>{new Date(order.tanggal_pesanan).toLocaleDateString('id-ID')}</p>
                                     </div>
                                 </div>
 
-                                <div className="card-body">
+                                <div className={styles["card-body"]}>
                                     <div className="body-left w-full flex flex-col items-start gap-2">
                                         <ReviewItemSelector order={order} ui={ui} />
 
@@ -696,18 +700,18 @@ export default function OrdersPage() {
                                     </div>
                                 </div>
 
-                                <div className="card-footer">
+                                <div className={styles["card-footer"]}>
                                     {/* ── BELUM BAYAR ── */}
                                     {ui.status === 'pending_payment' && (
                                         <>
                                             {/* Batalkan: tidak perlu refund karena belum bayar */}
                                             <button
-                                                className="btn btn-link-red"
+                                                className={`${styles.btn} ${styles['btn-link-red']}`}
                                                 onClick={() => setCancelModal({ order, orderStatus: 'pending_payment' })}
                                             >
                                                 Batalkan
                                             </button>
-                                            <button className="btn btn-solid-green">Bayar Sekarang</button>
+                                            <button className={`${styles.btn} ${styles['btn-solid-green']}`}>Bayar Sekarang</button>
                                         </>
                                     )}
 
@@ -716,12 +720,12 @@ export default function OrdersPage() {
                                         <>
                                             <button 
                                                 onClick={() => openDetail(order)}
-                                                className="btn btn-outline-gray"
+                                                className={`${styles.btn} ${styles['btn-outline-gray']}`}
                                             >
                                                 Detail Pesanan
                                             </button>
                                             <button 
-                                                className="btn btn-solid-black" 
+                                                className={`${styles.btn} ${styles['btn-solid-black']}`}
                                                 onClick={() => {
                                                     setSelectedOrder(order);
                                                     setTimeout(() => { handlePrint(); }, 100);
@@ -737,19 +741,19 @@ export default function OrdersPage() {
                                         <>
                                             <button 
                                                 onClick={() => openDetail(order)}
-                                                className="btn btn-outline-gray"
+                                                className={`${styles.btn} ${styles['btn-outline-gray']}`}
                                             >
                                                 Detail Pesanan
                                             </button>
                                             {/* Tombol konfirmasi terima — mengubah order_status jadi 'selesai' */}
                                             <button
-                                                className="btn btn-solid-green"
+                                                className={`${styles.btn} ${styles['btn-solid-green']}`}
                                                 disabled={confirmingId === order.id_pesanan}
                                                 onClick={() => handleConfirmReceived(order.id_pesanan)}
                                             >
                                                 {confirmingId === order.id_pesanan ? (
                                                     <span className="flex items-center gap-1">
-                                                        <Loader2 size={14} className="animate-spin" />
+                                                        <Loader2 size={14} className={styles["animate-spin"]} />
                                                         Memproses...
                                                     </span>
                                                 ) : (
@@ -764,13 +768,13 @@ export default function OrdersPage() {
                                         <>
                                             <button 
                                                 onClick={() => openDetail(order)}
-                                                className="btn btn-outline-gray"
+                                                className={`${styles.btn} ${styles['btn-outline-gray']}`}
                                             >
                                                 Detail Pesanan
                                             </button>
                                             {/* Beli Lagi: encode items ke sessionStorage → redirect ke /checkout */}
                                             <button
-                                                className="btn btn-solid-green"
+                                                className={`${styles.btn} ${styles['btn-solid-green']}`}
                                                 onClick={() => handleReorder(order)}
                                             >
                                                 Beli Lagi
@@ -781,7 +785,7 @@ export default function OrdersPage() {
                                     {/* ── DIBATALKAN ── */}
                                     {ui.status === 'cancelled' && (
                                         <button
-                                            className="btn btn-outline-gray"
+                                            className={`${styles.btn} ${styles['btn-outline-gray']}`}
                                             onClick={() => openDetail(order)}
                                         >
                                             Detail Pembatalan
@@ -792,28 +796,28 @@ export default function OrdersPage() {
                         );
                     })
                 ) : (
-                    <div className="empty-state">Belum ada pesanan.</div>
+                    <div className={styles["empty-state"]}>Belum ada pesanan.</div>
                 )}
             </div>
 
             {totalPages > 1 && (
-                <div className="pagination-wrapper">
-                    <div className="pagination-info">
+                <div className={styles["pagination-wrapper"]}>
+                    <div className={styles["pagination-info"]}>
                         Menampilkan halaman <strong>{currentPage}</strong> dari <strong>{totalPages}</strong>
                     </div>
-                    <div className="pagination-buttons">
+                    <div className={styles["pagination-buttons"]}>
                         <button 
                             disabled={currentPage === 1}
                             onClick={() => {
                                 setCurrentPage(prev => prev - 1);
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
-                            className="pag-btn"
+                            className={styles["pag-btn"]}
                         >
-                            <ChevronLeftIcon /> Previous
+                            <ChevronLeftIcon /> Sebelumnya
                         </button>
                         
-                        <div className="page-numbers">
+                        <div className={styles["page-numbers"]}>
                             {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
                                 <button
                                     key={num}
@@ -821,7 +825,7 @@ export default function OrdersPage() {
                                         setCurrentPage(num);
                                         window.scrollTo({ top: 0, behavior: 'smooth' });
                                     }}
-                                    className={`num-btn ${currentPage === num ? 'active' : ''}`}
+                                    className={`${styles['num-btn']} ${currentPage === num ? styles.active : ''}`}
                                 >
                                     {num}
                                 </button>
@@ -834,9 +838,9 @@ export default function OrdersPage() {
                                 setCurrentPage(prev => prev + 1);
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
-                            className="pag-btn"
+                            className={styles["pag-btn"]}
                         >
-                            Next <ChevronRightIcon />
+                            Berikutnya <ChevronRightIcon />
                         </button>
                     </div>
                 </div>

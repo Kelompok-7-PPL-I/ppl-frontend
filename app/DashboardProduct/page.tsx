@@ -133,7 +133,7 @@ function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike
             }
           }}
         >
-          Buy Now
+          Beli Sekarang
         </button>
         </div>
       </div>

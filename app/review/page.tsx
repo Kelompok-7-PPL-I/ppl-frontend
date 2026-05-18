@@ -23,12 +23,12 @@ function ReviewContent() {
   const [showSuccess, setShowSuccess] = useState(false);
 
   const tags = [
-    { id: "quality", icon: "🥦", label: "Kualitas Bahan" },
-    { id: "freshness", icon: "✨", label: "Kesegaran" },
-    { id: "portion", icon: "⚖️", label: "Sesuai Takaran" },
-    { id: "packaging", icon: "📦", label: "Pengemasan" },
-    { id: "delivery", icon: "🚚", label: "Kecepatan Kirim" },
-    { id: "value", icon: "💰", label: "Harga Terjangkau" },
+    { id: "Kualitas", icon: "🥦", label: "Kualitas Bahan" },
+    { id: "Kesegaran", icon: "✨", label: "Kesegaran" },
+    { id: "Takaran", icon: "⚖️", label: "Sesuai Takaran" },
+    { id: "Pengemasan", icon: "📦", label: "Pengemasan" },
+    { id: "Pengiriman", icon: "🚚", label: "Kecepatan Kirim" },
+    { id: "Harga Terjangkau", icon: "💰", label: "Harga Terjangkau" },
   ];
 
   const toggleTag = (id: string) => {

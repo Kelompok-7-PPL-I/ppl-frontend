@@ -179,7 +179,7 @@ if (!product) {
           />
         </div>
         <button className="back-btn" onClick={() => router.back()}>
-          ← Back
+          ← Kembali
         </button>
       </header>
 
@@ -262,10 +262,10 @@ if (!product) {
             )}
 
             <button
-              className={`add-cart-btn ${addedToCart ? "added" : ""}`}
+              className={`add-cart-btn ${addedToCart ? "Ditambahkan" : ""}`}
               onClick={handleAddToCart}
             >
-              {addedToCart ? "✓ Added!" : "Tambahkan Ke Keranjang"}
+              {addedToCart ? "✓ Ditambahkan!" : "Tambah ke Keranjang"}
             </button>
           </div>
           <button
@@ -290,7 +290,7 @@ if (!product) {
               }
             }}
           >
-            Buy Now
+            Beli Sekarang
           </button>
         </section>
       </main>
