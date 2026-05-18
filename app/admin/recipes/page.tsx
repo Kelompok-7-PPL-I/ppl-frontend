@@ -22,6 +22,7 @@ interface Recipe {
   langkah_masak: string;
   informasi_gizi: string;
   gambar_url: string;
+  waktu_masak: number; // ← tambah ini
   created_at: string;
 }
 
@@ -82,6 +83,8 @@ export default function AdminRecipesPage() {
 const [bahanTarget, setBahanTarget] = useState<Recipe | null>(null);
 const [bahanList, setBahanList] = useState<BahanItem[]>([]);
 const [bahanLoading, setBahanLoading] = useState(false);
+const [langkahTarget, setLangkahTarget] = useState<Recipe | null>(null);
+const [giziTarget, setGiziTarget] = useState<Recipe | null>(null);
 const { toast } = useToast();
 
 // Tambah fungsi fetchBahan
@@ -215,9 +218,10 @@ const fetchRecipes = useCallback(async () => {
             <col className="col-no"/>
             <col className="col-judul"/>
             <col className="col-kat"/>
-            <col className="col-data"/> 
-            <col className="col-data"/> 
             <col className="col-data"/>
+            <col className="col-data"/>
+            <col className="col-data"/>
+            <col className="col-data"/>  {/* ← durasi */}
             <col className="col-gizi"/>
             <col className="col-img"/>
             <col className="col-aksi"/>
@@ -230,6 +234,7 @@ const fetchRecipes = useCallback(async () => {
               <th>Deskripsi</th>
               <th>Bahan</th>
               <th>Langkah</th>
+              <th>Durasi</th>   {/* ← tambah */}
               <th>Gizi</th>
               <th>Gambar</th>
               <th>Aksi</th>
@@ -250,12 +255,19 @@ const fetchRecipes = useCallback(async () => {
                   </button>
                 </td>                
                 <td>
-                  <div className="text-wrapper" title={r.langkah_masak}>{r.langkah_masak || "-"}
-                  </div>
+                  <button className="btn-bahan-detail" onClick={() => setLangkahTarget(r)}>
+                    Lihat Langkah
+                  </button>
                 </td>
                 <td>
-                  <div className="text-wrapper">{r.informasi_gizi || "-"}
-                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#555" }}>
+                    {r.waktu_masak ? `${r.waktu_masak} min` : "-"}
+                  </span>
+                </td>
+                <td>
+                  <button className="btn-bahan-detail" onClick={() => setGiziTarget(r)}>
+                    Lihat Gizi
+                  </button>
                 </td>
                 <td>
                   <img src={r.gambar_url || "/placeholder.jpg"} className="img-thumb" alt="" />
@@ -331,6 +343,80 @@ const fetchRecipes = useCallback(async () => {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL LANGKAH */}
+      {langkahTarget && (
+        <div className="modal-backdrop" onClick={() => setLangkahTarget(null)}>
+          <div className="modal-box bahan-modal-box" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setLangkahTarget(null)}>
+              <CloseIcon />
+            </button>
+            <div className="modal-content">
+              <div className="modal-title">Langkah Pembuatan</div>
+              <div className="modal-sub">{langkahTarget.judul_resep}</div>
+              <div className="bahan-list">
+                {(langkahTarget.langkah_masak || "")
+                  .split(/\\n|\n/)
+                  .filter((s) => s.trim())
+                  .map((step, idx) => (
+                    <div key={idx} className="bahan-card">
+                      <div style={{
+                        width: 28, height: 28, borderRadius: "50%",
+                        background: "#f5c800", display: "flex",
+                        alignItems: "center", justifyContent: "center",
+                        fontWeight: 800, fontSize: 13, flexShrink: 0,
+                      }}>
+                        {idx + 1}
+                      </div>
+                      <div className="bahan-info">
+                        <span className="bahan-nama" style={{ fontWeight: 500, fontSize: 13 }}>
+                          {step.trim()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL GIZI */}
+      {giziTarget && (
+        <div className="modal-backdrop" onClick={() => setGiziTarget(null)}>
+          <div className="modal-box bahan-modal-box" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setGiziTarget(null)}>
+              <CloseIcon />
+            </button>
+            <div className="modal-content">
+              <div className="modal-title">Informasi Gizi</div>
+              <div className="modal-sub">{giziTarget.judul_resep}</div>
+              <div className="bahan-list">
+                {(giziTarget.informasi_gizi || "")
+                  .split(",")
+                  .filter((s) => s.trim())
+                  .map((item, idx) => {
+                    const [label, value] = item.split(":").map((s) => s.trim());
+                    return (
+                      <div key={idx} className="bahan-card" style={{ justifyContent: "space-between" }}>
+                        <span className="bahan-nama">{label}</span>
+                        {value && (
+                          <span style={{
+                            fontSize: 13, fontWeight: 700,
+                            color: "#1a3a2a", background: "#f0f5f0",
+                            padding: "4px 12px", borderRadius: 8,
+                          }}>
+                            {value}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
           </div>
         </div>

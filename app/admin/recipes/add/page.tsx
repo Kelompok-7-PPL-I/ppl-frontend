@@ -37,12 +37,32 @@ export default function AddRecipePage() {
     kategori_jenis: "Diet",
     deskripsi_singkat: "",
     langkah_masak: "",
+    waktu_masak: "",  // ← tambah
   });
 
   // ── State Gizi ───────────────────────────────────────────────
   const [nutritionList, setNutritionList] = useState([{ tipe: "Kalori", nilai: "" }]);
   const categoryOptions = ["Diet", "Weight Gain", "Snack", "High Protein"];
-  const nutritionOptions = ["Kalori", "Karbohidrat", "Protein", "Serat", "Lemak", "Gula"];
+  const nutritionOptions = [
+    "Kalori",
+    "Karbohidrat",
+    "Protein",
+    "Serat",
+    "Lemak",
+    "Gula",
+    "Sodium",
+    "Vitamin A",
+    "Vitamin B",
+    "Vitamin C",
+    "Vitamin D",
+    "Vitamin E",
+    "Kalsium",
+    "Zat Besi",
+    "Fosfor",
+    "Magnesium",
+    "Zinc",
+    "Kolesterol",
+  ];
 
   // ── State Katalog Produk / Bahan ─────────────────────────────
   const [produkList, setProdukList] = useState<ProdukKatalog[]>([]);
@@ -111,6 +131,12 @@ export default function AddRecipePage() {
   };
 
   // ── Submit ───────────────────────────────────────────────────
+  const bahanTanpaTakaran = bahanDipilih.filter(b => !b.takaran || Number(b.takaran) <= 0);
+    if (bahanTanpaTakaran.length > 0) {
+      toast.danger(`Isi takaran untuk: ${bahanTanpaTakaran.map(b => b.nama_produk).join(", ")}`);
+      setIsSubmitting(false);
+      return;
+    }
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -138,6 +164,7 @@ export default function AddRecipePage() {
           langkah_masak: form.langkah_masak,
           informasi_gizi: giziString,
           gambar_url: finalImageUrl,
+          waktu_masak: form.waktu_masak ? Number(form.waktu_masak) : null, // ← tambah
         }])
         .select()
         .single();
@@ -201,6 +228,27 @@ export default function AddRecipePage() {
                   {categoryOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
+              <div className="field-group">
+              <label>Durasi Masak</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  name="waktu_masak"
+                  type="number"
+                  min="1"
+                  placeholder="Contoh: 30"
+                  value={form.waktu_masak}
+                  onChange={handleChange}
+                  style={{ paddingRight: "56px" }}
+                />
+                <span style={{
+                  position: "absolute", right: 16, top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: 13, fontWeight: 700, color: "#888",
+                }}>
+                  menit
+                </span>
+              </div>
+          </div>
             </div>
             <div className="upload-preview-side">
               <div className="preview-display">
@@ -313,9 +361,21 @@ export default function AddRecipePage() {
           {/* ── Langkah Memasak ── */}
           <div className="field-group">
             <label>Langkah Memasak</label>
-            <textarea name="langkah_masak" rows={8} value={form.langkah_masak} onChange={handleChange} required placeholder="Masukkan langkah-langkah memasak..." />
+            <textarea
+              name="langkah_masak"
+              rows={12}
+              value={form.langkah_masak}
+              onChange={handleChange}
+              required
+              placeholder={"1. Langkah pertama...\n2. Langkah kedua...\n3. Langkah ketiga..."}
+              style={{
+                whiteSpace: "pre-wrap",
+                lineHeight: "1.8",
+                resize: "vertical",
+                minHeight: "200px",
+              }}
+            />
           </div>
-
           <div className="form-footer-sticky">
             <button type="submit" className="btn-submit-recipe" disabled={isSubmitting}>
               {isSubmitting ? "Sedang Memproses..." : "Publikasikan Resep"}

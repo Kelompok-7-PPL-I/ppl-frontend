@@ -41,11 +41,32 @@ export default function EditRecipePage() {
     deskripsi_singkat: "",
     langkah_masak: "",
     gambar_url: "",
+    waktu_masak: "",  // ← ditambahkan, sesuai add
   });
 
   // ── State Gizi ───────────────────────────────────────────────
   const [nutritionList, setNutritionList] = useState<{ tipe: string; nilai: string }[]>([]);
-  const nutritionOptions = ["Kalori", "Karbohidrat", "Protein", "Serat", "Lemak", "Gula"];
+  const categoryOptions = ["Diet", "Weight Gain", "Snack", "High Protein"];
+  const nutritionOptions = [
+    "Kalori",
+    "Karbohidrat",
+    "Protein",
+    "Serat",
+    "Lemak",
+    "Gula",
+    "Sodium",
+    "Vitamin A",
+    "Vitamin B",
+    "Vitamin C",
+    "Vitamin D",
+    "Vitamin E",
+    "Kalsium",
+    "Zat Besi",
+    "Fosfor",
+    "Magnesium",
+    "Zinc",
+    "Kolesterol",
+  ];
 
   // ── State Katalog Produk / Bahan ─────────────────────────────
   const [produkList, setProdukList] = useState<ProdukKatalog[]>([]);
@@ -96,13 +117,18 @@ export default function EditRecipePage() {
       if (error) throw error;
 
       if (data) {
+        // Normalize \n literal string → actual newline (data lama mungkin tersimpan sebagai "\\n")
+        const normalizeNewlines = (str: string | null) =>
+          (str ?? "").replace(/\\n/g, "\n");
+
         setForm({
           judul_resep: data.judul_resep,
           kategori_jenis: data.kategori_jenis,
-          deskripsi_singkat: data.deskripsi_singkat,
+          deskripsi_singkat: normalizeNewlines(data.deskripsi_singkat),
           informasi_gizi: data.informasi_gizi,
-          langkah_masak: data.langkah_masak,
+          langkah_masak: normalizeNewlines(data.langkah_masak),
           gambar_url: data.gambar_url,
+          waktu_masak: data.waktu_masak != null ? String(data.waktu_masak) : "",
         });
         setPreview(data.gambar_url);
 
@@ -162,8 +188,10 @@ export default function EditRecipePage() {
   };
 
   // ── Handler Gizi ─────────────────────────────────────────────
-  const addNutritionField = () => setNutritionList([...nutritionList, { tipe: "Kalori", nilai: "" }]);
-  const removeNutrition = (index: number) => setNutritionList(nutritionList.filter((_, i) => i !== index));
+  const addNutritionField = () => setNutritionList([...nutritionList, { tipe: "Protein", nilai: "" }]);
+  const removeNutrition = (index: number) => {
+    if (nutritionList.length > 1) setNutritionList(nutritionList.filter((_, i) => i !== index));
+  };
   const updateNutrition = (index: number, field: string, value: string) => {
     const newList = [...nutritionList];
     newList[index] = { ...newList[index], [field]: value };
@@ -173,6 +201,14 @@ export default function EditRecipePage() {
   // ── Submit ───────────────────────────────────────────────────
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ← Validasi bahan tanpa takaran, sesuai add
+    const bahanTanpaTakaran = bahanDipilih.filter(b => !b.takaran || Number(b.takaran) <= 0);
+    if (bahanTanpaTakaran.length > 0) {
+      toast.danger(`Isi takaran untuk: ${bahanTanpaTakaran.map(b => b.nama_produk).join(", ")}`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       let finalImageUrl = form.gambar_url;
@@ -199,6 +235,7 @@ export default function EditRecipePage() {
           informasi_gizi: giziString || "-",
           langkah_masak: form.langkah_masak,
           gambar_url: finalImageUrl,
+          waktu_masak: form.waktu_masak ? Number(form.waktu_masak) : null,  // ← ditambahkan
         })
         .eq('id_resep', id);
 
@@ -232,7 +269,7 @@ export default function EditRecipePage() {
 
   return (
     <div className="admin-form-page">
-      <div className="form-container-wrap" style={{ maxWidth: '1000px' }}>
+      <div className="form-container-wrap">
         <header className="form-view-header">
           <button type="button" onClick={() => router.back()} className="btn-back-link">
             ← Batal
@@ -247,21 +284,47 @@ export default function EditRecipePage() {
             <div className="inputs-main">
               <div className="field-group">
                 <label>Judul Resep</label>
-                <input name="judul_resep" className="input-judul-huge" value={form.judul_resep} onChange={handleChange} required />
+                <input
+                  name="judul_resep"
+                  className="input-judul-huge"
+                  placeholder="Contoh: Salad Ayam Panggang..."
+                  value={form.judul_resep}
+                  onChange={handleChange}
+                  required
+                />
               </div>
               <div className="field-group">
-                <label>Kategori</label>
+                <label>Kategori Program</label>
                 <select name="kategori_jenis" className="form-select" value={form.kategori_jenis} onChange={handleChange}>
-                  <option value="Diet">Diet</option>
-                  <option value="Weight Gain">Weight Gain</option>
-                  <option value="Snack">Snack</option>
-                  <option value="High Protein">High Protein</option>
+                  {categoryOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
+              </div>
+              {/* ← Durasi Masak ditambahkan, sesuai add */}
+              <div className="field-group">
+                <label>Durasi Masak</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    name="waktu_masak"
+                    type="number"
+                    min="1"
+                    placeholder="Contoh: 30"
+                    value={form.waktu_masak}
+                    onChange={handleChange}
+                    style={{ paddingRight: "56px" }}
+                  />
+                  <span style={{
+                    position: "absolute", right: 16, top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: 13, fontWeight: 700, color: "#888",
+                  }}>
+                    menit
+                  </span>
+                </div>
               </div>
             </div>
             <div className="upload-preview-side">
               <div className="preview-display">
-                {preview ? <img src={preview} alt="Preview" /> : <div className="placeholder">No Image</div>}
+                {preview ? <img src={preview} alt="Preview" /> : <span className="placeholder-text">Belum ada foto</span>}
               </div>
               <label className="btn-upload-label">
                 Ganti Foto
@@ -273,8 +336,16 @@ export default function EditRecipePage() {
             </div>
           </div>
 
+          <hr className="form-divider" />
+
+          {/* ── Deskripsi ── */}
+          <div className="field-group">
+            <label>Deskripsi Singkat</label>
+            <textarea name="deskripsi_singkat" rows={3} value={form.deskripsi_singkat} onChange={handleChange} placeholder="Tulis deskripsi singkat masakan..." />
+          </div>
+
           {/* ── Informasi Gizi ── */}
-          <div className="field-group" style={{ marginBottom: '24px' }}>
+          <div className="field-group">
             <label>Informasi Gizi</label>
             <div className="nutrition-input-area">
               {nutritionList.map((item, index) => (
@@ -288,12 +359,6 @@ export default function EditRecipePage() {
               ))}
               <button type="button" className="btn-add-gizi" onClick={addNutritionField}>+ Tambah Baris Gizi</button>
             </div>
-          </div>
-
-          {/* ── Deskripsi ── */}
-          <div className="field-group">
-            <label>Deskripsi Singkat</label>
-            <textarea name="deskripsi_singkat" rows={3} value={form.deskripsi_singkat} onChange={handleChange} />
           </div>
 
           {/* ── Bahan dari Katalog Produk ── */}
@@ -371,7 +436,20 @@ export default function EditRecipePage() {
           {/* ── Langkah Memasak ── */}
           <div className="field-group">
             <label>Langkah Memasak</label>
-            <textarea name="langkah_masak" rows={8} value={form.langkah_masak} onChange={handleChange} required />
+            <textarea
+              name="langkah_masak"
+              rows={12}
+              value={form.langkah_masak}
+              onChange={handleChange}
+              required
+              placeholder={"1. Langkah pertama...\n2. Langkah kedua...\n3. Langkah ketiga..."}
+              style={{
+                whiteSpace: "pre-wrap",
+                lineHeight: "1.8",
+                resize: "vertical",
+                minHeight: "200px",
+              }}
+            />
           </div>
 
           <div className="form-footer-sticky">
