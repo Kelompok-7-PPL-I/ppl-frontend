@@ -6,7 +6,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 const Midtrans = require("midtrans-client");
 
 // ── tambah "reorder" ke union type ──────────────────────────────
-type CheckoutMode = "cart" | "selected_cart" | "buy_now" | "reorder";
+type CheckoutMode = "cart" | "selected_cart" | "buy_now" | "reorder" | "recipe_checkout";
 
 type CheckoutBodyItem = {
   id?: string | number;
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
     // ── normalise mode — termasuk "reorder" ─────────────────────
     const checkoutMode: CheckoutMode =
-      mode === "selected_cart" || mode === "buy_now" || mode === "reorder"
+      mode === "selected_cart" || mode === "buy_now" || mode === "reorder" || mode === "recipe_checkout"
         ? mode
         : "cart";
 
@@ -146,6 +146,44 @@ export async function POST(request: Request) {
 
       const products = await prisma.produk.findMany({
         where: { id_produk: { in: buyNowProductIds } },
+      });
+
+      if (products.length === 0) {
+        return NextResponse.json(
+          { error: "Produk tidak ditemukan" },
+          { status: 400 }
+        );
+      }
+
+      checkoutItems = products.map((product) => {
+        const requested = requestedItems.find(
+          (item) => item.id_produk === product.id_produk
+        );
+
+        return {
+          id_produk: product.id_produk,
+          harga: Number(product.harga),
+          quantity: requested?.quantity || 1,
+          note: requested?.note || null,
+        };
+      });
+    }
+
+    // ── RECIPE CHECKOUT ──────────────────────────────────────────
+    // Seperti buy_now: ambil harga terbaru dari DB, skip keranjang.
+    // Dipakai untuk flow "Beli Semua Bahan" dari halaman resep.
+    if (checkoutMode === "recipe_checkout") {
+      if (requestedItems.length === 0) {
+        return NextResponse.json(
+          { error: "Tidak ada produk untuk dibeli" },
+          { status: 400 }
+        );
+      }
+
+      const recipeProductIds = requestedItems.map((item) => item.id_produk);
+
+      const products = await prisma.produk.findMany({
+        where: { id_produk: { in: recipeProductIds } },
       });
 
       if (products.length === 0) {

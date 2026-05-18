@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { useToast } from "@/app/context/ToastContext";
+import { useToast } from "@/app/context/ToastContext"; 
+import { useSession } from "next-auth/react";
 
 const formatRupiah = (n: number) =>
   "Rp " + n.toLocaleString("id-ID").replace(/\./g, ".");
@@ -47,17 +48,19 @@ const getPurchasePlan = (product: Product) => {
 export default function RecipeProducts({ products }: { products: Product[] }) {
   const router = useRouter();
   const { toast } = useToast();
+  const { data: session } = useSession();
 
   const [addingId, setAddingId] = useState<number | null>(null);
   const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
-  const [isAddingBulk, setIsAddingBulk] = useState(false);
+  const [isKeranjangBulk, setIsKeranjangBulk] = useState(false);
+  const [isBuyingBulk, setIsBuyingBulk] = useState(false);
 
   if (!products || products.length === 0) {
     return null;
   }
 
-  const handleBeliSemuaBahan = async () => {
-    setIsAddingBulk(true);
+  const handleKeranjangkanBahan = async () => {
+    setIsKeranjangBulk(true);
 
     try {
       const payloadItems = products
@@ -72,7 +75,7 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
 
       if (payloadItems.length === 0) {
         toast.danger("Tidak ada bahan yang tersedia untuk dibeli.");
-        setIsAddingBulk(false);
+        setIsKeranjangBulk(false);
         return;
       }
 
@@ -91,8 +94,65 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
       console.error("Gagal tambah ke keranjang:", error);
       toast.danger("Terjadi kesalahan sistem.");
     } finally {
-      setIsAddingBulk(false);
+      setIsKeranjangBulk(false);
     }
+  };
+
+  const handleBeliSemuaBahan = async () => {
+    setIsBuyingBulk(true);
+
+    try {
+      const payloadItems = products
+        .filter((item) => item.stok > 0)
+        .map((item) => {
+          const { quantity } = getPurchasePlan(item);
+          return {
+            id_produk: item.id_produk,
+            id: item.id_produk,
+            name: item.nama_produk,
+            price: item.harga,
+            quantity,
+            image: item.gambar_url,
+          };
+        });
+
+      if (payloadItems.length === 0) {
+        toast.danger("Tidak ada bahan yang tersedia untuk dibeli.");
+        return;
+      }
+
+      sessionStorage.setItem("recipeItems", JSON.stringify(payloadItems.map(item => ({
+        ...item,
+        id: item.id_produk,        // pastikan id = id_produk
+        id_produk: item.id_produk, // kirim keduanya
+      }))));
+      router.push("/checkout?mode=recipe-checkout");
+    } catch (error) {
+      console.error("Gagal redirect ke checkout:", error);
+      toast.danger("Terjadi kesalahan sistem.");
+    } finally {
+      setIsBuyingBulk(false);
+    }
+  };
+
+  const [buyingId, setBuyingId] = useState<number | null>(null);
+
+  const handleBeliBahan = (product: Product) => {
+    setBuyingId(product.id_produk);
+    const { quantity } = getPurchasePlan(product);
+
+    const item = {
+      id: product.id_produk,
+      id_produk: product.id_produk,
+      name: product.nama_produk,
+      price: product.harga,
+      quantity,
+      image: product.gambar_url,
+    };
+
+    sessionStorage.setItem("recipeItems", JSON.stringify([item]));
+    router.push("/checkout?mode=recipe-checkout");
+    // buyingId tidak perlu di-reset karena langsung redirect
   };
 
   const handleAddToCart = async (product: Product) => {
@@ -156,9 +216,11 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
           Beli bahan-bahan segar langsung dari Panganesia untuk resep ini.
         </p>
 
+        <div className="button-group" style={{ display: "flex", gap: "0.5rem" }}>
+
         <button
-          onClick={handleBeliSemuaBahan}
-          disabled={isAddingBulk}
+          onClick={handleKeranjangkanBahan}
+          disabled={isKeranjangBulk}
           className="recipe-add-cart-btn"
           style={{
             width: "auto",
@@ -167,8 +229,23 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
             fontWeight: "bold",
           }}
         >
-          {isAddingBulk ? "Mengarahkan..." : "+ Beli Semua Bahan"}
+          {isKeranjangBulk ? "Mengarahkan..." : "+ Masukkan Semua ke Keranjang"}
         </button>
+
+        <button
+          onClick={handleBeliSemuaBahan}
+          disabled={isBuyingBulk}
+          className="recipe-buy-now-btn"
+          style={{
+            width: "auto",
+            padding: "0.5rem 1rem",
+            margin: 0,
+            fontWeight: "bold",
+          }}
+        >
+          {isBuyingBulk ? "Mengarahkan..." : "+ Beli Semua Bahan"}
+        </button>
+      </div>
       </div>
 
       <div className="recipe-products-grid">
@@ -240,17 +317,31 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
                   </span>
                 </div>
 
-                <button
-                  className={`recipe-add-cart-btn ${isAdded ? "added" : ""}`}
-                  onClick={() => handleAddToCart(product)}
-                  disabled={product.stok <= 0 || isAdding || isAdded}
-                >
-                  {isAdding
-                    ? "Menambahkan..."
-                    : isAdded
-                    ? "✓ Ditambahkan"
-                    : "Beli Bahan"}
-                </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {/* Masukkan ke Keranjang — outline */}
+                  <button
+                    className="recipe-add-cart-btn"
+                    onClick={() => handleAddToCart(product)}
+                    disabled={product.stok <= 0 || isAdding || isAdded}
+                    style={{ width: "100%", padding: "0.6rem 0" }}
+                  >
+                    {isAdding
+                      ? "Menambahkan..."
+                      : isAdded
+                      ? "✓ Ditambahkan"
+                      : "🛒 Keranjang"}
+                  </button>
+
+                  {/* Beli Bahan — solid */}
+                  <button
+                    className="recipe-buy-now-btn"
+                    onClick={() => handleBeliBahan(product)}
+                    disabled={product.stok <= 0 || buyingId === product.id_produk}
+                    style={{ width: "100%", padding: "0.6rem 0" }}
+                  >
+                    {buyingId === product.id_produk ? "Mengarahkan..." : "Beli Bahan"}
+                  </button>
+                </div>
               </div>
             </div>
           );
