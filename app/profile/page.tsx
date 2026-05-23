@@ -14,6 +14,7 @@ export default function ProfilePage() {
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
     const [stats, setStats] = useState({ orders: 0, reviews: 0 });
     const { toast } = useToast();
 
@@ -168,16 +169,37 @@ export default function ProfilePage() {
     }, [selectedAddress, modalType]);
 
     const handleUpdateProfile = async () => {
-        setLoading(true);
-        const { error } = await supabase
-            .from('pengguna')
-            .update({
-                nama: formData.nama,
-                nomor_telp: formData.nomor_telp,
-                alamat: formData.alamat
-            })
-            .eq('email', profile.email);
+        const newErrors: Record<string, string> = {};
+        
+        if (!formData.nama.trim()){
+            newErrors.nama = "Nama lengkap wajib diisi!";
+        }
+        
+        if (!formData.nomor_telp.trim()){
+            newErrors.nomor_telp = "Nomor telepon wajib diisi!";
+        } else if(/\D/.test(formData.nomor_telp)){
+            newErrors.nomor_telp = "Nomor telepon tidak valid! Hanya boleh berisi angka.";
+        } else if (formData.nomor_telp.length > 15){
+            newErrors.nomor_telp = "Nomor telepon maksimal 15 digit!";
+        }
 
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return; 
+        }
+        
+        setLoading(true);
+        setErrors({});
+
+        const { error } = await supabase
+        .from('pengguna')
+        .update({
+            nama: formData.nama,
+            nomor_telp: formData.nomor_telp,
+            alamat: formData.alamat
+        })
+        .eq('email', profile.email);
+        
         if (!error) {
             setProfile({ ...profile, ...formData });
             setModalType(null); // Tutup modal setelah simpan
@@ -305,7 +327,29 @@ export default function ProfilePage() {
         const newErrors: Record<string, string> = {};
         if (!addressFormData.label_alamat) newErrors.label_alamat = "Label wajib diisi";
         if (!addressFormData.nama_penerima) newErrors.nama_penerima = "Nama wajib diisi";
-        if (!addressFormData.nomor_telepon) newErrors.nomor_telepon = "Nomor wajib diisi";
+        if (!addressFormData.alamat_lengkap) newErrors.alamat_lengkap = "Alamat lengkap wajib diisi";
+        if (!addressFormData.provinsi) newErrors.provinsi = "Provinsi wajib diisi";
+        if (!addressFormData.kota_kabupaten) newErrors.kota_kabupaten = "Kabupaten/Kota wajib diisi";
+        if (!addressFormData.kecamatan) newErrors.kecamatan = "Kecamatan wajib diisi";
+        if (!addressFormData.kelurahan) newErrors.kelurahan = "Kelurahan wajib diisi";
+
+        // Validasi nomor telepon
+        if (!addressFormData.nomor_telepon || !addressFormData.nomor_telepon.trim()){
+            newErrors.nomor_telepon = "Nomor wajib diisi!";
+        } else if (/\D/.test(addressFormData.nomor_telepon)){
+            newErrors.nomor_telepon = "Wajib berupa angka!";
+        } else if (addressFormData.nomor_telepon.length > 15){
+            newErrors.nomor_telepon = "Maksimal 15 digit!";
+        }
+
+        // Validasi Kode Pos
+        if (!addressFormData.kode_pos || !addressFormData.kode_pos.trim()) {
+            newErrors.kode_pos = "Kode Pos wajib diisi!";
+        } else if (/\D/.test(addressFormData.kode_pos)){
+            newErrors.kode_pos = "Kode Pos wajib berupa angka!";
+        } else if (addressFormData.kode_pos.length !== 5){
+            newErrors.kode_pos = "Kode Pos tidak valid!";
+        }
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -353,8 +397,8 @@ export default function ProfilePage() {
             if (error) throw error;
             setModalType('alamat_list');
             await fetchAddresses();
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3000);
+            setShowDeleteSuccess(true);
+            setTimeout(() => setShowDeleteSuccess(false), 3000);
         } catch (err: any) {
             toast.danger("Gagal menghapus: " + err.message);
         } finally {
@@ -524,8 +568,12 @@ export default function ProfilePage() {
                                     type="text"
                                     className="w-full border rounded-xl px-4 py-3 mt-1 outline-none focus:ring-2 focus:ring-green-500 bg-white text-black font-semibold"
                                     value={formData.nama}
-                                    onChange={(e) => setFormData({...formData, nama: e.target.value})}
+                                    onChange={(e) => {
+                                        setFormData({...formData, nama: e.target.value});
+                                        if (errors.nama) setErrors((prev) => { const { nama, ...rest } = prev; return rest; });
+                                    }}
                                 />
+                                {errors.nama && <p className="text-red-500 text-xs mt-1 font-medium">{errors.nama}</p>}
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Nomor Telepon</label>
@@ -535,14 +583,19 @@ export default function ProfilePage() {
                                     className="w-full border rounded-xl px-4 py-3 mt-1 outline-none focus:ring-2 focus:ring-green-500 bg-white text-black font-semibold"
                                     value={formData.nomor_telp}
                                     onChange={(e) => {
-                                        const value = e.target.value.replace(/\D/g, "");
-                                        setFormData({...formData, nomor_telp: value});
+                                        setFormData({...formData, nomor_telp: e.target.value});
+                                        if (errors.nomor_telp) setErrors((prev) => { const { nomor_telp, ...rest } = prev; return rest; });
                                     }}
                                 />
+                                {errors.nomor_telp && <p className="text-red-500 text-xs mt-1 font-medium">{errors.nomor_telp}</p>}
                             </div>
                         </div>
                         <div className="flex gap-3 mt-8">
-                            <button onClick={() => setModalType(null)} className="flex-1 py-3 text-gray-400 font-bold transition-colors hover:text-red-600">Batal</button>
+                            <button onClick={() => {
+                                setModalType(null);
+                                setErrors({});
+                            }} 
+                            className="flex-1 py-3 text-gray-400 font-bold transition-colors hover:text-red-600">Batal</button>
                             <button onClick={handleUpdateProfile} className="flex-1 py-3 bg-[#064E3B] text-white rounded-xl font-bold transition-all hover:brightness-125 active:scale-95">Simpan</button>
                         </div>
                     </div>
@@ -720,6 +773,12 @@ export default function ProfilePage() {
                                 <label className="text-[10px] font-bold text-gray-400 uppercase">
                                     Provinsi <span className="text-red-500">*</span>
                                 </label>
+                                {/* Pesan Error di Sebelah Kanan Label */}
+                                {errors.provinsi && (
+                                    <span className="text-[10px] text-red-500 font-bold animate-pulse">
+                                        {errors.provinsi}
+                                    </span>
+                                )}
                                 <select 
                                     className="w-full border rounded-xl px-4 py-3 bg-white text-black font-semibold outline-none border-gray-200 focus:ring-2 focus:ring-green-500 appearance-none"
                                     value={addressFormData.provinsi}
@@ -734,7 +793,12 @@ export default function ProfilePage() {
                                 <label className={`text-[10px] font-bold uppercase transition-colors ${!addressFormData.provinsi ? 'text-gray-300' : 'text-gray-400'}`}>
                                     Kota/Kabupaten <span className="text-red-500">*</span>
                                 </label>
-
+                                {/* Pesan Error di Sebelah Kanan Label */}
+                                {errors.kota_kabupaten && (
+                                    <span className="text-[8px] text-red-500 font-bold animate-pulse">
+                                        {errors.kota_kabupaten}
+                                    </span>
+                                )}
                                 <select 
                                     disabled={!addressFormData.provinsi || dropdownLoading.kab}
                                     className="w-full border rounded-xl px-4 py-3 font-semibold outline-none transition-all duration-200
@@ -754,6 +818,12 @@ export default function ProfilePage() {
                                 <label className={`text-[10px] font-bold uppercase transition-colors ${!addressFormData.kota_kabupaten ? 'text-gray-300' : 'text-gray-400'}`}>
                                     Kecamatan <span className="text-red-500">*</span>
                                 </label>
+                                {/* Pesan Error di Sebelah Kanan Label */}
+                                {errors.kecamatan && (
+                                    <span className="text-[10px] text-red-500 font-bold animate-pulse">
+                                        {errors.kecamatan}
+                                    </span>
+                                )}
                                 <select 
                                     disabled={!addressFormData.kota_kabupaten || districts.length === 0 || dropdownLoading.kec}
                                     className="w-full border rounded-xl px-4 py-3 font-semibold outline-none transition-all duration-200
@@ -771,6 +841,12 @@ export default function ProfilePage() {
                                 <label className="text-[10px] font-bold text-gray-400 uppercase">
                                     Kelurahan <span className="text-red-500">*</span>
                                 </label>
+                                {/* Pesan Error di Sebelah Kanan Label */}
+                                {errors.kelurahan && (
+                                    <span className="text-[10px] text-red-500 font-bold animate-pulse">
+                                        {errors.kelurahan}
+                                    </span>
+                                )}
                                 <select 
                                     disabled={!addressFormData.kecamatan || dropdownLoading.kel}
                                     className="w-full border rounded-xl px-4 py-3 font-semibold outline-none transition-all duration-200
@@ -857,6 +933,18 @@ export default function ProfilePage() {
                 </div>
             )}
 
+            {showDeleteSuccess && (
+                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-bottom-5 duration-300">
+                    <div className="bg-[#064E3B] text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border border-green-400">
+                        <span className="text-xl">✅</span>
+                        <div className="flex flex-col">
+                            <p className="font-bold text-sm">Berhasil!</p>
+                            <p className="text-xs text-green-100">Alamat anda berhasil dihapus.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
             {showWarning.active && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center animate-in zoom-in-95 duration-200">
