@@ -13,8 +13,7 @@ export async function POST(request: Request) {
         });
 
         if (!user) {
-            // Berpura-pura berhasil agar orang tidak bisa menebak email yang terdaftar
-            return NextResponse.json({ success: true, message: "Email reset password terkirim jika akun ada!" });
+            return NextResponse.json({ success: false, error: "Email tidak terdaftar" }, { status: 404 });
         }
 
         // 2. Buat token rahasia

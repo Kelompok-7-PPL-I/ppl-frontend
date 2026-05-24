@@ -16,6 +16,7 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [resetErrors, setResetErrors] = useState<{password?: string; confirmPassword?: string}>({});
 
   useEffect(() => {
     // Mengambil parameter token dari URL
@@ -67,6 +68,29 @@ export default function ResetPasswordPage() {
     }
   };
 
+const handleUpdateClick = () => {
+  const errors: {password?: string; confirmPassword?: string} = {};
+  
+  if (!password) {
+    errors.password = "Password wajib diisi";
+  } else if (metReqs < 4) {
+    errors.password = "Password tidak memenuhi syarat";
+  }
+  if (!confirmPassword) {
+    errors.confirmPassword = "Konfirmasi password wajib diisi";
+  } else if (!isMatch) {
+    errors.confirmPassword = "Password tidak cocok";
+  }
+
+  if (Object.keys(errors).length > 0) {
+    setResetErrors(errors);
+    return; // ← tambah return biar tidak lanjut
+  }
+
+  // Kalau valid, panggil handleUpdate
+  handleUpdate({ preventDefault: () => {} } as React.FormEvent);
+};
+
   return (
     <main className="auth-page">
       <section className="map-container" />
@@ -86,15 +110,18 @@ export default function ResetPasswordPage() {
             </div>
           )}
 
-          <form onSubmit={handleUpdate} className="auth-form">
+          <form onSubmit={(e) => { e.preventDefault(); handleUpdateClick(); }} className="auth-form">
             <div className="input-wrapper">
               <input 
                 type={showPass ? "text" : "password"} 
                 placeholder="New Password" 
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="input-field"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setResetErrors(prev => ({...prev, password: undefined}));
+                }}
+                className={`input-field ${resetErrors.password ? 'input-error' : ''}`}
+                suppressHydrationWarning
               />
               <button type="button" onClick={() => setShowPass(!showPass)} className="password-toggle">
                 {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -112,24 +139,33 @@ export default function ResetPasswordPage() {
                 )
               })}
             </div>
+            {resetErrors.password && <span className="error-text">{resetErrors.password}</span>}
+
 
             <div className="input-wrapper">
               <input 
                 type="password" 
                 placeholder="Confirm New Password" 
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className={`input-field ${confirmPassword ? (isMatch ? 'match' : 'no-match') : ''}`} 
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setResetErrors(prev => ({...prev, confirmPassword: undefined}));
+                }}
+                className={`input-field ${confirmPassword ? (isMatch ? 'match' : 'no-match') : ''} ${resetErrors.confirmPassword ? 'input-error' : ''}`}
+                suppressHydrationWarning
               />
             </div>
+            {resetErrors.confirmPassword && <span className="error-text">{resetErrors.confirmPassword}</span>}
 
-            <button 
-              disabled={loading || metReqs < 4 || !isMatch} 
-              className="btn-submit"
-            >
-              {loading ? 'Updating...' : 'Update Password'} <ShieldCheck size={18} />
-            </button>
+            <div onClick={handleUpdateClick}>
+              <button 
+                disabled={loading || metReqs < 4 || !isMatch} 
+                className="btn-submit"
+                style={{ pointerEvents: 'none' }}
+              >
+                {loading ? 'Updating...' : 'Update Password'} <ShieldCheck size={18} />
+              </button>
+            </div>
           </form>
 
         </div>
