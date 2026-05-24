@@ -836,3 +836,22 @@ main > .modal-backdrop {
   inset: 0 !important;
   transform: none !important;
 }
+
+.form-upload-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1.5px dashed #e0dbd0;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #888;
+  background: #fafaf8;
+  transition: all .15s;
+}
+.form-upload-area:hover {
+  border-color: #f5c800;
+  background: #fffde6;
+  color: #7a6000;
+}

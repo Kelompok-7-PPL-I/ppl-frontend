@@ -286,23 +286,48 @@
   border-color: #ffc107;
 }
 
-/* Tombol Hapus Baris (X) */
+/* Tombol hapus baris gizi (×) */
 .btn-remove-gizi {
   background: #fee2e2;
   color: #ef4444;
   border: none;
   width: 32px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: 50%;
   cursor: pointer;
   font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  flex-shrink: 0;
+  padding: 0;
 }
 
 .btn-remove-gizi:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* Tombol hapus bahan (×) */
+.bahan-remove-btn {
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.bahan-remove-btn:hover {
   background: #ef4444;
   color: #fff;
 }
@@ -417,21 +442,6 @@
 .bahan-satuan {
   font-size: 13px;
   color: #666;
-}
-
-.bahan-remove-btn {
-  background: none;
-  border: none;
-  color: #e53935;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-  line-height: 1;
-}
-
-.bahan-remove-btn:hover {
-  background: #ffeaea;
 }
 
 /* Tombol buka katalog */

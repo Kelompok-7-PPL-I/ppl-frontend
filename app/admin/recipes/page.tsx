@@ -44,12 +44,6 @@ const SearchIcon = () => (
     <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
   </svg>
 );
-const BellIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-  </svg>
-);
 const EditIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -86,6 +80,7 @@ const [bahanLoading, setBahanLoading] = useState(false);
 const [langkahTarget, setLangkahTarget] = useState<Recipe | null>(null);
 const [giziTarget, setGiziTarget] = useState<Recipe | null>(null);
 const { toast } = useToast();
+const [alatBahanTarget, setAlatBahanTarget] = useState<Recipe | null>(null);
 
 // Tambah fungsi fetchBahan
 const fetchBahan = async (resep: Recipe) => {
@@ -148,18 +143,19 @@ const fetchRecipes = useCallback(async () => {
   }, [fetchRecipes]);
 
   // Handler Hapus Data
-  const handleDelete = async () => {
-    if (!targetRecipe) return;
-    try {      
-      const { error } = await supabase.from('resep').delete().eq('id_resep', targetRecipe.id_resep);
-      if (error) throw error;
-      await fetchRecipes();
-      setIsDeleteModalOpen(false);
-      setTargetRecipe(null);
-    } catch (err: any) {
-      toast.danger("Error: " + err.message);
-    }
-  };
+const handleDelete = async () => {
+  if (!targetRecipe) return;
+  try {      
+    const { error } = await supabase.from('resep').delete().eq('id_resep', targetRecipe.id_resep);
+    if (error) throw error;
+    await fetchRecipes();
+    toast.success(`Resep "${targetRecipe.judul_resep}" berhasil dihapus!`); // ← tambah ini
+    setIsDeleteModalOpen(false);
+    setTargetRecipe(null);
+  } catch (err: any) {
+    toast.danger("Error: " + err.message);
+  }
+};
 
   // Logic Filtering
   const filtered = recipes.filter(r => {
@@ -217,12 +213,10 @@ const fetchRecipes = useCallback(async () => {
           <colgroup>
             <col className="col-no"/>
             <col className="col-judul"/>
-            <col className="col-kat"/>
-            <col className="col-data"/>
-            <col className="col-data"/>
-            <col className="col-data"/>
-            <col className="col-data"/>  {/* ← durasi */}
-            <col className="col-gizi"/>
+            <col className="col-kategori"/>
+            <col className="col-deskripsi"/>
+            <col className="col-detail"/>
+            <col className="col-durasi"/> 
             <col className="col-img"/>
             <col className="col-aksi"/>
           </colgroup>
@@ -232,10 +226,8 @@ const fetchRecipes = useCallback(async () => {
               <th>Judul Resep</th>
               <th>Kategori</th>
               <th>Deskripsi</th>
-              <th>Bahan</th>
-              <th>Langkah</th>
-              <th>Durasi</th>   {/* ← tambah */}
-              <th>Gizi</th>
+              <th>Detail</th>
+              <th>Durasi</th>  
               <th>Gambar</th>
               <th>Aksi</th>
             </tr>
@@ -244,20 +236,18 @@ const fetchRecipes = useCallback(async () => {
             {loading ? (
                 <tr><td colSpan={8} style={{textAlign: "center", padding: "40px"}}>Memuat...</td></tr>
               ) : pageItems.map((r, i) => (
-              <tr key={r.id_resep}>
+              <tr key={r.id_resep} style={{ verticalAlign: "middle" }}>
                 <td>{(safePage - 1) * PER_PAGE + i + 1}.</td>
                 <td><span className="judul-wrapper" title={r.judul_resep}>{r.judul_resep}</span></td>
                 <td><span className="cat-badge">{r.kategori_jenis}</span></td>
                 <td><div className="text-wrapper" title={r.deskripsi_singkat}>{r.deskripsi_singkat || "-"}</div></td>
                 <td>
-                  <button className="btn-bahan-detail" onClick={() => fetchBahan(r)}>
-                    Lihat Bahan
-                  </button>
-                </td>                
-                <td>
-                  <button className="btn-bahan-detail" onClick={() => setLangkahTarget(r)}>
-                    Lihat Langkah
-                  </button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <button className="btn-bahan-detail" onClick={() => fetchBahan(r)}>Bahan Katalog</button>
+                    <button className="btn-bahan-detail" onClick={() => setAlatBahanTarget(r)}>Alat & Bahan</button>
+                    <button className="btn-bahan-detail" onClick={() => setLangkahTarget(r)}>Langkah</button>
+                    <button className="btn-bahan-detail" onClick={() => setGiziTarget(r)}>Gizi</button>
+                  </div>
                 </td>
                 <td>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "#555" }}>
@@ -265,23 +255,26 @@ const fetchRecipes = useCallback(async () => {
                   </span>
                 </td>
                 <td>
-                  <button className="btn-bahan-detail" onClick={() => setGiziTarget(r)}>
-                    Lihat Gizi
-                  </button>
-                </td>
-                <td>
                   <img src={r.gambar_url || "/placeholder.jpg"} className="img-thumb" alt="" />
                 </td>
                 <td className="action-cell">
-                  <Link href={`/admin/recipes/edit/${r.id_resep}`} className="btn-icon edit" aria-label="Edit">
-                    <EditIcon />
-                  </Link>
-                  <button className="btn-icon delete" onClick={() => {
-                    setTargetRecipe(r);
-                    setIsDeleteModalOpen(true);
-                  }} aria-label="Delete">
-                    <DeleteIcon />
-                  </button>
+                  <div style={{ 
+                    display: "flex", 
+                    flexDirection: "column",
+                    alignItems: "center", 
+                    justifyContent: "center", 
+                    gap: 8,
+                  }}>
+                    <Link href={`/admin/recipes/edit/${r.id_resep}`} className="btn-icon edit" aria-label="Edit">
+                      <EditIcon />
+                    </Link>
+                    <button className="btn-icon delete" onClick={() => {
+                      setTargetRecipe(r);
+                      setIsDeleteModalOpen(true);
+                    }} aria-label="Delete">
+                      <DeleteIcon />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -343,6 +336,45 @@ const fetchRecipes = useCallback(async () => {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {alatBahanTarget && (
+        <div className="modal-backdrop" onClick={() => setAlatBahanTarget(null)}>
+          <div className="modal-box bahan-modal-box" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setAlatBahanTarget(null)}>
+              <CloseIcon />
+            </button>
+            <div className="modal-content">
+              <div className="modal-title">Alat & Bahan</div>
+              <div className="modal-sub">{alatBahanTarget.judul_resep}</div>
+              <div className="bahan-list">
+                  {(alatBahanTarget.bahan_bahan || "")
+                    .split(/\\n|\n|,/)  // ← tambah koma sebagai separator
+                    .filter((s) => s.trim())
+                    .map((item, idx) => (
+                    <div key={idx} className="bahan-card">
+                      <div style={{
+                        width: 28, height: 28, borderRadius: "50%",
+                        background: "#e8f5e9", display: "flex",
+                        alignItems: "center", justifyContent: "center",
+                        fontWeight: 800, fontSize: 13, flexShrink: 0, color: "#2e7d32",
+                      }}>
+                        {idx + 1}
+                      </div>
+                      <div className="bahan-info">
+                        <span className="bahan-nama" style={{ fontWeight: 500, fontSize: 13 }}>
+                          {item.trim()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                {!alatBahanTarget.bahan_bahan && (
+                  <div className="bahan-empty">Belum ada alat & bahan tercatat.</div>
+                )}
+              </div>
             </div>
           </div>
         </div>
