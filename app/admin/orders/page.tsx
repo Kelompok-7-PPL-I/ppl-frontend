@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import "./page.css";
 import { createBrowserClient } from '@supabase/ssr';
+import Link from "next/dist/client/link";
+import { useToast } from "@/app/context/ToastContext";
+import { useRouter, usePathname } from "next/navigation";
 
+export const dynamic = 'force-dynamic';
 export const createClient = () =>
   createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,6 +52,8 @@ const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
 };
 
 export default function AdminOrdersPage() {
+  const { toast } = useToast();
+  const pathname = usePathname();
   const supabase = createClient();
   const [orders, setOrders]           = useState<Order[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -82,7 +88,9 @@ export default function AdminOrdersPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => {
+    fetchOrders();
+  }, [pathname]);
 
   // ── Order Status inline update ────────────────────────────────────────────
   const handleOrderStatusChange = async (id: number, newStatus: OrderStatus) => {
@@ -142,6 +150,7 @@ export default function AdminOrdersPage() {
     await supabase.from('pesanan').delete().eq('id_pesanan', targetOrder.id_pesanan);
 
     fetchOrders();
+    toast.success(`Order #${targetOrder.id_pesanan} berhasil dihapus.`);
     setIsDeleteModalOpen(false);
     setTargetOrder(null);
   };
@@ -170,12 +179,29 @@ export default function AdminOrdersPage() {
     return matchSearch && matchStatus;
   });
 
-  const safePage  = Math.min(currentPage, Math.max(1, Math.ceil(filtered.length / PER_PAGE)));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
   const pageItems = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
 
-  const startItem = filtered.length === 0 ? 0 : (safePage - 1) * PER_PAGE + 1;
+  const getPageNumbers = (): (number | "...")[] => {
+    const pages: (number | "...")[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (safePage > 3) pages.push("...");
+      const start = Math.max(2, safePage - 1);
+      const end = Math.min(totalPages - 1, safePage + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (safePage < totalPages - 2) pages.push("...");
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
+  const startItem = (safePage - 1) * PER_PAGE + 1;
   const endItem = Math.min(safePage * PER_PAGE, filtered.length);
+
 
   return (
     <>
@@ -190,12 +216,13 @@ export default function AdminOrdersPage() {
       <div className="products-page">
         <div className="products-header">
           <div className="products-header-left">
-            <h1>Orders</h1>
+            <h1>Pesanan</h1>
             <p>Kelola semua transaksi Panganesia.</p>
           </div>
           <div className="products-header-right">
-            <button className="btn-add" onClick={() => openModal()}>+ Tambah Order</button>
-            <select className="select-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <Link href="/admin/orders/add" className="btn-add">
+              + Tambah Pesanan
+            </Link>                    <select className="select-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="all">Semua Status</option>
               <option value="dibayar">Dibayar</option>
               <option value="pending">Pending</option>
@@ -261,7 +288,7 @@ export default function AdminOrdersPage() {
 
                   <td>
                     <div className="action-cell">
-                      <button className="btn-icon edit" onClick={() => openModal(o)}><EditIcon /></button>
+                      <Link href={`/admin/orders/edit/${o.id_pesanan}`} className="btn-icon-edit" aria-label="Edit"><EditIcon /></Link>
                       <button className="btn-icon delete" onClick={() => { setTargetOrder(o); setIsDeleteModalOpen(true); }}><DeleteIcon /></button>
                     </div>
                   </td>
@@ -271,26 +298,31 @@ export default function AdminOrdersPage() {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="pagination-row">
-            <span className="pagination-info">
-              Menampilkan {startItem}-{endItem} dari {filtered.length} order
-            </span>
-            <div className="pagination-controls">
-              <button className="pg-btn" disabled={safePage === 1} onClick={() => setCurrentPage(safePage - 1)}>
-                Prev
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                <button key={p} className={`pg-btn ${p === safePage ? 'active' : ''}`} onClick={() => setCurrentPage(p)}>
-                  {p}
-                </button>
-              ))}
-              <button className="pg-btn" disabled={safePage === totalPages} onClick={() => setCurrentPage(safePage + 1)}>
-                Next
-              </button>
-            </div>
+        {/* Pagination */}
+        <div className="pagination-row">
+          <span className="pagination-info">
+            Menampilkan {filtered.length === 0 ? 0 : startItem}–{endItem} dari {filtered.length} produk
+          </span>
+          <div className="pagination-controls">
+            <button className="pg-btn" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+              Prev
+            </button>
+            {getPageNumbers().map((pg, i) =>
+              pg === "..." ? (
+                <span key={`e-${i}`} className="pg-ellipsis">...</span>
+              ) : (
+                <button
+                  key={`p-${pg}`}
+                  className={`pg-btn ${safePage === pg ? "active" : ""}`}
+                  onClick={() => setCurrentPage(pg as number)}
+                >{pg}</button>
+              )
+            )}
+            <button className="pg-btn" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}>
+              Next
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* ── Modal Items ─────────────────────────────────────────────────────── */}
@@ -353,53 +385,6 @@ export default function AdminOrdersPage() {
                 </tfoot>
               </table>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal Add / Edit ─────────────────────────────────────────────────── */}
-      {isModalOpen && (
-        <div className="modal-backdrop" onClick={closeModal}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{targetOrder ? "Edit Order" : "Tambah Order Baru"}</h2>
-            </div>
-            <form onSubmit={handleSave}>
-              <div className="form-group">
-                <label>User UUID</label>
-                <input type="text" value={formData.id_user}
-                  onChange={e => setFormData({ ...formData, id_user: e.target.value })} required />
-              </div>
-              <div className="form-group">
-                <label>Total Harga (Rp)</label>
-                <input type="number" value={formData.total_harga}
-                  onChange={e => setFormData({ ...formData, total_harga: parseInt(e.target.value) })} required />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Status Bayar</label>
-                  <select value={formData.status_pembayaran}
-                    onChange={e => setFormData({ ...formData, status_pembayaran: e.target.value })}>
-                    <option value="Pending">Pending</option>
-                    <option value="Dibayar">Dibayar</option>
-                    <option value="Gagal">Gagal</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Status Order</label>
-                  <select value={formData.order_status}
-                    onChange={e => setFormData({ ...formData, order_status: e.target.value as OrderStatus })}>
-                    {ORDER_STATUS_LIST.map(s => (
-                      <option key={s} value={s}>{ORDER_STATUS_LABEL[s]}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={closeModal}>Batal</button>
-                <button type="submit" className="btn-save">Simpan</button>
-              </div>
-            </form>
           </div>
         </div>
       )}

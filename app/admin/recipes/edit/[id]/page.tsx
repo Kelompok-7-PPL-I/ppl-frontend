@@ -36,12 +36,13 @@ export default function EditRecipePage() {
   const [file, setFile] = useState<File | null>(null);
   const [form, setForm] = useState({
     judul_resep: "",
-    kategori_jenis: "Diet",
+    kategori_jenis: "",
     informasi_gizi: "",
     deskripsi_singkat: "",
     langkah_masak: "",
     gambar_url: "",
-    waktu_masak: "",  // ← ditambahkan, sesuai add
+    waktu_masak: "",  
+    bahan_bahan: "", 
   });
 
   // ── State Gizi ───────────────────────────────────────────────
@@ -129,6 +130,7 @@ export default function EditRecipePage() {
           langkah_masak: normalizeNewlines(data.langkah_masak),
           gambar_url: data.gambar_url,
           waktu_masak: data.waktu_masak != null ? String(data.waktu_masak) : "",
+          bahan_bahan: normalizeNewlines(data.bahan_bahan),
         });
         setPreview(data.gambar_url);
 
@@ -201,6 +203,31 @@ export default function EditRecipePage() {
   // ── Submit ───────────────────────────────────────────────────
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+          if (!form.judul_resep.trim()) {
+        toast.warning("Judul resep wajib diisi!");
+        return;
+      }
+      if (!form.kategori_jenis) {
+        toast.warning("Kategori program wajib dipilih!");
+        return;
+      }
+      if (!form.deskripsi_singkat.trim()) {
+        toast.warning("Deskripsi singkat wajib diisi!");
+        return;
+      }
+      if (!form.waktu_masak.trim() || isNaN(Number(form.waktu_masak)) || Number(form.waktu_masak) <= 0) {
+        toast.warning("Durasi masak wajib diisi dan harus berupa angka positif!");
+        return;
+      }
+      if (bahanDipilih.length === 0) {
+        toast.warning("Minimal satu bahan dari katalog wajib dipilih!");
+        return;
+      }
+
+      if (!form.langkah_masak.trim()) {
+        toast.warning("Langkah memasak wajib diisi!");
+        return;
+      }
 
     // ← Validasi bahan tanpa takaran, sesuai add
     const bahanTanpaTakaran = bahanDipilih.filter(b => !b.takaran || Number(b.takaran) <= 0);
@@ -235,7 +262,8 @@ export default function EditRecipePage() {
           informasi_gizi: giziString || "-",
           langkah_masak: form.langkah_masak,
           gambar_url: finalImageUrl,
-          waktu_masak: form.waktu_masak ? Number(form.waktu_masak) : null,  // ← ditambahkan
+          waktu_masak: form.waktu_masak ? Number(form.waktu_masak) : null,  
+          bahan_bahan: form.bahan_bahan,
         })
         .eq('id_resep', id);
 
@@ -285,17 +313,18 @@ export default function EditRecipePage() {
               <div className="field-group">
                 <label>Judul Resep</label>
                 <input
+                  suppressHydrationWarning
                   name="judul_resep"
                   className="input-judul-huge"
                   placeholder="Contoh: Salad Ayam Panggang..."
                   value={form.judul_resep}
                   onChange={handleChange}
-                  required
                 />
               </div>
               <div className="field-group">
                 <label>Kategori Program</label>
                 <select name="kategori_jenis" className="form-select" value={form.kategori_jenis} onChange={handleChange}>
+                  <option value="" disabled>-- Pilih Kategori --</option>
                   {categoryOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
@@ -304,6 +333,7 @@ export default function EditRecipePage() {
                 <label>Durasi Masak</label>
                 <div style={{ position: "relative" }}>
                   <input
+                    suppressHydrationWarning
                     name="waktu_masak"
                     type="number"
                     min="1"
@@ -328,7 +358,7 @@ export default function EditRecipePage() {
               </div>
               <label className="btn-upload-label">
                 Ganti Foto
-                <input type="file" accept="image/*" onChange={(e) => {
+                <input suppressHydrationWarning type="file" accept="image/*" onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) { setFile(f); setPreview(URL.createObjectURL(f)); }
                 }} />
@@ -353,8 +383,10 @@ export default function EditRecipePage() {
                   <select value={item.tipe} onChange={(e) => updateNutrition(index, 'tipe', e.target.value)}>
                     {nutritionOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
-                  <input placeholder="Contoh: 250 kkal / 15g" value={item.nilai} onChange={(e) => updateNutrition(index, 'nilai', e.target.value)} />
-                  <button type="button" className="btn-remove-gizi" onClick={() => removeNutrition(index)}>×</button>
+                  <input suppressHydrationWarning placeholder="Contoh: 250 kkal / 15g" value={item.nilai} onChange={(e) => updateNutrition(index, 'nilai', e.target.value)} />
+                  <button type="button" className="btn-remove-gizi" onClick={() => removeNutrition(index)}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
                 </div>
               ))}
               <button type="button" className="btn-add-gizi" onClick={addNutritionField}>+ Tambah Baris Gizi</button>
@@ -376,15 +408,18 @@ export default function EditRecipePage() {
                     </div>
                     <div className="bahan-dipilih-input-wrap">
                       <input
+                        suppressHydrationWarning
                         type="number"
                         className="bahan-takaran-input"
-                        placeholder="gram"
+                        placeholder="0"
                         value={b.takaran}
                         onChange={e => updateTakaran(b.id_produk, e.target.value)}
                         min="0"
                       />
                       <span className="bahan-satuan">gram</span>
-                      <button type="button" className="bahan-remove-btn" onClick={() => removeBahan(b.id_produk)}>×</button>
+                      <button type="button" className="bahan-remove-btn" onClick={() => removeBahan(b.id_produk)}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -400,6 +435,7 @@ export default function EditRecipePage() {
             {showKatalog && (
               <div className="katalog-panel">
                 <input
+                  suppressHydrationWarning
                   className="katalog-search"
                   placeholder="Cari produk..."
                   value={searchProduk}
@@ -433,6 +469,18 @@ export default function EditRecipePage() {
             )}
           </div>
 
+          <div className="field-group">
+            <label>Alat & Bahan</label>
+            <textarea
+              name="bahan_bahan"
+              rows={6}
+              value={form.bahan_bahan}
+              onChange={handleChange}
+              placeholder={"1. Bahan pertama...\n2. Alat kedua..."}
+              style={{ whiteSpace: "pre-wrap", lineHeight: "1.8", resize: "vertical", minHeight: "140px" }}
+            />
+          </div>
+
           {/* ── Langkah Memasak ── */}
           <div className="field-group">
             <label>Langkah Memasak</label>
@@ -441,7 +489,6 @@ export default function EditRecipePage() {
               rows={12}
               value={form.langkah_masak}
               onChange={handleChange}
-              required
               placeholder={"1. Langkah pertama...\n2. Langkah kedua...\n3. Langkah ketiga..."}
               style={{
                 whiteSpace: "pre-wrap",
