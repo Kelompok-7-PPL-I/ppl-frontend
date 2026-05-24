@@ -53,6 +53,11 @@ const ProductItemRow = ({ item, ui }: any) => (
             <span className="text-sm font-semibold text-gray-800 truncate max-w-[180px]">
                 {item.produk.nama_produk}
             </span>
+            {item.catatan && (
+                <span className="text-xs text-gray-500 italic  max-w-[560px] break-words">
+                    📝Catatan: {item.catatan}
+                </span>
+            )}
         </div>
         {ui.status === 'completed' && (
             <div className="flex flex-col items-end">

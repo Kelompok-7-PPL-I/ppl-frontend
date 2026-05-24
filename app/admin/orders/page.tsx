@@ -25,6 +25,7 @@ interface ItemPesanan {
   kuantitas: number;
   subtotal: number;
   produk?: { nama_produk: string; gambar_url: string | null };
+  catatan?: string | null;
 }
 
 const PER_PAGE = 10;
@@ -315,6 +316,7 @@ export default function AdminOrdersPage() {
                     <th>ID Item</th>
                     <th>Produk</th>
                     <th>ID Produk</th>
+                    <th>Catatan</th>
                     <th>Qty</th>
                     <th>Subtotal</th>
                   </tr>
@@ -333,6 +335,9 @@ export default function AdminOrdersPage() {
                         </div>
                       </td>
                       <td className="mono-cell" style={{ color: '#999', fontSize: 12 }}>#{item.id_produk}</td>
+                      <td style={{ fontSize: 12, color: '#888', fontStyle: 'italic' }}>
+                          {item.catatan || <span style={{ color: '#ccc' }}>—</span>}
+                      </td>
                       <td><strong>{item.kuantitas}</strong> pcs</td>
                       <td>Rp {item.subtotal?.toLocaleString('id-ID')}</td>
                     </tr>
@@ -340,7 +345,7 @@ export default function AdminOrdersPage() {
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'right', fontWeight: 700, paddingTop: 12, color: '#333' }}>Total Item:</td>
+                    <td colSpan={5} style={{ textAlign: 'right', fontWeight: 700, paddingTop: 12, color: '#333' }}>Total Item:</td>
                     <td style={{ fontWeight: 800, color: '#1a3a2a' }}>
                       Rp {items.reduce((s, i) => s + Number(i.subtotal), 0).toLocaleString('id-ID')}
                     </td>
