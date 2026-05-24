@@ -342,3 +342,15 @@
     width: 550px;
   }
 }
+
+.error-text {
+  color: #ff4d4d;
+  font-size: 12px;
+  margin-top: -8px;
+  display: block;
+}
+
+.input-error {
+  border-color: #ff4d4d !important;
+  box-shadow: 0 0 0 4px rgba(255, 77, 77, 0.1);
+}
