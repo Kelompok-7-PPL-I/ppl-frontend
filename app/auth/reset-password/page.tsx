@@ -123,7 +123,7 @@ const handleUpdateClick = () => {
                 className={`input-field ${resetErrors.password ? 'input-error' : ''}`}
                 suppressHydrationWarning
               />
-              <button type="button" onClick={() => setShowPass(!showPass)} className="password-toggle">
+              <button suppressHydrationWarning type="button" onClick={() => setShowPass(!showPass)} className="password-toggle">
                 {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
@@ -159,6 +159,7 @@ const handleUpdateClick = () => {
 
             <div onClick={handleUpdateClick}>
               <button 
+                suppressHydrationWarning
                 disabled={loading || metReqs < 4 || !isMatch} 
                 className="btn-submit"
                 style={{ pointerEvents: 'none' }}
