@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
         const userId = (session.user as any).id;
         const body = await request.json();
-        const { id_produk, id_item, rating, komentar } = body;
+        const { id_produk, id_item, rating, komentar, is_anonim } = body;
 
         if (!id_produk || !id_item || !rating) {
             return NextResponse.json({ error: "id_produk, id_item, and rating are required" }, { status: 400 });
@@ -74,6 +74,7 @@ export async function POST(request: Request) {
                 id_item: Number(id_item),
                 rating: Number(rating),
                 komentar: komentar || "",
+                is_anonim: is_anonim ?? false,
             }
         });
 

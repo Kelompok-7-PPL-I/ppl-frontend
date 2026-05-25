@@ -51,6 +51,7 @@ export default function DetailProduct() {
         rating,
         komentar,
         tanggal_ulasan,
+        is_anonim,
         pengguna ( nama )
       `)
       .eq("id_produk", id)
@@ -306,7 +307,7 @@ if (!product) {
               <div key={r.id_ulasan} style={{ padding: '24px', borderRadius: '16px', backgroundColor: '#f9f9f9', border: '1px solid #eee' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <strong style={{ fontSize: 16, color: '#1a1a1a', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                    {r.pengguna?.nama || 'Pengguna Tanpa Nama'}
+                      {r.is_anonim ? 'Pengguna Anonim' : (r.pengguna?.nama || 'Pengguna Tanpa Nama')}
                   </strong>
                   <span style={{ fontSize: 13, color: '#888' }}>
                     {new Date(r.tanggal_ulasan).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
