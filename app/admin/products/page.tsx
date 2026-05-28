@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import "./page.css";
 import { createClient } from '@/utils/supabase/client';
+import { useToast } from "@/app/context/ToastContext";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -71,6 +72,13 @@ const ReviewIcon = () => (
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
   </svg>
 );
+const FileIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <polyline points="17 8 12 3 7 8"/>
+    <line x1="12" y1="3" x2="12" y2="15"/>
+  </svg>
+);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtRupiah = (n: number) => "Rp" + n.toLocaleString("id-ID").replace(/,/g, ".");
@@ -99,13 +107,13 @@ export default function AdminProductsPage() {
   const [ulasanTarget, setUlasanTarget] = useState<Product | null>(null);
   const [ulasanList, setUlasanList] = useState<Ulasan[]>([]);
   const [ulasanLoading, setUlasanLoading] = useState(false);
+  const { toast } = useToast();
 
   const [form, setForm] = useState({
     nama: "",
     harga: "",
     stok: "",
     deskripsi: "",
-    isPromo: false,
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,7 +133,6 @@ export default function AdminProductsPage() {
         stok: Number(p.stok),
         deskripsi: p.deskripsi || "",
         gambar: p.gambar_url || "/images/corn-1.jpg",
-        isPromo: p.is_promo ?? false,
         dibuatPada: p.dibuat_pada || "",
       }));
       setProducts(mapped);
@@ -229,24 +236,23 @@ export default function AdminProductsPage() {
 
   // ── Submit (Add & Edit) ───────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!form.nama.trim()) return alert("Nama produk wajib diisi");
-    if (!form.harga || isNaN(Number(form.harga))) return alert("Harga harus berupa angka");
-    if (!form.stok || isNaN(Number(form.stok))) return alert("Stok harus berupa angka");
-    
+    if (!form.nama.trim()) return toast.warning("Nama produk wajib diisi");
+    if (!form.harga || isNaN(Number(form.harga))) return toast.warning("Harga harus berupa angka");
+    if (!form.stok || isNaN(Number(form.stok))) return toast.warning("Stok harus berupa angka");
+
     setIsSubmitting(true);
     try {
-      let imageUrl = modalMode === "edit" ? editTarget?.gambar : "/images/corn-1.jpg";
-      if (selectedFile) imageUrl = await uploadImage(selectedFile);
+      let gambar = modalMode === "edit" ? editTarget?.gambar : "/images/corn-1.jpg";
+      if (selectedFile) gambar = await uploadImage(selectedFile);
 
       const method = modalMode === "add" ? "POST" : "PUT";
 
       const payload: Record<string, any> = {
-        nama_produk: form.nama,
+        nama: form.nama,
         harga: Number(form.harga),
         stok: Number(form.stok),
         deskripsi: form.deskripsi,
-        gambar_url: imageUrl,
-        is_promo: form.isPromo,
+        gambar: gambar,
       };
 
       if (modalMode === "edit" && editTarget) {
@@ -266,9 +272,10 @@ export default function AdminProductsPage() {
       }
 
       await fetchProducts();
+      toast.success(modalMode === "add" ? "Produk berhasil ditambahkan!" : "Produk berhasil diperbarui!");
       closeModal();
     } catch (err: any) {
-      alert(err.message);
+      toast.danger(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -281,9 +288,10 @@ export default function AdminProductsPage() {
       const res = await fetch(`/api/products?id=${deleteTarget.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Gagal menghapus");
       await fetchProducts();
+      toast.success(`${deleteTarget.nama} berhasil dihapus.`);
       setDeleteTarget(null);
     } catch (err: any) {
-      alert(err.message);
+      toast.danger(err.message);
     }
   };
 
@@ -353,7 +361,7 @@ export default function AdminProductsPage() {
             <button
               className="btn-tambah"
               onClick={() => {
-                setForm({ nama: "", harga: "", stok: "", deskripsi: "", isPromo: false });
+                setForm({ nama: "", harga: "", stok: "", deskripsi: ""});
                 setSelectedFile(null);
                 setModalMode("add");
               }}
@@ -382,7 +390,6 @@ export default function AdminProductsPage() {
                 <th>Stok</th>
                 <th>Deskripsi</th>
                 <th>Gambar</th>
-                <th>Promo</th>
                 <th>Ulasan</th>
                 <th>Dibuat Pada</th>
                 <th>Aksi</th>
@@ -417,11 +424,6 @@ export default function AdminProductsPage() {
                   <td className="img-container">
                     <img src={p.gambar} className="img-thumb" alt={p.nama} />
                   </td>
-                  <td>
-                    <span className={`promo-badge ${p.isPromo ? "promo-yes" : "promo-no"}`}>
-                      {p.isPromo ? "Ya" : "Tidak"}
-                    </span>
-                  </td>
                   {/* Kolom Ulasan */}
                   <td className="img-container">
                     <button
@@ -445,7 +447,6 @@ export default function AdminProductsPage() {
                             harga: String(p.harga),
                             stok: String(p.stok),
                             deskripsi: p.deskripsi,
-                            isPromo: p.isPromo,
                           });
                           setSelectedFile(null);
                           setModalMode("edit");
@@ -563,27 +564,25 @@ export default function AdminProductsPage() {
                     <span className="form-img-hint">Gambar saat ini — upload baru untuk mengganti</span>
                   </div>
                 )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="form-upload"
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                />
-              </div>
-
-              <div className="form-group form-group-inline">
-                <span className="form-label">Produk Promo?</span>
-                <div className="toggle-wrap">
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={form.isPromo}
-                      onChange={(e) => setForm((prev) => ({ ...prev, isPromo: e.target.checked }))}
-                    />
-                    <span className="toggle-slider" />
-                  </label>
-                  <span className="toggle-label">{form.isPromo ? "Ya" : "Tidak"}</span>
+                <div
+                  className="form-upload-area"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                >
+                  <FileIcon />
+                  <span>{selectedFile ? selectedFile.name : "Klik untuk pilih gambar"}</span>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  />
                 </div>
+                {selectedFile && (
+                  <span style={{ fontSize: 12, color: "#888", marginTop: 4, display: "block" }}>
+                    {selectedFile.name}
+                  </span>
+                )}
               </div>
 
               <button

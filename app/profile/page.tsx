@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { getSession } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { MapPin, Pencil, Home, Plus } from 'lucide-react';
+import { useToast } from "@/app/context/ToastContext";
 
 export default function ProfilePage() {
     const supabase = createClient();
@@ -13,7 +14,20 @@ export default function ProfilePage() {
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
     const [stats, setStats] = useState({ orders: 0, reviews: 0 });
+    const { toast } = useToast();
+
+    // State untuk fetch data wilayah
+    const [provinces, setProvinces] = useState<any[]>([]);
+    const [regencies, setRegencies] = useState<any[]>([]);
+    const [districts, setDistricts] = useState<any[]>([]);
+    const [villages, setVillages] = useState<any[]>([]);
+
+    // State loading untuk dropdown
+    const [dropdownLoading, setDropdownLoading] = useState({
+        prov: false, kab: false, kec: false, kel: false
+    });
 
     // State untuk fitur edit
     const [modalType, setModalType] = useState<'kontak' | 'alamat_list' | 'alamat_form' | null>(null);    
@@ -47,6 +61,9 @@ export default function ProfilePage() {
         nama_penerima: '',
         nomor_telepon: '',
         alamat_lengkap: '',
+        provinsi: '',
+        kecamatan: '',
+        kelurahan: '',
         kota_kabupaten: '',
         kode_pos: '',
         is_utama: false
@@ -105,12 +122,12 @@ export default function ProfilePage() {
                         const { count: orderCount } = await supabase
                             .from('pesanan')
                             .select('*', { count: 'exact', head: true })
-                            .eq('id_pengguna', userData.id);
+                            .eq('id_user', userData.id);
 
                         const { count: reviewCount } = await supabase
                             .from('ulasan')
                             .select('*', { count: 'exact', head: true })
-                            .eq('id_pengguna', userData.id);
+                            .eq('id_user', userData.id);
 
                         setStats({ 
                             orders: orderCount || 0, 
@@ -135,6 +152,9 @@ export default function ProfilePage() {
                 nama_penerima: selectedAddress.nama_penerima || '',
                 nomor_telepon: selectedAddress.nomor_telepon || '',
                 alamat_lengkap: selectedAddress.alamat_lengkap || '',
+                provinsi: selectedAddress.provinsi || '',
+                kecamatan: selectedAddress.kecamatan || '',
+                kelurahan: selectedAddress.kelurahan || '',
                 kota_kabupaten: selectedAddress.kota_kabupaten || '',
                 kode_pos: selectedAddress.kode_pos || '',
                 is_utama: selectedAddress.is_utama || false
@@ -143,22 +163,43 @@ export default function ProfilePage() {
             // Reset form jika klik Tambah Baru
             setAddressFormData({
                 label_alamat: '', nama_penerima: '', nomor_telepon: '',
-                alamat_lengkap: '', kota_kabupaten: '', kode_pos: '', is_utama: false
+                alamat_lengkap: '', provinsi: '', kecamatan: '', kelurahan: '', kota_kabupaten: '', kode_pos: '', is_utama: false
             });
         }
     }, [selectedAddress, modalType]);
 
     const handleUpdateProfile = async () => {
-        setLoading(true);
-        const { error } = await supabase
-            .from('pengguna')
-            .update({
-                nama: formData.nama,
-                nomor_telp: formData.nomor_telp,
-                alamat: formData.alamat
-            })
-            .eq('email', profile.email);
+        const newErrors: Record<string, string> = {};
+        
+        if (!formData.nama.trim()){
+            newErrors.nama = "Nama lengkap wajib diisi!";
+        }
+        
+        if (!formData.nomor_telp.trim()){
+            newErrors.nomor_telp = "Nomor telepon wajib diisi!";
+        } else if(/\D/.test(formData.nomor_telp)){
+            newErrors.nomor_telp = "Nomor telepon tidak valid! Hanya boleh berisi angka.";
+        } else if (formData.nomor_telp.length > 15){
+            newErrors.nomor_telp = "Nomor telepon maksimal 15 digit!";
+        }
 
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return; 
+        }
+        
+        setLoading(true);
+        setErrors({});
+
+        const { error } = await supabase
+        .from('pengguna')
+        .update({
+            nama: formData.nama,
+            nomor_telp: formData.nomor_telp,
+            alamat: formData.alamat
+        })
+        .eq('email', profile.email);
+        
         if (!error) {
             setProfile({ ...profile, ...formData });
             setModalType(null); // Tutup modal setelah simpan
@@ -166,7 +207,7 @@ export default function ProfilePage() {
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
         } else {
-            alert("Gagal memperbarui profil.");
+            toast.danger("Gagal memperbarui profil.");
         }
         setLoading(false);
     };
@@ -183,13 +224,132 @@ export default function ProfilePage() {
         if (!error) setAddresses(data || []);
     };
 
+    // Fetch Provinsi saat modal alamat dibuka
+    useEffect(() => {
+        if (modalType === 'alamat_form') {
+            setDropdownLoading(prev => ({ ...prev, prov: true }));
+            fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json`)
+                .then(res => res.json())
+                .then(data => {
+                    setProvinces(data);
+                    setDropdownLoading(prev => ({ ...prev, prov: false }));
+                });
+        }
+    }, [modalType]);
+
+    // 2. Fetch Kabupaten saat Provinsi Berubah
+    useEffect(() => {
+        if (addressFormData.provinsi) {
+            // Cari ID berdasarkan Nama (karena API Emsifa butuh ID untuk fetch anak-anaknya)
+            const provId = provinces.find(p => p.name === addressFormData.provinsi)?.id;
+            if (provId) {
+                setDropdownLoading(prev => ({ ...prev, kab: true }));
+                fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provId}.json`)
+                    .then(res => res.json())
+                    .then(data => {
+                        setRegencies(data);
+                        setDropdownLoading(prev => ({ ...prev, kab: false }));
+                    });
+            }
+        } else {
+            setRegencies([]);
+        }
+    }, [addressFormData.provinsi, provinces]);
+
+    // 3. Fetch Kecamatan saat Kabupaten Berubah
+    useEffect(() => {
+        if (addressFormData.kota_kabupaten) {
+            const kabId = regencies.find(r => r.name === addressFormData.kota_kabupaten)?.id;
+            if (kabId) {
+                setDropdownLoading(prev => ({ ...prev, kec: true }));
+                fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${kabId}.json`)
+                    .then(res => res.json())
+                    .then(data => {
+                        setDistricts(data);
+                        setDropdownLoading(prev => ({ ...prev, kec: false }));
+                    });
+            }
+        } else {
+            setDistricts([]);
+        }
+    }, [addressFormData.kota_kabupaten, regencies]);
+
+    // 4. Fetch Kelurahan saat Kecamatan Berubah
+    useEffect(() => {
+        if (addressFormData.kecamatan) {
+            const kecId = districts.find(d => d.name === addressFormData.kecamatan)?.id;
+            if (kecId) {
+                setDropdownLoading(prev => ({ ...prev, kel: true }));
+                fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${kecId}.json`)
+                    .then(res => res.json())
+                    .then(data => {
+                        setVillages(data);
+                        setDropdownLoading(prev => ({ ...prev, kel: false }));
+                    });
+            }
+        } else {
+            setVillages([]);
+        }
+    }, [addressFormData.kecamatan, districts]);
+
+    // --- HELPER UNTUK HANDLE PERUBAHAN ---
+    const handleRegionChange = (field: string, value: string) => {
+        // Jika provinsi berubah, reset semua anak-anaknya di bawah
+        if (field === 'provinsi') {
+            setAddressFormData({
+                ...addressFormData,
+                provinsi: value,
+                kota_kabupaten: '',
+                kecamatan: '',
+                kelurahan: ''
+            });
+        } else if (field === 'kota_kabupaten') {
+            setAddressFormData({
+                ...addressFormData,
+                kota_kabupaten: value,
+                kecamatan: '',
+                kelurahan: ''
+            });
+        } else if (field === 'kecamatan') {
+            setAddressFormData({
+                ...addressFormData,
+                kecamatan: value,
+                kelurahan: ''
+            });
+        } else {
+            setAddressFormData({ ...addressFormData, [field]: value });
+        }
+    };
+
     // 2. Fungsi Simpan (Tambah & Edit)
     const handleSaveAddress = async () => {
         // Validasi Sederhana
         const newErrors: Record<string, string> = {};
         if (!addressFormData.label_alamat) newErrors.label_alamat = "Label wajib diisi";
         if (!addressFormData.nama_penerima) newErrors.nama_penerima = "Nama wajib diisi";
-        if (!addressFormData.nomor_telepon) newErrors.nomor_telepon = "Nomor wajib diisi";
+        if (!addressFormData.alamat_lengkap) newErrors.alamat_lengkap = "Alamat lengkap wajib diisi";
+        if (!addressFormData.provinsi) newErrors.provinsi = "Provinsi wajib diisi";
+        if (!addressFormData.kota_kabupaten) newErrors.kota_kabupaten = "Kabupaten/Kota wajib diisi";
+        if (!addressFormData.kecamatan) newErrors.kecamatan = "Kecamatan wajib diisi";
+        if (!addressFormData.kelurahan) newErrors.kelurahan = "Kelurahan wajib diisi";
+
+        // Validasi nomor telepon
+        if (!addressFormData.nomor_telepon || !addressFormData.nomor_telepon.trim()){
+            newErrors.nomor_telepon = "Nomor wajib diisi!";
+        } else if (/\D/.test(addressFormData.nomor_telepon)){
+            newErrors.nomor_telepon = "Wajib berupa angka!";
+        } else if (addressFormData.nomor_telepon.length > 15){
+            newErrors.nomor_telepon = "Maksimal 15 digit!";
+        }
+
+        // Validasi Kode Pos
+        if (!addressFormData.kode_pos || !addressFormData.kode_pos.trim()) {
+            newErrors.kode_pos = "Kode Pos wajib diisi!";
+        } else if (/\D/.test(addressFormData.kode_pos)){
+            newErrors.kode_pos = "Kode Pos wajib berupa angka!";
+        } else if (addressFormData.kode_pos.length !== 5){
+            newErrors.kode_pos = "Kode Pos tidak valid!";
+        }
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -219,7 +379,7 @@ export default function ProfilePage() {
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
         } catch (err: any) {
-            alert("Error: " + err.message);
+            toast.danger("Error: " + err.message);
         } finally {
             setLoading(false);
         }
@@ -237,10 +397,10 @@ export default function ProfilePage() {
             if (error) throw error;
             setModalType('alamat_list');
             await fetchAddresses();
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3000);
+            setShowDeleteSuccess(true);
+            setTimeout(() => setShowDeleteSuccess(false), 3000);
         } catch (err: any) {
-            alert("Gagal menghapus: " + err.message);
+            toast.danger("Gagal menghapus: " + err.message);
         } finally {
             setLoading(false);
             setShowWarning({ ...showWarning, active: false });
@@ -281,26 +441,53 @@ export default function ProfilePage() {
 
         {/* User Card */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-6 mb-8">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-[#064E3B] text-3xl font-bold shrink-0">
-                {profile?.nama?.charAt(0).toUpperCase() || 'U'}
-            </div>
-            <div className="flex-1">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-[#064E3B] text-3xl font-bold shrink-0">
+            {profile?.nama?.charAt(0).toUpperCase() || 'U'}
+        </div>
+        
+        <div className="flex-1">
             <h2 className="text-xl font-bold text-gray-800">{profile?.nama}</h2>
-            <p className="text-gray-500 text-xs">Bergabung dengan Panganesia sejak {profile?.dibuat_pada ? new Date(profile.dibuat_pada).toLocaleDateString() : 'Invalid Date'}</p>
-            </div>
-            <div className="text-center px-6 border-l border-gray-100 shrink-0">
-            <p className="text-xl font-black text-[#064E3B]">
-                {stats.orders ?? 0}
+            <p className="text-gray-500 text-xs">
+                Bergabung dengan Panganesia sejak {profile?.dibuat_pada ? new Date(profile.dibuat_pada).toLocaleDateString() : 'Invalid Date'}
             </p>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Pesanan</p>
+        </div>
+
+        {/* BUNGKUS KEDUA STATS DALAM SATU CONTAINER FLEX AGAR SEJAJAR */}
+        <div className="flex items-center h-12 shrink-0">
+            {/* Kolom Pesanan */}
+            <div className="text-center px-6">
+                <p className="text-xl font-black text-[#064E3B] leading-none mb-1">
+                    {stats.orders ?? 0}
+                </p>
+                <Link 
+                    href="/profile/orders"
+                    className="inline-block group cursor-pointer outline-none focus:outline-none"
+                >
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest transition-colors duration-200 group-hover:text-emerald-600">
+                        Pesanan
+                    </p>
+                </Link>
             </div>
-            <div className="text-center px-6 border-l-2 border-gray-200 shrink-0">
-            <p className="text-xl font-black text-[#064E3B]">
-                {stats.reviews ?? 0}
-            </p>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Ulasan</p>
+
+            {/* GARIS PEMBATAS VERTIKAL MANDIRI YANG PAS DI TENGAH */}
+            <div className="w-[2px] h-12 bg-gray-200"></div>
+
+            {/* Kolom Ulasan */}
+            <div className="text-center px-6">
+                <p className="text-xl font-black text-[#064E3B] leading-none mb-1">
+                    {stats.reviews ?? 0}
+                </p>
+                <Link 
+                    href="/review/history" 
+                    className="inline-block group cursor-pointer outline-none focus:outline-none"
+                >
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest transition-colors duration-200 group-hover:text-emerald-600">
+                        Ulasan
+                    </p>
+                </Link>
             </div>
         </div>
+    </div>
 
         {/* Info Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -381,8 +568,12 @@ export default function ProfilePage() {
                                     type="text"
                                     className="w-full border rounded-xl px-4 py-3 mt-1 outline-none focus:ring-2 focus:ring-green-500 bg-white text-black font-semibold"
                                     value={formData.nama}
-                                    onChange={(e) => setFormData({...formData, nama: e.target.value})}
+                                    onChange={(e) => {
+                                        setFormData({...formData, nama: e.target.value});
+                                        if (errors.nama) setErrors((prev) => { const { nama, ...rest } = prev; return rest; });
+                                    }}
                                 />
+                                {errors.nama && <p className="text-red-500 text-xs mt-1 font-medium">{errors.nama}</p>}
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Nomor Telepon</label>
@@ -392,14 +583,19 @@ export default function ProfilePage() {
                                     className="w-full border rounded-xl px-4 py-3 mt-1 outline-none focus:ring-2 focus:ring-green-500 bg-white text-black font-semibold"
                                     value={formData.nomor_telp}
                                     onChange={(e) => {
-                                        const value = e.target.value.replace(/\D/g, "");
-                                        setFormData({...formData, nomor_telp: value});
+                                        setFormData({...formData, nomor_telp: e.target.value});
+                                        if (errors.nomor_telp) setErrors((prev) => { const { nomor_telp, ...rest } = prev; return rest; });
                                     }}
                                 />
+                                {errors.nomor_telp && <p className="text-red-500 text-xs mt-1 font-medium">{errors.nomor_telp}</p>}
                             </div>
                         </div>
                         <div className="flex gap-3 mt-8">
-                            <button onClick={() => setModalType(null)} className="flex-1 py-3 text-gray-400 font-bold transition-colors hover:text-red-600">Batal</button>
+                            <button onClick={() => {
+                                setModalType(null);
+                                setErrors({});
+                            }} 
+                            className="flex-1 py-3 text-gray-400 font-bold transition-colors hover:text-red-600">Batal</button>
                             <button onClick={handleUpdateProfile} className="flex-1 py-3 bg-[#064E3B] text-white rounded-xl font-bold transition-all hover:brightness-125 active:scale-95">Simpan</button>
                         </div>
                     </div>
@@ -575,28 +771,93 @@ export default function ProfilePage() {
                             {/* Kota & Kode Pos */}
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase">
+                                    Provinsi <span className="text-red-500">*</span>
+                                </label>
+                                {/* Pesan Error di Sebelah Kanan Label */}
+                                {errors.provinsi && (
+                                    <span className="text-[10px] text-red-500 font-bold animate-pulse">
+                                        {errors.provinsi}
+                                    </span>
+                                )}
+                                <select 
+                                    className="w-full border rounded-xl px-4 py-3 bg-white text-black font-semibold outline-none border-gray-200 focus:ring-2 focus:ring-green-500 appearance-none"
+                                    value={addressFormData.provinsi}
+                                    onChange={(e) => handleRegionChange('provinsi', e.target.value)}
+                                >
+                                    <option value="">{dropdownLoading.prov ? 'Memuat...' : 'Pilih Provinsi'}</option>
+                                    {provinces.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className={`text-[10px] font-bold uppercase transition-colors ${!addressFormData.provinsi ? 'text-gray-300' : 'text-gray-400'}`}>
                                     Kota/Kabupaten <span className="text-red-500">*</span>
                                 </label>
-
+                                {/* Pesan Error di Sebelah Kanan Label */}
                                 {errors.kota_kabupaten && (
-                                    <span className="text-[10px] text-red-500 font-bold animate-pulse">
+                                    <span className="text-[8px] text-red-500 font-bold animate-pulse">
                                         {errors.kota_kabupaten}
                                     </span>
                                 )}
+                                <select 
+                                    disabled={!addressFormData.provinsi || dropdownLoading.kab}
+                                    className="w-full border rounded-xl px-4 py-3 font-semibold outline-none transition-all duration-200
+                                            /* Kondisi Aktif */
+                                            bg-white text-black border-gray-200 focus:ring-2 focus:ring-green-500 cursor-pointer
+                                            /* Kondisi Disabled (Mati) */
+                                            disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed disabled:opacity-70"
+                                        value={addressFormData.kota_kabupaten}
+                                        onChange={(e) => handleRegionChange('kota_kabupaten', e.target.value)}
+                                    >
+                                    <option value="">{dropdownLoading.kab ? 'Memuat...' : 'Pilih Kota/Kab'}</option>
+                                    {regencies.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+                                </select>
+                            </div>
 
-                                <input 
-                                    type="text" 
-                                    className={`w-full border rounded-xl px-4 py-3 bg-white text-black font-semibold outline-none transition-all ${
-                                        errors.kota_kabupaten 
-                                            ? 'border-red-500 bg-red-50 focus:ring-1 focus:ring-red-200' 
-                                            : 'border-gray-200 focus:ring-2 focus:ring-green-500'
-                                    }`}                                    
-                                    value={addressFormData.kota_kabupaten} 
-                                    onChange={(e) => {
-                                        setAddressFormData({...addressFormData, kota_kabupaten: e.target.value});
-                                        if (errors.kota_kabupaten) setErrors({...errors, kota_kabupaten: ''}); 
-                                    }}                                
-                                />
+                            <div>
+                                <label className={`text-[10px] font-bold uppercase transition-colors ${!addressFormData.kota_kabupaten ? 'text-gray-300' : 'text-gray-400'}`}>
+                                    Kecamatan <span className="text-red-500">*</span>
+                                </label>
+                                {/* Pesan Error di Sebelah Kanan Label */}
+                                {errors.kecamatan && (
+                                    <span className="text-[10px] text-red-500 font-bold animate-pulse">
+                                        {errors.kecamatan}
+                                    </span>
+                                )}
+                                <select 
+                                    disabled={!addressFormData.kota_kabupaten || districts.length === 0 || dropdownLoading.kec}
+                                    className="w-full border rounded-xl px-4 py-3 font-semibold outline-none transition-all duration-200
+                                                bg-white text-black border-gray-200 focus:ring-2 focus:ring-green-500 cursor-pointer
+                                                disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed disabled:opacity-70"
+                                    value={addressFormData.kecamatan}
+                                    onChange={(e) => handleRegionChange('kecamatan', e.target.value)}
+                                >
+                                    <option value="">{dropdownLoading.kec ? 'Memuat...' : 'Pilih Kecamatan'}</option>
+                                    {districts.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase">
+                                    Kelurahan <span className="text-red-500">*</span>
+                                </label>
+                                {/* Pesan Error di Sebelah Kanan Label */}
+                                {errors.kelurahan && (
+                                    <span className="text-[10px] text-red-500 font-bold animate-pulse">
+                                        {errors.kelurahan}
+                                    </span>
+                                )}
+                                <select 
+                                    disabled={!addressFormData.kecamatan || dropdownLoading.kel}
+                                    className="w-full border rounded-xl px-4 py-3 font-semibold outline-none transition-all duration-200
+                                        bg-white text-black border-gray-200 focus:ring-2 focus:ring-green-500 cursor-pointer
+                                        disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed disabled:opacity-70"
+                                    value={addressFormData.kelurahan}
+                                    onChange={(e) => handleRegionChange('kelurahan', e.target.value)}
+                                >
+                                    <option value="">{dropdownLoading.kel ? 'Memuat...' : 'Pilih Kelurahan'}</option>
+                                    {villages.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
+                                </select>
                             </div>
 
                             <div>
@@ -672,6 +933,18 @@ export default function ProfilePage() {
                 </div>
             )}
 
+            {showDeleteSuccess && (
+                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-bottom-5 duration-300">
+                    <div className="bg-[#064E3B] text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border border-green-400">
+                        <span className="text-xl">✅</span>
+                        <div className="flex flex-col">
+                            <p className="font-bold text-sm">Berhasil!</p>
+                            <p className="text-xs text-green-100">Alamat anda berhasil dihapus.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
             {showWarning.active && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center animate-in zoom-in-95 duration-200">

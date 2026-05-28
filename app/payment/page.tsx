@@ -4,11 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Icon from '@mdi/react';
 import { mdiChevronLeft, mdiDownload, mdiReload } from '@mdi/js';
+import { useToast } from "@/app/context/ToastContext";
 import './page.css';
 
 export default function PaymentPage() {
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState(86399);
+  const { toast } = useToast();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -107,11 +109,11 @@ export default function PaymentPage() {
                 />
               </div>
               <p className="qr-id-number">NMID:ID2025444802321</p>
-              <button className="btn-save-qr" onClick={() => alert('QR Code Berhasil Disimpan!')}>
+              <button className="btn-save-qr" onClick={() => toast.success('QR Code Berhasil Disimpan!')}>
                 <Icon path={mdiDownload} size={0.75} />
                 Simpan Kode QR
               </button>
-              <button className="btn-reload-qr" onClick={() => alert('QR Code diperbarui!')}>
+              <button className="btn-reload-qr" onClick={() => toast.info('QR Code diperbarui!')}>
                 <Icon path={mdiReload} size={0.65} />
                 Muat ulang QR
               </button>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from '@supabase/ssr';
+import { useToast } from "@/app/context/ToastContext";
 import "./page.css";
 
 const supabase = createBrowserClient(
@@ -25,6 +26,7 @@ interface BahanDipilih {
 
 export default function AddRecipePage() {
   const router = useRouter();
+  const { toast } = useToast();
 
   // ── State Form ──────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,15 +34,36 @@ export default function AddRecipePage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [form, setForm] = useState({
     judul_resep: "",
-    kategori_jenis: "Diet",
+    kategori_jenis: "",
     deskripsi_singkat: "",
     langkah_masak: "",
+    waktu_masak: "",
+    bahan_bahan: "",
   });
 
   // ── State Gizi ───────────────────────────────────────────────
   const [nutritionList, setNutritionList] = useState([{ tipe: "Kalori", nilai: "" }]);
   const categoryOptions = ["Diet", "Weight Gain", "Snack", "High Protein"];
-  const nutritionOptions = ["Kalori", "Karbohidrat", "Protein", "Serat", "Lemak", "Gula"];
+  const nutritionOptions = [
+    "Kalori",
+    "Karbohidrat",
+    "Protein",
+    "Serat",
+    "Lemak",
+    "Gula",
+    "Sodium",
+    "Vitamin A",
+    "Vitamin B",
+    "Vitamin C",
+    "Vitamin D",
+    "Vitamin E",
+    "Kalsium",
+    "Zat Besi",
+    "Fosfor",
+    "Magnesium",
+    "Zinc",
+    "Kolesterol",
+  ];
 
   // ── State Katalog Produk / Bahan ─────────────────────────────
   const [produkList, setProdukList] = useState<ProdukKatalog[]>([]);
@@ -108,9 +131,45 @@ export default function AddRecipePage() {
     if (nutritionList.length > 1) setNutritionList(nutritionList.filter((_, i) => i !== index));
   };
 
-  // ── Submit ───────────────────────────────────────────────────
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+      if (!form.judul_resep.trim()) {
+        toast.warning("Judul resep wajib diisi!");
+        return;
+      }
+      if (!form.kategori_jenis) {
+        toast.warning("Kategori program wajib dipilih!");
+        return;
+      }
+      if (!form.deskripsi_singkat.trim()) {
+        toast.warning("Deskripsi singkat wajib diisi!");
+        return;
+      }
+      if (!form.waktu_masak.trim() || isNaN(Number(form.waktu_masak)) || Number(form.waktu_masak) <= 0) {
+        toast.warning("Durasi masak wajib diisi dan harus berupa angka positif!");
+        return;
+      }
+      if (bahanDipilih.length === 0) {
+        toast.warning("Minimal satu bahan dari katalog wajib dipilih!");
+        return;
+      }
+      if (!file) {
+        toast.warning("Gambar resep wajib diupload!");
+        return;
+      }
+
+      if (!form.langkah_masak.trim()) {
+        toast.warning("Langkah memasak wajib diisi!");
+        return;
+      }
+  
+    // ── Submit ───────────────────────────────────────────────────
+    const bahanTanpaTakaran = bahanDipilih.filter(b => !b.takaran || Number(b.takaran) <= 0);
+      if (bahanTanpaTakaran.length > 0) {
+        toast.danger(`Isi takaran untuk: ${bahanTanpaTakaran.map(b => b.nama_produk).join(", ")}`);
+        setIsSubmitting(false);
+        return;
+      }
     setIsSubmitting(true);
     try {
       let finalImageUrl = "";
@@ -136,6 +195,8 @@ export default function AddRecipePage() {
           langkah_masak: form.langkah_masak,
           informasi_gizi: giziString,
           gambar_url: finalImageUrl,
+          waktu_masak: form.waktu_masak ? Number(form.waktu_masak) : null,
+          bahan_bahan: form.bahan_bahan,
         }])
         .select()
         .single();
@@ -157,11 +218,11 @@ export default function AddRecipePage() {
         }
       }
 
-      alert("Resep berhasil dipublikasikan!");
+      toast.success("Resep berhasil dipublikasikan!");
       router.push("/admin/recipes");
       router.refresh();
     } catch (err: any) {
-      alert("Error: " + err.message);
+      toast.danger("Error: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -185,20 +246,43 @@ export default function AddRecipePage() {
               <div className="field-group">
                 <label>Judul Resep</label>
                 <input
+                  suppressHydrationWarning
                   name="judul_resep"
                   className="input-judul-huge"
                   placeholder="Contoh: Salad Ayam Panggang..."
                   value={form.judul_resep}
                   onChange={handleChange}
-                  required
                 />
               </div>
               <div className="field-group">
                 <label>Kategori Program</label>
                 <select name="kategori_jenis" className="form-select" value={form.kategori_jenis} onChange={handleChange}>
+                  <option value="" disabled>-- Pilih Kategori --</option>
                   {categoryOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
+              <div className="field-group">
+              <label>Durasi Masak</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  suppressHydrationWarning
+                  name="waktu_masak"
+                  type="number"
+                  min="1"
+                  placeholder="Contoh: 30"
+                  value={form.waktu_masak}
+                  onChange={handleChange}
+                  style={{ paddingRight: "56px" }}
+                />
+                <span style={{
+                  position: "absolute", right: 16, top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: 13, fontWeight: 700, color: "#888",
+                }}>
+                  menit
+                </span>
+              </div>
+          </div>
             </div>
             <div className="upload-preview-side">
               <div className="preview-display">
@@ -206,7 +290,7 @@ export default function AddRecipePage() {
               </div>
               <label className="btn-upload-label">
                 Pilih Foto Resep
-                <input type="file" accept="image/*" onChange={handleFileChange} />
+                <input suppressHydrationWarning type="file" accept="image/*" onChange={handleFileChange} />
               </label>
             </div>
           </div>
@@ -228,9 +312,10 @@ export default function AddRecipePage() {
                   <select value={item.tipe} onChange={(e) => updateNutrition(index, 'tipe', e.target.value)}>
                     {nutritionOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
-                  <input placeholder="Contoh: 250 kkal / 15g" value={item.nilai} onChange={(e) => updateNutrition(index, 'nilai', e.target.value)} />
-                  <button type="button" className="btn-remove-gizi" onClick={() => removeNutrition(index)}>×</button>
-                </div>
+                  <input suppressHydrationWarning placeholder="Contoh: 250 kkal / 15g" value={item.nilai} onChange={(e) => updateNutrition(index, 'nilai', e.target.value)} />
+                  <button type="button" className="btn-remove-gizi" onClick={() => removeNutrition(index)}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>                </div>
               ))}
               <button type="button" className="btn-add-gizi" onClick={addNutritionField}>+ Tambah Baris Gizi</button>
             </div>
@@ -250,16 +335,18 @@ export default function AddRecipePage() {
                       <span className="bahan-dipilih-nama">{b.nama_produk}</span>
                     </div>
                     <div className="bahan-dipilih-input-wrap">
-                      <input
+                      <input suppressHydrationWarning
                         type="number"
                         className="bahan-takaran-input"
-                        placeholder="gram"
+                        placeholder="0"
                         value={b.takaran}
                         onChange={e => updateTakaran(b.id_produk, e.target.value)}
                         min="0"
                       />
                       <span className="bahan-satuan">gram</span>
-                      <button type="button" className="bahan-remove-btn" onClick={() => removeBahan(b.id_produk)}>×</button>
+                      <button type="button" className="bahan-remove-btn" onClick={() => removeBahan(b.id_produk)}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -274,7 +361,7 @@ export default function AddRecipePage() {
             {/* Panel katalog produk */}
             {showKatalog && (
               <div className="katalog-panel">
-                <input
+                <input suppressHydrationWarning
                   className="katalog-search"
                   placeholder="Cari produk..."
                   value={searchProduk}
@@ -308,12 +395,35 @@ export default function AddRecipePage() {
             )}
           </div>
 
+          <div className="field-group">
+            <label>Alat & Bahan</label>
+            <textarea
+              name="bahan_bahan"
+              rows={6}
+              value={form.bahan_bahan}
+              onChange={handleChange}
+              placeholder={"1. Bahan pertama...\n2. Alat kedua...\n3. Alat ketiga..."}
+              style={{ whiteSpace: "pre-wrap", lineHeight: "1.8", resize: "vertical", minHeight: "140px" }}
+            />
+          </div>
+
           {/* ── Langkah Memasak ── */}
           <div className="field-group">
             <label>Langkah Memasak</label>
-            <textarea name="langkah_masak" rows={8} value={form.langkah_masak} onChange={handleChange} required placeholder="Masukkan langkah-langkah memasak..." />
+            <textarea
+              name="langkah_masak"
+              rows={12}
+              value={form.langkah_masak}
+              onChange={handleChange}
+              placeholder={"1. Langkah pertama...\n2. Langkah kedua...\n3. Langkah ketiga..."}
+              style={{
+                whiteSpace: "pre-wrap",
+                lineHeight: "1.8",
+                resize: "vertical",
+                minHeight: "200px",
+              }}
+            />
           </div>
-
           <div className="form-footer-sticky">
             <button type="submit" className="btn-submit-recipe" disabled={isSubmitting}>
               {isSubmitting ? "Sedang Memproses..." : "Publikasikan Resep"}

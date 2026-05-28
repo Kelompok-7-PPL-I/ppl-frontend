@@ -822,6 +822,12 @@
   color: #dc2626;
 }
 
+/* Status Order - Dibatalkan */
+.status-badge.dibatalkan {
+  background: #fef2f2;
+  color: #800000;
+}
+
 /* Tombol + Tambah Order di Header */
 .btn-add {
   display: flex;
@@ -868,6 +874,7 @@
 
 /* ── Order Status Select ─────────────────────────────────────────────── */
 .order-status-select {
+  display: inline-block;
   padding: 6px 10px;
   border-radius: 8px;
   border: 1.5px solid transparent;
@@ -896,6 +903,14 @@
   color: #15803d;
   border-color: #bbf7d0;
 }
+
+.order-status-select--dibatalkan {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+  cursor: default;
+}
+
 
 .order-status-select:focus {
   box-shadow: 0 0 0 3px rgba(26, 58, 42, 0.15);

@@ -39,7 +39,7 @@ export default function FavoriteProductsPage() {
       if (!userId) return [];
       const { data, error } = await supabase
         .from("favorit_produk")
-        .select(`id_fav, produk:id_produk (id_produk, nama_produk, harga, gambar_url)`)
+        .select(`id_fav, produk:id_produk (id_produk, nama_produk, harga, gambar_url, satuan_produk, unit_nama)`)
         .eq("id_user", userId);
       if (error) throw error;
       return data.map((fav: any) => ({ id_fav: fav.id_fav, ...fav.produk }));
@@ -117,10 +117,10 @@ export default function FavoriteProductsPage() {
                 </div>
                 <div className={styles["card-body"]}>
                   <h3 className={styles["card-name"]}>{product.nama_produk}</h3>
-                  <p className={styles["card-price"]}>{formatRupiah(product.harga)}</p>
+                  <p className={styles["card-price"]}>{formatRupiah(product.harga)} / {product.satuan_produk} {product.unit_nama}</p>
                   <div className={styles["card-actions"]}>
                     <Link href={`/product/${product.id_produk}`} className={styles["btn-detail"]}>Detail</Link>
-                    <Link href="/checkout" className={styles["btn-buy"]}>Buy Now</Link>
+                    <Link href="/checkout" className={styles["btn-buy"]}>Beli Sekarang</Link>
                   </div>
                 </div>
               </div>

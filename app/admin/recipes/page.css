@@ -272,10 +272,8 @@
 
 /* Action buttons */
 .action-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .btn-icon {
@@ -658,10 +656,11 @@
 
 /* Pengaturan lebar kolom spesifik */
 .col-no { width: 50px; }
-.col-judul { width: 150px; }
-.col-kat { width: 120px; }
-.col-data { width: 176px; } /* Untuk Deskripsi, Bahan, Langkah */
-.col-gizi { width: 150px; }
+.col-judul { width: 280px; }
+.col-kategori { width: 120px; }
+.col-deskripsi { width: 200px; } /* Untuk Deskripsi */
+.col-detail { width: 176px; } /* Untuk Deskripsi, Bahan, Langkah */
+.col-durasi {width: 80px;}
 .col-img { width: 80px; }
 .col-aksi { width: 100px; }
 
@@ -691,8 +690,8 @@
 }
 
 .img-thumb {
-  width: 44px;
-  height: 44px;
+  width: 72px;
+  height: 72px;
   border-radius: 8px;
   object-fit: cover;
   border: 1px solid #eee;

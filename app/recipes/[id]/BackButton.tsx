@@ -12,7 +12,7 @@ export default function BackButton() {
       className="back-link"
       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}
     >
-      Back
+      ← Kembali
     </button>
   );
 }

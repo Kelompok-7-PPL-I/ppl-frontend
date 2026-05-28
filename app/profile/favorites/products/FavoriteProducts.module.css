@@ -103,37 +103,57 @@
   margin-bottom: 20px;
 }
 
-/* Actions Buttons */
+/* Actions Buttons (Container) */
 .card-actions {
   display: flex;
-  gap: 12px;
-  margin-top: auto;
+  flex-direction: column; /* Mengubah posisi dari sampingan menjadi atas-bawah */
+  gap: 8px;               /* Jarak vertikal antar tombol dibuat sedikit lebih rapat */
+  margin-top: 16px;       /* Jarak dari teks harga ke tombol atas */
+  width: 100%;
 }
 
 .btn-detail, .btn-buy {
-  flex: 1;
-  padding: 10px 0;
-  border-radius: 999px;
+  display: inline-flex;   /* Menggunakan inline-flex agar teks berada di tengah sempurna */
+  align-items: center;
+  justify-content: center;
+  width: 100%;            /* Membuat tombol melebar penuh memenuhi card */
+  padding: 10px 0;        /* Sedikit disesuaikan agar proporsinya pas saat bertumpuk */
+  border-radius: 999px;   /* Kembali ke bentuk pill/kapsul bawaan desain kamu */
   font-size: 0.875rem;
   font-weight: 700;
-  text-align: center;
-  transition: all 0.2s;
+  text-decoration: none;  /* Menghilangkan garis bawah bawaan tag Link <a> */
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
 }
 
+/* Button Detail (Sekarang Posisi di Atas) */
 .btn-detail {
-  border: 1px solid #333;
-  color: #333;
+  border: 1px solid #E5E7EB;
+  color: #4B5563;
+  background: #FFFFFF;
 }
 
 .btn-detail:hover {
-  background: #f9f9f9;
+  background: #F9FAFB;
+  border-color: #D1D5DB;
+  color: #1F2937;
 }
 
+.btn-detail:active {
+  transform: scale(0.98);
+}
+
+/* Button Buy Now (Sekarang Posisi di Bawah) */
 .btn-buy {
   background: #2a8a3a;
   color: white;
+  border: 1px solid transparent;
 }
 
 .btn-buy:hover {
   background: #1f6e2b;
+}
+
+.btn-buy:active {
+  transform: scale(0.98); /* Efek membal halus saat ditekan */
 }

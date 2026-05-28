@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import "./page.css";
 import { createBrowserClient } from '@supabase/ssr';
+import Link from "next/dist/client/link";
+import { useToast } from "@/app/context/ToastContext";
+import { useRouter, usePathname } from "next/navigation";
 
+export const dynamic = 'force-dynamic';
 export const createClient = () =>
   createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,6 +29,7 @@ interface ItemPesanan {
   kuantitas: number;
   subtotal: number;
   produk?: { nama_produk: string; gambar_url: string | null };
+  catatan?: string | null;
 }
 
 const PER_PAGE = 10;
@@ -35,16 +40,20 @@ const EditIcon  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="no
 const WarnIcon  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
 const BoxIcon   = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>;
 
-const ORDER_STATUS_LIST = ['dikemas', 'dikirim', 'selesai'] as const;
+// ── Tambah 'dibatalkan' ke list ──────────────────────────────────────────────
+const ORDER_STATUS_LIST = ['dikemas', 'dikirim', 'selesai', 'dibatalkan'] as const;
 type OrderStatus = typeof ORDER_STATUS_LIST[number];
 
 const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   dikemas: '📦 Dikemas',
   dikirim: '🚚 Dikirim',
   selesai: '✅ Selesai',
+  dibatalkan: '❌ Dibatalkan',
 };
 
 export default function AdminOrdersPage() {
+  const { toast } = useToast();
+  const pathname = usePathname();
   const supabase = createClient();
   const [orders, setOrders]           = useState<Order[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -79,11 +88,12 @@ export default function AdminOrdersPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => {
+    fetchOrders();
+  }, [pathname]);
 
   // ── Order Status inline update ────────────────────────────────────────────
   const handleOrderStatusChange = async (id: number, newStatus: OrderStatus) => {
-    // Optimistic update
     setOrders(prev => prev.map(o => o.id_pesanan === id ? { ...o, order_status: newStatus } : o));
     await supabase.from('pesanan').update({ order_status: newStatus }).eq('id_pesanan', id);
   };
@@ -116,10 +126,31 @@ export default function AdminOrdersPage() {
     closeModal();
   };
 
+  // ── Delete: hapus ulasan → item_pesanan → pesanan ─────────────────────────
   const handleDelete = async () => {
     if (!targetOrder) return;
+
+    // 1. Ambil semua id_item milik pesanan ini
+    const { data: itemList } = await supabase
+      .from('item_pesanan')
+      .select('id_item')
+      .eq('id_pesanan', targetOrder.id_pesanan);
+
+    const itemIds = (itemList || []).map((i: { id_item: number }) => i.id_item);
+
+    // 2. Hapus ulasan yang terkait item tersebut (jika ada)
+    if (itemIds.length > 0) {
+      await supabase.from('ulasan').delete().in('id_item', itemIds);
+    }
+
+    // 3. Hapus item_pesanan
+    await supabase.from('item_pesanan').delete().eq('id_pesanan', targetOrder.id_pesanan);
+
+    // 4. Baru hapus pesanan
     await supabase.from('pesanan').delete().eq('id_pesanan', targetOrder.id_pesanan);
+
     fetchOrders();
+    toast.success(`Order #${targetOrder.id_pesanan} berhasil dihapus.`);
     setIsDeleteModalOpen(false);
     setTargetOrder(null);
   };
@@ -148,9 +179,29 @@ export default function AdminOrdersPage() {
     return matchSearch && matchStatus;
   });
 
-  const safePage  = Math.min(currentPage, Math.max(1, Math.ceil(filtered.length / PER_PAGE)));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
   const pageItems = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+
+  const getPageNumbers = (): (number | "...")[] => {
+    const pages: (number | "...")[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (safePage > 3) pages.push("...");
+      const start = Math.max(2, safePage - 1);
+      const end = Math.min(totalPages - 1, safePage + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (safePage < totalPages - 2) pages.push("...");
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
+  const startItem = (safePage - 1) * PER_PAGE + 1;
+  const endItem = Math.min(safePage * PER_PAGE, filtered.length);
+
 
   return (
     <>
@@ -165,12 +216,13 @@ export default function AdminOrdersPage() {
       <div className="products-page">
         <div className="products-header">
           <div className="products-header-left">
-            <h1>Orders</h1>
+            <h1>Pesanan</h1>
             <p>Kelola semua transaksi Panganesia.</p>
           </div>
           <div className="products-header-right">
-            <button className="btn-add" onClick={() => openModal()}>+ Tambah Order</button>
-            <select className="select-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <Link href="/admin/orders/add" className="btn-add">
+              + Tambah Pesanan
+            </Link>                    <select className="select-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="all">Semua Status</option>
               <option value="dibayar">Dibayar</option>
               <option value="pending">Pending</option>
@@ -203,36 +255,40 @@ export default function AdminOrdersPage() {
                   <td style={{ fontSize: '11px', color: '#666' }}>{o.id_user}</td>
                   <td className="bold-cell">Rp {o.total_harga?.toLocaleString('id-ID')}</td>
 
-                  {/* Items button */}
                   <td>
                     <button className="btn-items" onClick={() => openItemsModal(o.id_pesanan)}>
                       <BoxIcon /> Lihat
                     </button>
                   </td>
 
-                  {/* Status Pembayaran */}
                   <td>
                     <span className={`status-badge ${o.status_pembayaran?.toLowerCase()}`}>
                       {o.status_pembayaran}
                     </span>
                   </td>
 
-                  {/* Order Status — inline dropdown */}
+                  {/* Order Status — inline dropdown, dibatalkan tidak bisa diubah */}
                   <td>
-                    <select
-                      className={`order-status-select order-status-select--${o.order_status ?? 'dikemas'}`}
-                      value={o.order_status ?? 'dikemas'}
-                      onChange={(e) => handleOrderStatusChange(o.id_pesanan, e.target.value as OrderStatus)}
-                    >
-                      {ORDER_STATUS_LIST.map(s => (
-                        <option key={s} value={s}>{ORDER_STATUS_LABEL[s]}</option>
-                      ))}
-                    </select>
+                    {o.order_status === 'dibatalkan' ? (
+                      <span className="order-status-select order-status-select--dibatalkan">
+                        ❌ Dibatalkan
+                      </span>
+                    ) : (
+                      <select
+                        className={`order-status-select order-status-select--${o.order_status ?? 'dikemas'}`}
+                        value={o.order_status ?? 'dikemas'}
+                        onChange={(e) => handleOrderStatusChange(o.id_pesanan, e.target.value as OrderStatus)}
+                      >
+                        {ORDER_STATUS_LIST.filter(s => s !== 'dibatalkan').map(s => (
+                          <option key={s} value={s}>{ORDER_STATUS_LABEL[s]}</option>
+                        ))}
+                      </select>
+                    )}
                   </td>
 
                   <td>
                     <div className="action-cell">
-                      <button className="btn-icon edit" onClick={() => openModal(o)}><EditIcon /></button>
+                      <Link href={`/admin/orders/edit/${o.id_pesanan}`} className="btn-icon-edit" aria-label="Edit"><EditIcon /></Link>
                       <button className="btn-icon delete" onClick={() => { setTargetOrder(o); setIsDeleteModalOpen(true); }}><DeleteIcon /></button>
                     </div>
                   </td>
@@ -243,20 +299,30 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="pagination-row">
-            <span className="pagination-info">
-              {filtered.length} order · halaman {safePage} dari {totalPages}
-            </span>
-            <div className="pagination-controls">
-              <button className="pg-btn" disabled={safePage === 1} onClick={() => setCurrentPage(safePage - 1)}>‹</button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                <button key={p} className={`pg-btn ${p === safePage ? 'active' : ''}`} onClick={() => setCurrentPage(p)}>{p}</button>
-              ))}
-              <button className="pg-btn" disabled={safePage === totalPages} onClick={() => setCurrentPage(safePage + 1)}>›</button>
-            </div>
+        <div className="pagination-row">
+          <span className="pagination-info">
+            Menampilkan {filtered.length === 0 ? 0 : startItem}–{endItem} dari {filtered.length} produk
+          </span>
+          <div className="pagination-controls">
+            <button className="pg-btn" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+              Prev
+            </button>
+            {getPageNumbers().map((pg, i) =>
+              pg === "..." ? (
+                <span key={`e-${i}`} className="pg-ellipsis">...</span>
+              ) : (
+                <button
+                  key={`p-${pg}`}
+                  className={`pg-btn ${safePage === pg ? "active" : ""}`}
+                  onClick={() => setCurrentPage(pg as number)}
+                >{pg}</button>
+              )
+            )}
+            <button className="pg-btn" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}>
+              Next
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* ── Modal Items ─────────────────────────────────────────────────────── */}
@@ -282,6 +348,7 @@ export default function AdminOrdersPage() {
                     <th>ID Item</th>
                     <th>Produk</th>
                     <th>ID Produk</th>
+                    <th>Catatan</th>
                     <th>Qty</th>
                     <th>Subtotal</th>
                   </tr>
@@ -300,6 +367,9 @@ export default function AdminOrdersPage() {
                         </div>
                       </td>
                       <td className="mono-cell" style={{ color: '#999', fontSize: 12 }}>#{item.id_produk}</td>
+                      <td style={{ fontSize: 12, color: '#888', fontStyle: 'italic' }}>
+                          {item.catatan || <span style={{ color: '#ccc' }}>—</span>}
+                      </td>
                       <td><strong>{item.kuantitas}</strong> pcs</td>
                       <td>Rp {item.subtotal?.toLocaleString('id-ID')}</td>
                     </tr>
@@ -307,7 +377,7 @@ export default function AdminOrdersPage() {
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'right', fontWeight: 700, paddingTop: 12, color: '#333' }}>Total Item:</td>
+                    <td colSpan={5} style={{ textAlign: 'right', fontWeight: 700, paddingTop: 12, color: '#333' }}>Total Item:</td>
                     <td style={{ fontWeight: 800, color: '#1a3a2a' }}>
                       Rp {items.reduce((s, i) => s + Number(i.subtotal), 0).toLocaleString('id-ID')}
                     </td>
@@ -315,53 +385,6 @@ export default function AdminOrdersPage() {
                 </tfoot>
               </table>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal Add / Edit ─────────────────────────────────────────────────── */}
-      {isModalOpen && (
-        <div className="modal-backdrop" onClick={closeModal}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{targetOrder ? "Edit Order" : "Tambah Order Baru"}</h2>
-            </div>
-            <form onSubmit={handleSave}>
-              <div className="form-group">
-                <label>User UUID</label>
-                <input type="text" value={formData.id_user}
-                  onChange={e => setFormData({ ...formData, id_user: e.target.value })} required />
-              </div>
-              <div className="form-group">
-                <label>Total Harga (Rp)</label>
-                <input type="number" value={formData.total_harga}
-                  onChange={e => setFormData({ ...formData, total_harga: parseInt(e.target.value) })} required />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Status Bayar</label>
-                  <select value={formData.status_pembayaran}
-                    onChange={e => setFormData({ ...formData, status_pembayaran: e.target.value })}>
-                    <option value="Pending">Pending</option>
-                    <option value="Dibayar">Dibayar</option>
-                    <option value="Gagal">Gagal</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Status Order</label>
-                  <select value={formData.order_status}
-                    onChange={e => setFormData({ ...formData, order_status: e.target.value as OrderStatus })}>
-                    {ORDER_STATUS_LIST.map(s => (
-                      <option key={s} value={s}>{ORDER_STATUS_LABEL[s]}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={closeModal}>Batal</button>
-                <button type="submit" className="btn-save">Simpan</button>
-              </div>
-            </form>
           </div>
         </div>
       )}

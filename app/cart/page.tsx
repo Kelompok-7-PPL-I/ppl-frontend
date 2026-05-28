@@ -10,7 +10,7 @@ import {
   mdiPlus,
   mdiCartOutline,
 } from "@mdi/js";
-import "./page.css";
+import styles from "./CartPage.module.css";
 
 interface CartItem {
   id_keranjang: number;
@@ -140,27 +140,27 @@ export default function CartPage() {
     isClient ? `Rp ${price.toLocaleString("id-ID")}` : "Rp 0";
 
   return (
-    <div className="cart-view">
-      {toast && <div className="cart-toast">{toast}</div>}
+    <div className={styles["cart-view"]}>
+      {toast && <div className={styles["cart-toast"]}>{toast}</div>}
 
       {confirmId !== null && (
-        <div className="cart-confirm-overlay">
-          <div className="cart-confirm-box">
-            <p className="cart-confirm-title">Hapus produk?</p>
-            <p className="cart-confirm-sub">
+        <div className={styles["cart-confirm-overlay"]}>
+          <div className={styles["cart-confirm-box"]}>
+            <p className={styles["cart-confirm-title"]}>Hapus produk?</p>
+            <p className={styles["cart-confirm-sub"]}>
               Produk ini akan dihapus dari keranjangmu.
             </p>
 
-            <div className="cart-confirm-btns">
+            <div className={styles["cart-confirm-btns"]}>
               <button
-                className="cart-confirm-cancel"
+                className={styles["cart-confirm-cancel"]}
                 onClick={() => setConfirmId(null)}
               >
                 Batal
               </button>
 
               <button
-                className="cart-confirm-ok"
+                className={styles["cart-confirm-ok"]}
                 onClick={() => removeItem(confirmId)}
               >
                 Hapus
@@ -170,53 +170,53 @@ export default function CartPage() {
         </div>
       )}
 
-      <div className="cart-header">
-        <button className="back-btn" onClick={() => window.history.back()}>
+      <div className={styles["cart-header"]}>
+        <button className={styles["back-btn"]} onClick={() => window.history.back()}>
           <Icon path={mdiChevronLeft} size={0.9} />
         </button>
 
-        <span className="cart-header-title">Keranjang Belanja</span>
-        <span className="cart-header-badge">{cartItems.length}</span>
+        <span className={styles["cart-header-title"]}>Keranjang Belanja</span>
+        <span className={styles["cart-header-badge"]}>{cartItems.length}</span>
       </div>
 
-      <div className="cart-container">
+      <div className={styles["cart-container"]}>
         {!isLoading && cartItems.length === 0 && (
-          <div className="cart-empty">
-            <div className="cart-empty-icon">
+          <div className={styles["cart-empty"]}>
+            <div className={styles["cart-empty-icon"]}>
               <Icon path={mdiCartOutline} size={1.6} color="#c8b97a" />
             </div>
 
-            <p className="cart-empty-title">Keranjangmu kosong</p>
-            <p className="cart-empty-sub">
+            <p className={styles["cart-empty-title"]}>Keranjangmu kosong</p>
+            <p className={styles["cart-empty-sub"]}>
               Yuk mulai belanja produk pangan lokal pilihan!
             </p>
           </div>
         )}
 
-        <div className="cart-list">
+        <div className={styles["cart-list"]}>
           {isLoading ? (
             <p style={{ textAlign: "center", marginTop: 20 }}>
               Memuat keranjang...
             </p>
           ) : (
             cartItems.map((item) => (
-              <div key={item.id_keranjang} className="cart-item-wrapper">
+              <div key={item.id_keranjang} className={styles["cart-item-wrapper"]}>
                 <div
-                  className={`item-checkbox-custom ${
-                    item.checked ? "checked" : ""
+                  className={`${styles["item-checkbox-custom"]} ${
+                    item.checked ? styles.checked : ""
                   }`}
                   onClick={() => toggleCheck(item.id_keranjang)}
                 />
 
-                <div className={`item-card ${item.checked ? "selected" : ""}`}>
-                  <img src={item.image} alt={item.name} className="item-img" />
+                <div className={`${styles["item-card"]} ${item.checked ? styles.selected : ""}`}>
+                  <img src={item.image} alt={item.name} className={styles["item-img"]} />
 
-                  <div className="item-info">
-                    <div className="item-header">
-                      <h3 className="item-name">{item.name}</h3>
+                  <div className={styles["item-info"]}>
+                    <div className={styles["item-header"]}>
+                      <h3 className={styles["item-name"]}>{item.name}</h3>
 
                       <button
-                        className="btn-hapus-icon"
+                        className={styles["btn-hapus-icon"]}
                         onClick={() => setConfirmId(item.id_keranjang)}
                         title="Hapus produk"
                       >
@@ -224,31 +224,31 @@ export default function CartPage() {
                       </button>
                     </div>
 
-                    <div className="item-price-unit">
+                    <div className={styles["item-price-unit"]}>
                       {formatPrice(item.price)} / pcs
                     </div>
 
-                    <div className="item-controls">
-                      <div className="qty-box">
+                    <div className={styles["item-controls"]}>
+                      <div className={styles["qty-box"]}>
                         <button
-                          className="qty-btn"
+                          className={styles["qty-btn"]}
                           onClick={() => updateQty(item.id_keranjang, -1)}
                           disabled={item.quantity <= 1}
                         >
                           <Icon path={mdiMinus} size={0.55} />
                         </button>
 
-                        <span className="qty-number">{item.quantity}</span>
+                        <span className={styles["qty-number"]}>{item.quantity}</span>
 
                         <button
-                          className="qty-btn"
+                          className={styles["qty-btn"]}
                           onClick={() => updateQty(item.id_keranjang, 1)}
                         >
                           <Icon path={mdiPlus} size={0.55} />
                         </button>
                       </div>
 
-                      <span className="item-total-price">
+                      <span className={styles["item-total-price"]}>
                         {formatPrice(item.price * item.quantity)}
                       </span>
                     </div>
@@ -260,15 +260,15 @@ export default function CartPage() {
         </div>
 
         {cartItems.length > 0 && (
-          <div className="cart-summary">
-            <p className="cart-summary-title">Ringkasan Belanja</p>
+          <div className={styles["cart-summary"]}>
+            <p className={styles["cart-summary-title"]}>Ringkasan Belanja</p>
 
-            <div className="cart-summary-row">
+            <div className={styles["cart-summary-row"]}>
               <span>Subtotal produk</span>
               <span>{formatPrice(subtotal)}</span>
             </div>
 
-            <div className="cart-summary-row total">
+            <div className={`${styles["cart-summary-row"]} ${styles.total}`}>
               <span>Total</span>
               <span>{formatPrice(subtotal)}</span>
             </div>
@@ -276,31 +276,31 @@ export default function CartPage() {
         )}
       </div>
 
-      <footer className="cart-footer">
-        <div className="footer-content">
-          <div className="select-all-label" onClick={toggleSelectAll}>
+      <footer className={styles["cart-footer"]}>
+        <div className={styles["footer-content"]}>
+          <div className={styles["select-all-label"]} onClick={toggleSelectAll}>
             <div
-              className={`footer-checkbox-custom ${
-                allChecked ? "checked" : ""
+              className={`${styles["footer-checkbox-custom"]} ${
+                allChecked ? styles.checked : ""
               }`}
             />
 
-            <div className="footer-label-wrap">
-              <span className="all-checkout-text">Semua</span>
-              <span className="selected-count-text">
+            <div className={styles["footer-label-wrap"]}>
+              <span className={styles["all-checkout-text"]}>Semua</span>
+              <span className={styles["selected-count-text"]}>
                 {selectedCount} dipilih
               </span>
             </div>
           </div>
 
-          <div className="checkout-group">
-            <div className="subtotal-box">
-              <span className="label-sub">Total Pembayaran</span>
-              <span className="value-sub">{formatPrice(subtotal)}</span>
+          <div className={styles["checkout-group"]}>
+            <div className={styles["subtotal-box"]}>
+              <span className={styles["label-sub"]}>Total Pembayaran</span>
+              <span className={styles["value-sub"]}>{formatPrice(subtotal)}</span>
             </div>
 
             <button
-              className="btn-checkout-main"
+              className={styles["btn-checkout-main"]}
               disabled={subtotal === 0}
               onClick={handleCheckoutSelectedItems}
             >
