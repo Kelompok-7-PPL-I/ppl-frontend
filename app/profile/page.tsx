@@ -431,16 +431,16 @@ export default function ProfilePage() {
     }
 
     return (
-        <main className="flex-1 p-12 w-full bg-white">
-        <header className="flex justify-between items-center mb-10">
-            <h1 className="text-3xl font-extrabold text-[#062F24] tracking-tight">Informasi Pribadi</h1>
-            <Link href="/DashboardProduct" className="text-[#064E3B] font-bold text-sm hover:underline">
+        <main className="flex-1 p-6 sm:p-12 w-full bg-white">
+        <header className="flex flex-col-reverse sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-10">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#062F24] tracking-tight">Informasi Pribadi</h1>
+            <Link href="/DashboardProduct" className="text-[#064E3B] font-bold text-sm hover:underline mb-2 sm:mb-0">
             ← Kembali ke Toko
             </Link>
         </header>
 
         {/* User Card */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-6 mb-8">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-8 text-center sm:text-left">
         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-[#064E3B] text-3xl font-bold shrink-0">
             {profile?.nama?.charAt(0).toUpperCase() || 'U'}
         </div>
@@ -629,7 +629,15 @@ export default function ProfilePage() {
                                             </div>
                                             <p className="font-bold text-gray-800">{addr.nama_penerima}</p>
                                             <p className="text-xs text-gray-500">{addr.nomor_telepon}</p>
-                                            <p className="text-sm text-gray-600 mt-2">{addr.alamat_lengkap}</p>
+                                            <p className="text-sm font-medium text-gray-700 mt-2">{addr.alamat_lengkap}</p>
+                                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                                                {addr.kelurahan && `Kel. ${addr.kelurahan}, `}
+                                                {addr.kecamatan && `Kec. ${addr.kecamatan}, `}
+                                                <br />
+                                                {addr.kota_kabupaten && `${addr.kota_kabupaten}, `}
+                                                {addr.provinsi && `${addr.provinsi}`}
+                                                {addr.kode_pos && ` - ${addr.kode_pos}`}
+                                            </p>
                                         </div>
                                         <div className="flex flex-col gap-2 ml-4">
                                             <button 
@@ -898,12 +906,12 @@ export default function ProfilePage() {
                         </div>
 
                         {/* ACTION BUTTONS */}
-                        <div className="flex gap-3 mt-8">
+                        <div className="flex flex-col-reverse sm:flex-row gap-3 mt-8">
                             {/* TOMBOL HAPUS (Hanya muncul jika sedang EDIT) */}
                             {selectedAddress && (
                                 <button 
                                     onClick={triggerDelete}
-                                    className="flex-1 py-3 text-red-600 border border-red-200 rounded-xl font-bold hover:bg-red-50 transition"
+                                    className="w-full sm:flex-1 py-3.5 text-red-600 border border-red-200 rounded-xl font-bold bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-all duration-200 cursor-pointer"
                                 >
                                     Hapus Alamat
                                 </button>
@@ -911,7 +919,7 @@ export default function ProfilePage() {
                             
                             <button 
                                 onClick={handleSaveAddress} 
-                                className="flex-[2] py-3 bg-[#064E3B] text-white rounded-xl font-bold hover:bg-[#053d2e] transition shadow-lg"
+                                className="w-full sm:flex-1 py-3.5 bg-[#064E3B] text-white rounded-xl font-bold hover:bg-[#043427] transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
                             >
                                 {loading ? 'Menyimpan...' : 'Simpan Alamat'}
                             </button>

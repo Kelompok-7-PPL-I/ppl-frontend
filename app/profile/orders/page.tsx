@@ -43,32 +43,32 @@ const renderStars = (rating: number) => {
 };
 
 const ProductItemRow = ({ item, ui }: any) => (
-    <div className="flex items-center justify-between bg-white p-2 rounded-lg border border-gray-100 shadow-sm mt-2">
-        <div className="flex items-center gap-3">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-gray-100 shadow-sm mt-2 gap-3">
+        <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
             <img 
                 src={item.produk.gambar_url} 
                 alt={item.produk.nama_produk} 
-                className="w-10 h-10 object-cover rounded-md border"
+                className="w-10 h-10 object-cover rounded-md border flex-shrink-0"
             />
-            <span className="text-sm font-semibold text-gray-800 truncate max-w-[180px]">
-                {item.produk.nama_produk}
-            </span>
-            {item.catatan && (
-                <span className="text-xs text-gray-500 italic  max-w-[560px] break-words">
-                    📝Catatan: {item.catatan}
+            <div className="flex flex-col min-w-0">
+                <span className="text-sm font-semibold text-gray-800 break-words sm:truncate max-w-full sm:max-w-[180px]">
+                    {item.produk.nama_produk}
                 </span>
-            )}
+                {item.catatan && (
+                    <span className="text-xs text-gray-500 italic break-words mt-0.5">
+                        📝 Catatan: {item.catatan}
+                    </span>
+                )}
+            </div>
         </div>
         {ui.status === 'completed' && (
-            <div className="flex flex-col items-end">
+            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100 w-full sm:w-auto">
+                <span className="text-[10px] text-gray-400 uppercase font-bold sm:mb-0.5">Ulasan Anda</span>
                 {item.ulasan ? (
-                    <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Ulasan Anda</span>
-                        {renderStars(item.ulasan.rating)}
-                    </div>
+                    renderStars(item.ulasan.rating)
                 ) : (
-                    <Link href={`/review?id_produk=${item.id_produk}&id_item=${item.id_item}&nama_produk=${encodeURIComponent(item.produk.nama_produk)}`}>
-                        <button className="px-3 py-1 text-xs font-bold text-green-600 border border-green-200 rounded-md hover:bg-green-50 transition-all">
+                    <Link href={`/review?id_produk=${item.id_produk}&id_item=${item.id_item}&nama_produk=${encodeURIComponent(item.produk.nama_produk)}`} className="w-full sm:w-auto text-right">
+                        <button className="px-3 py-1 text-xs font-bold text-green-600 border border-green-200 rounded-md hover:bg-green-50 transition-all w-full sm:w-auto">
                             Nilai
                         </button>
                     </Link>
@@ -540,7 +540,7 @@ export default function OrdersPage() {
     );
 
     return (
-        <main className={styles["orders-main"]}>
+        <div className={styles['orders-main']}>
             <header className={styles["orders-header"]}>
                 <div>
                     <h1 className={styles["orders-title"]}>Lihat Pesanan</h1>
@@ -691,7 +691,7 @@ export default function OrdersPage() {
                                 </div>
 
                                 <div className={styles["card-body"]}>
-                                    <div className="body-left w-full flex flex-col items-start gap-2">
+                                    <div className={`${styles["body-left"]} w-full flex flex-col items-start gap-2`}>
                                         <ReviewItemSelector order={order} ui={ui} />
 
                                         <div className="w-full flex justify-between items-center mt-3 pt-3 border-t border-dashed border-gray-100">
@@ -856,6 +856,6 @@ export default function OrdersPage() {
                     <InvoiceToPrint order={selectedOrder} />
                 </div>
             </div>
-        </main>
+        </div>
     );
 }
