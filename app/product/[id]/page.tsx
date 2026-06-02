@@ -23,12 +23,12 @@ export default function DetailProduct() {
   const [reviews, setReviews] = useState<any[]>([]);
 
   useEffect(() => {
-  const fetchProductAndReviews = async () => {
-    const { data: productData, error: productError } = await supabase
-      .from("produk")
-      .select("*")
-      .eq("id_produk", id)
-      .single();
+    const fetchProductAndReviews = async () => {
+      const { data: productData, error: productError } = await supabase
+        .from("produk")
+        .select("*")
+        .eq("id_produk", id)
+        .single();
 
     if (productData) {
       setProduct({
@@ -82,27 +82,27 @@ export default function DetailProduct() {
   const handleIncrease = () => setQuantity((q) => q + 1);
 
   const handleNext = () => {
-  if (activeImage < images.length - 1) {
-    const newIndex = activeImage + 1;
-    setActiveImage(newIndex);
+    if (activeImage < images.length - 1) {
+      const newIndex = activeImage + 1;
+      setActiveImage(newIndex);
 
-    // geser thumbnail kalau keluar range
-    if (newIndex >= startIndex + 3) {
-      setStartIndex((prev) => prev + 1);
+      // geser thumbnail kalau keluar range
+      if (newIndex >= startIndex + 3) {
+        setStartIndex((prev) => prev + 1);
+      }
     }
-  }
-};
+  };
 
-const handlePrev = () => {
-  if (activeImage > 0) {
-    const newIndex = activeImage - 1;
-    setActiveImage(newIndex);
+  const handlePrev = () => {
+    if (activeImage > 0) {
+      const newIndex = activeImage - 1;
+      setActiveImage(newIndex);
 
-    if (newIndex < startIndex) {
-      setStartIndex((prev) => prev - 1);
+      if (newIndex < startIndex) {
+        setStartIndex((prev) => prev - 1);
+      }
     }
-  }
-};
+  };
 
   const handleAddToCart = async () => {
     try {
@@ -179,7 +179,7 @@ if (!product) {
             priority
           />
         </div>
-        <button className="back-btn" onClick={() => router.back()}>
+        <button className="btn-kembali-produk" onClick={() => router.back()}>
           ← Kembali
         </button>
       </header>
@@ -246,24 +246,27 @@ if (!product) {
             </p>
           </div>
 
+          {/* Action Row - Komposisi Baru yang Lebih Balance */}
           <div className="action-row">
-            <div className="qty-control">
-              <button className="qty-btn" onClick={handleDecrease}>
-                −
-              </button>
-              <span className="qty-value">{quantity}</span>
-              <button className="qty-btn" onClick={handleIncrease}>
-                +
-              </button>
+            <div className="qty-wrapper">
+              <div className="qty-control">
+                <button className="qty-btn" onClick={handleDecrease}>
+                  −
+                </button>
+                <span className="qty-value">{quantity}</span>
+                <button className="qty-btn" onClick={handleIncrease}>
+                  +
+                </button>
+              </div>
+              {unitText && (
+                <span className="weight-unit">
+                  ({unitText})
+                </span>
+              )}
             </div>
-            {unitText && (
-              <span className="weight-unit" style={{ marginLeft: '12px', fontSize: '1rem', color: '#666', alignSelf: 'center', fontWeight: 500 }}>
-                ({unitText})
-              </span>
-            )}
 
             <button
-              className={`add-cart-btn ${addedToCart ? "Ditambahkan" : ""}`}
+              className={`add-cart-btn ${addedToCart ? "added" : ""}`}
               onClick={handleAddToCart}
             >
               {addedToCart ? "✓ Ditambahkan!" : "Tambah ke Keranjang"}
@@ -297,34 +300,34 @@ if (!product) {
       </main>
 
       {/* Reviews Section */}
-      <section className="reviews-section" style={{ maxWidth: 1100, margin: '40px auto', padding: '0 80px' }}>
-        <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 24, color: '#1a1a1a' }}>
+      <section className="reviews-section" >
+        <h2 className="reviews-title">
           Ulasan Produk
         </h2>
         {reviews.length > 0 ? (
-          <div className="reviews-list" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="reviews-list">
             {reviews.map((r: any) => (
-              <div key={r.id_ulasan} style={{ padding: '24px', borderRadius: '16px', backgroundColor: '#f9f9f9', border: '1px solid #eee' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <strong style={{ fontSize: 16, color: '#1a1a1a', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                      {r.is_anonim ? 'Pengguna Anonim' : (r.pengguna?.nama || 'Pengguna Tanpa Nama')}
+              <div key={r.id_ulasan} className="review-item">
+                <div className="review-header">
+                  <strong className="review-user">
+                    {r.pengguna?.nama || 'Pengguna Tanpa Nama'}
                   </strong>
-                  <span style={{ fontSize: 13, color: '#888' }}>
+                  <span className="review-date">
                     {new Date(r.tanggal_ulasan).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </span>
                 </div>
-                <div style={{ marginBottom: 12, color: '#f5c800', fontSize: 18, letterSpacing: '2px' }}>
+                <div className="review-stars">
                   {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
                 </div>
-                <p style={{ margin: 0, fontSize: 15, color: '#444', lineHeight: 1.6 }}>
+                <p className="review-comment">
                   {r.komentar || <span style={{ fontStyle: 'italic', color: '#999' }}>Tidak ada komentar tulisan.</span>}
                 </p>
               </div>
             ))}
           </div>
         ) : (
-          <div style={{ padding: '40px', textAlign: 'center', backgroundColor: '#f9f9f9', borderRadius: '16px', border: '1px dashed #ccc' }}>
-            <p style={{ color: '#888', margin: 0, fontSize: 15 }}>Belum ada ulasan untuk produk ini. Jadilah yang pertama memberikan ulasan!</p>
+          <div className="review-empty">
+            <p className="review-empty-text">Belum ada ulasan untuk produk ini. Jadilah yang pertama memberikan ulasan!</p>
           </div>
         )}
       </section>

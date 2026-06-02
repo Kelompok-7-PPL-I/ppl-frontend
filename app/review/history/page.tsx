@@ -192,8 +192,8 @@ export default function HistoryUlasanPage() {
             />
           </div>
 
-          <div className="flex w-full sm:w-auto items-center gap-3">
-            <div className="relative flex-1 sm:flex-initial min-w-[140px]">
+          <div className="flex w-full md:w-auto flex-wrap md:flex-nowrap items-center gap-3 justify-end">
+            <div className="relative flex-1 md:flex-initial md:min-w-[150px]">
               <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.911c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
@@ -214,7 +214,7 @@ export default function HistoryUlasanPage() {
               <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 pointer-events-none text-xs">▼</span>
             </div>
 
-            <div className="relative flex-1 sm:flex-initial min-w-[130px]">
+            <div className="relative flex-1 sm:flex-initial sm:min-w-[130px]">
               <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
@@ -276,15 +276,15 @@ export default function HistoryUlasanPage() {
             </div>
         )}
 
-      {/* LIST KARDUS ULASAN */}
+      {/* LIST KARTU ULASAN */}
       {!loading && !error && filteredAndSortedUlasan.length > 0 && (
         <div className="space-y-5 max-w-4xl">
           {filteredAndSortedUlasan.map((ulasan) => (
             <div 
               key={ulasan.id_ulasan} 
-              className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex gap-6"
+              className="bg-white border border-gray-100 rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col sm:flex-row gap-4 sm:gap-6"
             >
-              <div className="w-28 h-28 relative flex-shrink-0">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 relative flex-shrink-0 mx-auto sm:mx-0">
                 <img 
                   src={ulasan.produk?.gambar_url || "/placeholder-food.png"} 
                   alt={ulasan.produk?.nama_produk} 
@@ -294,7 +294,7 @@ export default function HistoryUlasanPage() {
               
               <div className="flex-1 flex flex-col justify-between min-w-0">
                 <div>
-                  <div className="flex items-center justify-between text-xs mb-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2 sm:gap-0 mb-2">
                     <span className="text-gray-400 font-medium">
                       Diulas pada {new Date(ulasan.tanggal_ulasan).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                     </span>
@@ -303,9 +303,9 @@ export default function HistoryUlasanPage() {
                     <button 
                         onClick={() => openDetail({
                             ...ulasan.item_pesanan?.pesanan,
-                            produk: ulasan.produk // kita selipkan data produk untuk jaga-jaga kalau fallback aktif
+                            produk: ulasan.produk // selipkan data produk untuk jaga-jaga kalau fallback aktif
                         })}
-                        className="bg-emerald-50 text-[#064E3B] font-bold px-2 py-1 rounded-md border border-emerald-100 hover:bg-emerald-100 transition tracking-wide text-[10px] cursor-pointer"
+                        className="w-full sm:w-auto text-center bg-emerald-50 text-[#064E3B] font-bold px-2 py-1.5 rounded-md border border-emerald-100 hover:bg-emerald-100 transition tracking-wide text-[10px] cursor-pointer"
                         >
                         Nomor Pesanan: {(ulasan.item_pesanan?.pesanan?.order_id || ulasan.item_pesanan?.id_pesanan)?.toString().replace("PANGAN-", "")}
                     </button>
@@ -339,7 +339,7 @@ export default function HistoryUlasanPage() {
         </div>
       )}
 
-      {/* COMPONENT MODAL DETAIL PESANAN (SAMA SEPERTI DI PAGE ORDERS KAMU) */}
+      {/* COMPONENT MODAL DETAIL PESANAN (SAMA SEPERTI DI PAGE ORDERS) */}
       {isModalOpen && selectedOrder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all relative">
@@ -359,7 +359,7 @@ export default function HistoryUlasanPage() {
             <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-4">
               <span className="text-[10px] font-bold text-gray-400 block tracking-wider uppercase">Nomor Pesanan</span>
               <span className="text-emerald-600 font-extrabold text-sm tracking-wide">
-                {selectedOrder.order_id || `ID: ${selectedOrder.id_pesanan}`}
+                {(selectedOrder.order_id || `ID: ${selectedOrder.id_pesanan}`).toString().replace("PANGAN-", "")}
               </span>
             </div>
 

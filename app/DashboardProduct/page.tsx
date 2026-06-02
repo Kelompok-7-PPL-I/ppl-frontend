@@ -309,9 +309,12 @@ function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike
         <section className="banner-section">
           <div className="banner-card" style={{ background: banners[activeBanner].bg.startsWith('url') ? `${banners[activeBanner].bg} center/cover no-repeat` : banners[activeBanner].bg }}>
             <div className="banner-content">
+              {/* Ganti baris judul banner lama dengan struktur yang lebih bersih ini */}
               <h2 className="banner-title">
-                {banners[activeBanner].title.split('\n').map((line, idx) => (
-                  <span key={idx} style={{ display: 'block' }}>{line}</span>
+                {banners[activeBanner].title.split('\n').map((line: string, index: number) => (
+                  <span key={index} className="banner-title-line">
+                    {line}
+                  </span>
                 ))}
               </h2>
               {banners[activeBanner].buttonText && (

@@ -96,16 +96,16 @@ export default function FavoriteRecipesPage() {
     );
 
     return (
-        <main className="flex-1 p-12 bg-white min-h-screen">
+        <main className="flex-1 p-4 sm:p-12 bg-white min-h-screen">
             <div className={styles["recipe-container"]}>
-                <header className="flex justify-between items-center mb-10">
+                <header className="flex flex-col-reverse sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-10">
                     <div>
-                        <h1 className="text-3xl font-extrabold text-[#062F24] tracking-tight">
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#062F24] tracking-tight">
                         Resep Favorit
                         </h1>
                         <p className="text-gray-500 text-sm mt-1">Kumpulan resep masakan yang kamu simpan</p>
                     </div>
-                    <Link href="/DashboardProduct" className="text-[#064E3B] font-bold text-sm hover:underline flex items-center gap-2">
+                    <Link href="/DashboardProduct" className="text-[#064E3B] font-bold text-sm hover:underline flex items-center gap-2 mb-2 sm:mb-0 self-start sm:self-auto">
                         <span>← Kembali ke Toko</span>
                     </Link>
                 </header>
