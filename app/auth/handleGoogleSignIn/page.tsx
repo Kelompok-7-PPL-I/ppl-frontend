@@ -1,13 +1,23 @@
-const handleGoogleSignIn = async () => {
+"use client";
+
+import { signIn } from "next-auth/react";
+import { useState } from "react";
+
+export default function HandleGoogleSignIn() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
     try {
-        // Menggunakan NextAuth untuk memicu login Google
-        // callbackUrl memastikan user dilempar ke DashboardProduct setelah login sukses
-        await signIn("google", { callbackUrl: "/DashboardProduct" });
+      await signIn("google", { callbackUrl: "/DashboardProduct" });
     } catch (err: any) {
-        setError("Gagal masuk dengan Google. Silakan coba lagi.");
+      setError("Gagal masuk dengan Google. Silakan coba lagi.");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
+
+  return null; // atau return komponen UI kalau ada
+}
