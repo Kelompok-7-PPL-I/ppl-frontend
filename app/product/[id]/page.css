@@ -1,0 +1,476 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
+
+.detail-root {
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  padding: 0 0 60px 0;
+}
+
+/* Header */
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 48px;
+}
+
+.logo-wrap {
+  width: 52px;
+  height: 52px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.logo-img {
+  border-radius: 50%;
+}
+
+.btn-kembali-produk {
+  background: none;
+  border: none;
+  color: #c0392b;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: opacity 0.2s;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.btn-kembali-produk:hover {
+  opacity: 0.75;
+}
+
+/* Main layout */
+.detail-main {
+  display: flex;
+  gap: 56px;
+  padding: 32px 80px 0 80px;
+  align-items: flex-start;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Gallery */
+.gallery-section {
+  flex-shrink: 0;
+  width: 440px;
+}
+
+.main-image-wrap {
+  width: 440px;
+  height: 340px;
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #e8e4dc;
+}
+
+.main-image {
+  transition: transform 0.4s ease;
+}
+
+.main-image-wrap:hover .main-image {
+  transform: scale(1.03);
+}
+
+.thumbnails-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.thumb-btn {
+  width: 96px;
+  height: 80px;
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  background: #f0ede8;
+  padding: 0;
+  transition: border-color 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.thumb-btn:hover {
+  transform: translateY(-2px);
+}
+
+.thumb-active {
+  border-color: #2d6a2d;
+}
+
+.thumb-img {
+  object-fit: cover;
+}
+
+.thumb-extra {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8e4dc;
+  width: 96px;
+  height: 80px;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.arrow.left {
+  left: 10px;
+}
+
+.arrow.right {
+  right: 10px;
+}
+
+/* Info section */
+.info-section {
+  flex: 1;
+  padding-top: 4px;
+  width: 100%;
+}
+
+.product-name {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 36px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 12px 0;
+  line-height: 1.1;
+}
+
+.product-price {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 30px;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin: 0 0 24px 0;
+}
+
+.description-box {
+  background: #f5f4f2;
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 24px;
+}
+
+.description-text {
+  font-size: 14.5px;
+  color: #444;
+  line-height: 1.75;
+  margin: 0;
+}
+
+/* Action row (Quantity & Add to Cart ALWAYS Side-by-Side) */
+.action-row {
+  display: flex;
+  flex-direction: row; /* Dikunci agar selalu sebaris */
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.qty-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  width: 140px; /* Mengunci lebar kuantitas agar lebih solid dan seimbang */
+}
+
+.qty-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f0ede8;
+  border-radius: 50px;
+  height: 48px;
+  padding: 0 16px;
+  width: 100%;
+  flex-shrink: 0; /* Mencegah tombol kuantitas gepeng di layar kecil */
+}
+
+.qty-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #555;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.15s, color 0.15s;
+  font-weight: 400;
+}
+
+.qty-btn:hover {
+  background: #ddd;
+  color: #1a1a1a;
+}
+
+.qty-value {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a1a1a;
+  min-width: 20px;
+  text-align: center;
+}
+
+.add-cart-btn {
+  flex: 1; /* Otomatis memenuhi sisa space yang ada */
+  padding: 13px 20px;
+  border: 2.5px solid #2d6a2d;
+  border-radius: 50px;
+  background: transparent;
+  color: #2d6a2d;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+  white-space: nowrap; /* Mencegah text pecah jadi 2 baris */
+  text-align: center;
+}
+
+.add-cart-btn:hover {
+  background: #2d6a2d;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.add-cart-btn.added {
+  background: #2d6a2d;
+  color: #fff;
+}
+
+/* Weight Unit Label */
+.weight-unit-container {
+  margin-bottom: 20px;
+  padding-left: 4px;
+}
+
+.weight-unit {
+  font-size: 13px;
+  color: #777;
+  font-weight: 500;
+}
+
+/* Buy Now Button */
+.buy-now-btn {
+  display: flex;           
+  align-items: center;    
+  justify-content: center; 
+  text-decoration: none;  
+  box-sizing: border-box;  
+  width: 100%;
+  padding: 16px;
+  background: #f5c800;
+  border: none;
+  border-radius: 50px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(245, 200, 0, 0.3);
+  margin-bottom: 12px;
+}
+
+.buy-now-btn:hover {
+  background: #e6b800;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(245, 200, 0, 0.4);
+}
+
+/* Reviews Section */
+.reviews-section {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 0 80px;
+}
+
+.reviews-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: #1a1a1a;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.review-item {
+  padding: 24px;
+  border-radius: 16px;
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.review-user {
+  font-size: 16px;
+  color: #1a1a1a;
+}
+
+.review-date {
+  font-size: 13px;
+  color: #888;
+}
+
+.review-stars {
+  margin-bottom: 12px;
+  color: #f5c800;
+  font-size: 18px;
+  letter-spacing: 2px;
+}
+
+.review-comment {
+  margin: 0;
+  font-size: 15px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.review-empty {
+  padding: 40px;
+  text-align: center;
+  background-color: #f9f9f9;
+  border-radius: 16px;
+  border: 1px dashed #ccc;
+}
+
+.review-empty-text {
+  color: #888;
+  margin: 0;
+  font-size: 15px;
+}
+
+/* --- Skeleton Style --- */
+.skeleton {
+  background: #eee;
+  background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+  border-radius: 8px;
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+  to { background-position-x: -200%; }
+}
+
+.skeleton-logo { width: 52px; height: 52px; border-radius: 50%; }
+.skeleton-title { width: 70%; height: 40px; margin-bottom: 20px; }
+.skeleton-price { width: 40%; height: 30px; margin-bottom: 30px; }
+.skeleton-desc { width: 100%; height: 20px; margin-bottom: 10px; }
+.skeleton-button { width: 100%; height: 50px; margin-top: 40px; border-radius: 30px; }
+.skeleton-header { border-bottom: 1px solid #eee; display: flex; align-items: center; padding: 24px 48px; }
+
+/* --- RESPONSIVE MEDIA QUERIES --- */
+@media (max-width: 992px) {
+  .detail-main {
+    padding: 32px 40px 0 40px;
+    gap: 40px;
+  }
+  .reviews-section {
+    padding: 0 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .detail-header, .skeleton-header {
+    padding: 16px 20px;
+  }
+
+  .detail-main {
+    flex-direction: column;
+    padding: 20px 20px 0 20px;
+    gap: 24px;
+  }
+
+  .gallery-section {
+    width: 100%;
+  }
+
+  .main-image-wrap {
+    width: 100%;
+    height: 280px;
+  }
+
+  .product-name {
+    font-size: 28px;
+  }
+
+  .product-price {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  /* Kunci action-row agar TETAP sebaris di mobile/layar split */
+  .action-row {
+    flex-direction: row !important;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .qty-control {
+    padding: 8px 12px;
+    gap: 12px;
+  }
+
+  .qty-wrapper {
+    width: 115px;
+  }
+
+  .add-cart-btn {
+    padding: 11px 10px;
+    font-size: 13px; /* Perkecil sedikit ukuran text agar pas di layar sangat sempit */
+  }
+
+  .reviews-section {
+    padding: 0 20px;
+    margin: 32px auto;
+  }
+
+  .review-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}

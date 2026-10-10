@@ -1,0 +1,375 @@
+body {
+  background-color: #ffffff !important;
+}
+
+.recipe-detail-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: #333;
+}
+
+/* --- HEADER --- */
+.recipe-detail-page .detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.recipe-detail-page .back-link {
+  color: #D32F2F; /* Warna merah sesuai mockup */
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.recipe-detail-page .logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recipe-detail-page .logo-img {
+  border-radius: 50%; /* Antisipasi jika logo butuh rounding */
+}
+
+/* --- HERO IMAGE --- */
+.recipe-detail-page .hero-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 350px;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.recipe-detail-page .hero-image {
+  width: 100%;
+  height: 100%;
+}
+
+/* --- META INFO --- */
+.recipe-detail-page .meta-info {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.recipe-detail-page .meta-pill {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.recipe-detail-page .time-pill {
+  background-color: #E0E0E0;
+  color: #555;
+}
+
+.recipe-detail-page .clock-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.recipe-detail-page .tag-pill {
+  background-color: #FFCE00; 
+  color: #000;
+}
+
+/* --- TITLE & DESCRIPTION --- */
+.recipe-detail-page .title-section {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.recipe-detail-page .recipe-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 1rem;
+  color: #000;
+}
+
+.recipe-detail-page .recipe-description {
+  font-size: 1rem;
+  color: #777;
+  line-height: 1.6;
+  text-align: justify;
+}
+
+/* --- CONTENT SECTIONS --- */
+.recipe-detail-page .content-section {
+  margin-bottom: 3rem;
+}
+
+.recipe-detail-page .section-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 1.5rem;
+}
+
+.recipe-detail-page .line-divider {
+  width: 80px;
+  height: 2px;
+  background-color: #555;
+}
+
+.recipe-detail-page .section-header h2 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0A3D22; /* Warna hijau gelap seperti pada green card */
+  letter-spacing: 0.5px;
+}
+
+.recipe-detail-page .nutrition-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.recipe-detail-page .nutrition-card {
+  background-color: #f3f4f6;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border-left: 4px solid #ffcc00; /* Aksen warna */
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* --- INGREDIENTS LIST --- */
+.recipe-detail-page .ingredients-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recipe-detail-page .ingredients-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1rem;
+  color: #666;
+}
+
+.recipe-detail-page .checkbox-square {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #28a745; /* Border hijau untuk checkbox */
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* --- STEPS TEXT --- */
+.recipe-detail-page .steps-text {
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.7;
+}
+
+/* --- NOT FOUND STATE --- */
+.recipe-detail-page .not-found {
+  text-align: center;
+  padding: 5rem 2rem;
+}
+
+.recipe-detail-page .not-found a {
+  color: #D32F2F;
+  text-decoration: underline;
+  margin-top: 1rem;
+  display: inline-block;
+}
+
+.recipe-detail-page .steps-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Jarak antar nomor langkah */
+}
+
+/* --- RECIPE PRODUCTS (AUTO BUY) --- */
+.recipe-detail-page .recipe-products-section {
+  background: rgba(243, 244, 246, 0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  padding: 2rem;
+  margin-top: 2rem;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+}
+
+.recipe-detail-page .recipe-products-subtitle {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.recipe-detail-page .recipe-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.recipe-detail-page .recipe-product-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  border: 1px solid #f0f0f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.recipe-detail-page .recipe-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.recipe-detail-page .recipe-product-image-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #f9f9f9;
+}
+
+.recipe-detail-page .promo-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background-color: #e53935;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.recipe-detail-page .out-of-stock-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background-color: rgba(0,0,0,0.7);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.recipe-detail-page .recipe-product-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.recipe-detail-page .recipe-product-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 0.5rem;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.recipe-detail-page .recipe-product-price {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0A3D22;
+  margin-bottom: 1rem;
+}
+
+/* Masukkan Semua ke Keranjang — outline style */
+.recipe-detail-page .recipe-add-cart-btn {
+  background-color: transparent;
+  color: #0A3D22;
+  border: 2px solid #0A3D22;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.recipe-detail-page .recipe-add-cart-btn:hover:not(:disabled) {
+  background-color: #0A3D22;
+  color: white;
+  transform: scale(1.02);
+}
+
+.recipe-detail-page .recipe-add-cart-btn:disabled {
+  border-color: #ccc;
+  color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Beli Semua Bahan — solid style */
+.recipe-detail-page .recipe-buy-now-btn {
+  background-color: #0A3D22;
+  color: white;
+  border: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.recipe-detail-page .recipe-buy-now-btn:hover:not(:disabled) {
+  background-color: #072a18;
+  transform: scale(1.02);
+}
+
+.recipe-detail-page .recipe-buy-now-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+.recipe-detail-page .recipe-buy-now-btn {
+  width: 100%;
+  background-color: #0A3D22;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.75rem 0;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.recipe-detail-page .recipe-buy-now-btn:hover:not(:disabled) {
+  background-color: #072a18;
+  transform: scale(1.02);
+}
+
+.recipe-detail-page .recipe-buy-now-btn.added {
+  background-color: #28a745;
+}
+
+.recipe-detail-page .recipe-buy-now-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
