@@ -10,7 +10,6 @@ datasource db {
 }
 
 model Pengguna {
-<<<<<<< HEAD
   id                  String              @id @default(uuid()) @db.Uuid
   nama                String?             @db.VarChar
   email               String              @unique @db.VarChar
@@ -27,28 +26,9 @@ model Pengguna {
   keranjang           Keranjang[]
   pesanan             Pesanan[]
   ulasan              Ulasan[]
-  user_preference     UserPreference[]
+  user_preference     UserPreference?
   user_interaction    UserInteraction[]
   user_profile_vector UserProfileVector?
-=======
-  id                 String           @id @default(uuid()) @db.Uuid
-  nama               String?          @db.VarChar
-  email              String           @unique @db.VarChar
-  alamat             String?
-  nomor_telp         String?          @db.VarChar
-  peran              String           @default("user") @db.VarChar
-  dibuat_pada        DateTime         @default(now()) @db.Timestamptz(6)
-  password           String?
-  reset_token        String?
-  reset_token_expiry DateTime?        @db.Timestamptz(6)
-  alamat_pengguna    AlamatPengguna[]
-  favorit_produk     FavoritProduk[]
-  favorit_resep      FavoritResep[]
-  keranjang          Keranjang[]
-  pesanan            Pesanan[]
-  ulasan             Ulasan[]
-  user_preference    UserPreference?
->>>>>>> origin/user-preference
 
   @@map("pengguna")
   @@schema("public")
@@ -65,12 +45,9 @@ model Produk {
   dibuat_pada        DateTime           @default(now()) @db.Timestamptz(6)
   satuan_produk      Int?               @default(1)
   unit_nama          String?            @default("gr") @db.VarChar
-<<<<<<< HEAD
   id_wilayah         Int?
   informasi_gizi     String?
   wilayah            Wilayah?           @relation(fields: [id_wilayah], references: [id_wilayah])
-=======
->>>>>>> origin/user-preference
   favorit            FavoritProduk[]
   item_pesanan       ItemPesanan[]
   keranjang          Keranjang[]
@@ -230,8 +207,6 @@ model AlamatPengguna {
   @@schema("public")
 }
 
-<<<<<<< HEAD
-=======
 model UserPreference {
   id                     Int      @id @default(autoincrement())
   id_user                String   @unique @db.Uuid
@@ -247,8 +222,6 @@ model UserPreference {
   @@map("user_preference")
   @@schema("public")
 }
-
->>>>>>> origin/user-preference
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model audit_log_entries {
@@ -808,20 +781,6 @@ model Wilayah {
   produk       Produk[]
 
   @@map("wilayah")
-  @@schema("public")
-}
-
-model UserPreference {
-  id                     Int      @id @default(autoincrement())
-  id_user                String   @db.Uuid
-  nutrition_preferences  Json?    @db.JsonB
-  ingredient_preferences Json?    @db.JsonB
-  category_preferences   Json?    @db.JsonB
-  created_at             DateTime @default(now()) @db.Timestamptz(6)
-  updated_at             DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  pengguna               Pengguna @relation(fields: [id_user], references: [id], onDelete: Cascade)
-
-  @@map("user_preference")
   @@schema("public")
 }
 
