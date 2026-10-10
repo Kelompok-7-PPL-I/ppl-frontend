@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight, Check, X, ArrowLeft, Mail } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { signIn, getSession } from "next-auth/react";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -22,8 +23,10 @@ export default function AuthPage() {
   // Login States
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [loginErrors, setLoginErrors] = useState<{email?: string; password?: string}>({});
 
-  // Register States (Initialized with empty strings to avoid Uncontrolled/Controlled error)
+
+  // Register States
   const [regData, setRegData] = useState({
     firstName: '',
     lastName: '',
@@ -31,12 +34,23 @@ export default function AuthPage() {
     password: '',
     confirmPassword: '',
   });
+  const [regErrors, setRegErrors] = useState<{firstName?: string; lastName?: string; email?: string; password?: string; confirmPassword?: string}>({});
 
   // Reset messages when switching between Login/Register
   useEffect(() => {
+    window.scrollTo(0, 0);
     setError(null);
     setSuccessMsg(null);
   }, [view]);
+
+useEffect(() => {
+    window.history.pushState(null, '', window.location.href)
+    const handlePopState = () => {
+        window.location.href = '/'
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+}, [])
 
   // Password Requirements Logic
   const requirements = [
@@ -57,68 +71,220 @@ export default function AuthPage() {
     return { label: "Kuat", color: "bg-green-500", text: "text-green-500" };
   };
 
-  // Auth Handlers
+  // ==============================
+  // AUTH HANDLERS
+  // ==============================
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const errors: {email?: string; password?: string} = {};
+
+    if (!loginEmail.trim()) {
+      errors.email = "Email wajib diisi";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail)) {
+      errors.email = "Format email tidak valid. Mohon isi dengan alamat email yang benar.";
+    }
+
+    if (loginEmail.length > 3 && !loginPassword.trim()) {
+      errors.password = "Password wajib diisi";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setLoginErrors(errors);
+      return;
+    }
+    setLoginErrors({});    
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password: loginPassword,
-    });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      router.push('/DashboardProduct');
-      router.refresh();
+
+    try {
+      const result = await signIn("credentials", {
+        email: loginEmail,
+        password: loginPassword,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      if (result?.ok) {
+        // 1. Tampilkan pesan sukses
+        setSuccessMsg("Login berhasil! Mengalihkan ke dashboard...");
+
+        // 2. Cek session untuk menentukan role dan redirect
+        setTimeout(async () => {
+          const session = await getSession();
+          
+          if (session?.user?.peran === 'admin') {
+            router.push('/admin');
+          } else {
+            router.push('/DashboardProduct');
+          }
+          
+          router.refresh(); 
+        }, 1500);
+      }
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false); // Matikan loading hanya jika error
     }
+    // Catatan: setLoading(false) di block 'finally' dihapus agar 
+    // tombol tetap status "Memproses..." saat jeda pindah halaman.
   };
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isAllMet || !isMatch) return;
+    e.preventDefault(); 
+      setError(null);    
+    const errors: {firstName?: string; lastName?: string; email?: string; password?: string; confirmPassword?: string} = {};
+    if (!regData.firstName.trim()) errors.firstName = "Nama depan wajib diisi";
+    if (!regData.lastName.trim()) errors.lastName = "Nama belakang wajib diisi";
+    if (!regData.email.trim()) {
+      errors.email = "Email wajib diisi";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regData.email)) {
+      errors.email = "Format email tidak valid";
+    }
+    if (!regData.password) {
+      errors.password = "Password wajib diisi";
+    } else if (!isAllMet) {
+      errors.password = "Password tidak memenuhi syarat";
+    }
+
+    if (!regData.confirmPassword) {
+      errors.confirmPassword = "Konfirmasi password wajib diisi";
+    } else if (!isMatch) {
+      errors.confirmPassword = "Password tidak cocok";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setRegErrors(errors);
+      return;
+    }
+    setRegErrors({});
     setLoading(true);
-    setError(null);
-    const { error } = await supabase.auth.signUp({
-      email: regData.email,
-      password: regData.password,
-      options: { 
-        data: { full_name: `${regData.firstName} ${regData.lastName}` },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+    setSuccessMsg(null);
+
+    try {
+      // TEMBAK KE API CUSTOM KITA (Bukan Supabase Auth)
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: `${regData.firstName} ${regData.lastName}`,
+          email: regData.email,
+          password: regData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Gagal mendaftar');
       }
-    });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      setSuccessMsg("Pendaftaran berhasil! Silakan cek email kamu untuk verifikasi.");
+
+      // Jika berhasil
+      setSuccessMsg("Pendaftaran Berhasil! Cek email kamu untuk info lengkapnya.");
+
+      // Kosongkan form setelah sukses
+      setRegData({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
+
+      // Otomatis pindah ke tampilan login setelah 3 detik
+      setTimeout(() => {
+        setView('login');
+      }, 3000);
+
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
       setLoading(false);
     }
   };
 
+  const handleRegisterClick = () => {
+  const errors: {firstName?: string; lastName?: string; email?: string; password?: string; confirmPassword?: string} = {};
+
+  if (!regData.firstName.trim()) errors.firstName = "Nama depan wajib diisi";
+  if (!regData.lastName.trim()) errors.lastName = "Nama belakang wajib diisi";
+  if (!regData.email.trim()) {
+    errors.email = "Email wajib diisi";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regData.email)) {
+    errors.email = "Format email tidak valid";
+  }
+  if (!regData.password) {
+    errors.password = "Password wajib diisi";
+  } else if (!isAllMet) {
+    errors.password = "Password tidak memenuhi syarat";
+  }
+  if (!regData.confirmPassword) {
+    errors.confirmPassword = "Konfirmasi password wajib diisi";
+  } else if (!isMatch) {
+    errors.confirmPassword = "Password tidak cocok";
+  }
+
+  if (Object.keys(errors).length > 0) {
+    setRegErrors(errors);
+    return;
+  }
+
+  handleRegister({ preventDefault: () => {} } as React.FormEvent);
+};
+
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
-    });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      setSuccessMsg("Link reset password telah dikirim ke email kamu!");
+
+    // Validasi manual
+    if (!loginEmail.trim()) {
+      setError("Email wajib diisi");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail)) {
+      setError("Format email tidak valid");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Panggil custom API kita (Nodemailer) yang sudah kamu buat
+      const response = await fetch('/api/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail }),
+      });
+      
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Gagal mengirim link reset password");
+      }
+
+      setSuccessMsg("Link reset password telah dikirim ke email kamu (cek juga folder Spam)!");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/DashboardProduct` },
-    });
+    setLoading(true);
+    setError(null);
+    try {
+      // Menggunakan NextAuth untuk memicu login Google
+      await signIn("google", { callbackUrl: "/DashboardProduct" });
+    } catch (err: any) {
+      setError("Gagal masuk dengan Google. Silakan coba lagi.");
+      setLoading(false);
+    }
   };
+
+  // ==============================
+  // UI RENDER
+  // ==============================
 
   return (
     <main className="auth-page">
@@ -141,12 +307,16 @@ export default function AuthPage() {
                 <div className="input-wrapper input-with-icon">
                   <Mail size={18} />
                   <input 
-                    type="email" 
+                    type="text"
                     placeholder="Email" 
-                    className="input-field"
+                    className={`input-field ${error ? 'input-error' : ''}`}
                     value={loginEmail} 
-                    onChange={(e) => setLoginEmail(e.target.value)} 
-                    required 
+                    onChange={(e) => {
+                      setLoginEmail(e.target.value);
+                      setError(null);
+                      setSuccessMsg(null);
+                    }}
+                    suppressHydrationWarning
                   />
                 </div>
                 <button className="btn-submit" disabled={loading}>
@@ -165,25 +335,31 @@ export default function AuthPage() {
                     <div className="input-wrapper input-with-icon">
                       <Mail size={18} />
                       <input 
-                        type="email" 
+                        type="text" 
                         placeholder="Email" 
-                        className="input-field"
+                        className={`input-field ${loginErrors.email ? 'input-error' : ''}`}
                         value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        required
+                        onChange={(e) => {
+                          setLoginEmail(e.target.value);
+                          setLoginErrors(prev => ({...prev, email: undefined}));
+                        }}
+                        suppressHydrationWarning 
                       />
                     </div>
-                    
+                    {loginErrors.email && <span className="error-text">{loginErrors.email}</span>}
                     {loginEmail.length > 3 && (
                       <div className="view-section">
                         <div className="input-wrapper">
                           <input 
                             type={showLoginPassword ? "text" : "password"} 
                             placeholder="Password" 
-                            className="input-field"
+                            className={`input-field ${loginErrors.password ? 'input-error' : ''}`}
                             value={loginPassword}
-                            onChange={(e) => setLoginPassword(e.target.value)}
-                            required
+                            onChange={(e) => {
+                              setLoginPassword(e.target.value);
+                              setLoginErrors(prev => ({...prev, password: undefined}));
+                            }}
+                            suppressHydrationWarning 
                           />
                           <button type="button" className="password-toggle" onClick={() => setShowLoginPassword(!showLoginPassword)}>
                             {showLoginPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -194,6 +370,7 @@ export default function AuthPage() {
                             Lupa kata sandi?
                           </button>
                         </div>
+                          {loginErrors.password && <span className="error-text">{loginErrors.password}</span>}
                       </div>
                     )}
 
@@ -219,45 +396,59 @@ export default function AuthPage() {
                       <input 
                         type="text" 
                         placeholder="Nama Depan" 
-                        className="input-field" 
+                        className={`input-field ${regErrors.firstName ? 'input-error' : ''}`}
                         value={regData.firstName}
-                        required 
-                        onChange={(e) => setRegData({...regData, firstName: e.target.value})}
+                        onChange={(e) => {
+                          setRegData({...regData, firstName: e.target.value});
+                          setRegErrors(prev => ({...prev, firstName: undefined}));
+                        }}
+                        suppressHydrationWarning 
                       />
                       <input 
                         type="text" 
                         placeholder="Nama Belakang" 
-                        className="input-field" 
+                        className={`input-field ${regErrors.lastName ? 'input-error' : ''}`}
                         value={regData.lastName}
                         autoComplete="off"
-                        required 
-                        onChange={(e) => setRegData({...regData, lastName: e.target.value})}
+                        onChange={(e) => {
+                          setRegData({...regData, lastName: e.target.value});
+                          setRegErrors(prev => ({...prev, lastName: undefined}));
+                        }}
+                        suppressHydrationWarning 
                       />
                     </div>
-                    
-                    <input 
-                      type="email" 
-                      placeholder="Email" 
-                      className="input-field" 
-                      value={regData.email}
-                      required 
-                      onChange={(e) => setRegData({...regData, email: e.target.value})}
-                    />
+                    {regErrors.firstName && <span className="error-text">{regErrors.firstName}</span>}
+                    {regErrors.lastName && <span className="error-text">{regErrors.lastName}</span>}
+                      <input 
+                        type="text"
+                        placeholder="Email" 
+                        className={`input-field ${regErrors.email ? 'input-error' : ''}`}
+                        value={regData.email}
+                        onChange={(e) => {
+                          setRegData({...regData, email: e.target.value});
+                          setRegErrors(prev => ({...prev, email: undefined}));
+                        }}
+                        suppressHydrationWarning 
+                      />
+                      {regErrors.email && <span className="error-text">{regErrors.email}</span>}
 
                     <div className="input-wrapper">
                       <input 
                         type={showRegPassword ? "text" : "password"} 
                         placeholder="Password" 
-                        className="input-field" 
+                        className={`input-field ${regErrors.password ? 'input-error' : ''}`}
                         value={regData.password}
-                        required 
-                        onChange={(e) => setRegData({...regData, password: e.target.value})}
+                        onChange={(e) => {
+                          setRegData({...regData, password: e.target.value});
+                          setRegErrors(prev => ({...prev, password: undefined}));
+                        }}
+                        suppressHydrationWarning 
                       />
                       <button type="button" className="password-toggle" onClick={() => setShowRegPassword(!showRegPassword)}>
                         {showRegPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
-
+                    {regErrors.password && <span className="error-text">{regErrors.password}</span>}
                     {regData.password && (
                       <div className="strength-meter">
                         <div className="strength-label">
@@ -288,20 +479,29 @@ export default function AuthPage() {
                       <input 
                         type={showConfirmPassword ? "text" : "password"} 
                         placeholder="Konfirmasi Password" 
-                        className={`input-field ${regData.confirmPassword ? (isMatch ? 'match' : 'no-match') : ''}`}
+                        className={`input-field ${regErrors.confirmPassword ? 'input-error' : ''}`}
                         value={regData.confirmPassword}
-                        required 
-                        onChange={(e) => setRegData({...regData, confirmPassword: e.target.value})}
+                        onChange={(e) => {
+                          setRegData({...regData, confirmPassword: e.target.value});
+                          setRegErrors(prev => ({...prev, confirmPassword: undefined}));
+                        }}
+                        suppressHydrationWarning 
                       />
                       <button type="button" className="password-toggle" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                         {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
-
-                    <button className="btn-submit" disabled={!isAllMet || !isMatch || loading}>
-                      {loading ? 'Memproses...' : 'Daftar Sekarang'} <ArrowRight size={18} />
-                    </button>
-
+                    {regErrors.confirmPassword && <span className="error-text">{regErrors.confirmPassword}</span>}
+                    <div onClick={handleRegisterClick}>
+                      <button 
+                        type="button"
+                        className="btn-submit" 
+                        disabled={!isAllMet || !isMatch || loading}
+                        style={{ pointerEvents: 'none' }}
+                      >
+                        {loading ? 'Memproses...' : 'Daftar Sekarang'} <ArrowRight size={18} />
+                      </button>
+                    </div>
                     <div className="separator">ATAU</div>
 
                     <button type="button" className="btn-google" onClick={handleGoogleSignIn}>
