@@ -13,7 +13,7 @@ const formatDate = (iso: string) =>
 
 export default function PreferencesPage() {
   const router = useRouter();
-  const { data, isLoading, isError, refetch, enabled, userId, session } = useOnboardingStatus();
+  const { data, isLoading, isError, refetch, enabled, userId, session, sessionStatus } = useOnboardingStatus();
 
   const startOnboarding = () => {
     requestOnboardingAutostart();
@@ -44,6 +44,14 @@ export default function PreferencesPage() {
 
         {isAdmin ? (
           <p className="text-gray-500 text-sm">Akun admin tidak memiliki preferensi makanan.</p>
+        ) : sessionStatus === "unauthenticated" ? (
+          <p className="text-gray-500 text-sm">
+            Sesi login kamu nggak ketemu.{" "}
+            <Link href="/auth" className="font-bold text-[#064E3B] hover:underline">
+              Masuk lagi
+            </Link>{" "}
+            untuk melihat preferensimu.
+          </p>
         ) : isLoading || (!data && !isError) || !enabled ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (

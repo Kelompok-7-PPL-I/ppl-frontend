@@ -31,7 +31,7 @@ export function useOnboardingStatus() {
     retry: false,
   });
 
-  return { ...query, enabled, userId, session };
+  return { ...query, enabled, userId, session, sessionStatus: status };
 }
 
 // Dipakai halaman lain (mis. Profil) untuk langsung membuka chat onboarding setelah pindah ke dashboard
