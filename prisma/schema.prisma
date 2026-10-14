@@ -26,6 +26,7 @@ model Pengguna {
   keranjang          Keranjang[]
   pesanan            Pesanan[]
   ulasan             Ulasan[]
+  user_preference    UserPreference?
 
   @@map("pengguna")
   @@schema("public")
@@ -198,6 +199,22 @@ model AlamatPengguna {
   pengguna       Pengguna? @relation(fields: [id_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("alamat_pengguna")
+  @@schema("public")
+}
+
+model UserPreference {
+  id                     Int      @id @default(autoincrement())
+  id_user                String   @unique @db.Uuid
+  nutrition_preferences  Json     @default("[]")
+  ingredient_preferences Json     @default("[]")
+  avoided_ingredients    Json     @default("[]")
+  allergies              Json     @default("[]")
+  category_preferences   Json     @default("[]")
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  pengguna               Pengguna @relation(fields: [id_user], references: [id], onDelete: Cascade)
+
+  @@map("user_preference")
   @@schema("public")
 }
 

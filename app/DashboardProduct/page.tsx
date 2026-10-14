@@ -10,6 +10,7 @@
   import { signOut as nextAuthSignOut } from "next-auth/react";
   import { useSession } from "next-auth/react";
   import { useToast } from "@/app/context/ToastContext";
+  import OnboardingAssistant from "@/components/onboarding/OnboardingAssistant";
 
   // ─── Types ────────────────────────────────────────────────────────────────────
   interface Product {
@@ -352,6 +353,8 @@ function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike
             </div>
           )}
         </section>
+
+        <OnboardingAssistant />
       </div>
     );
   }

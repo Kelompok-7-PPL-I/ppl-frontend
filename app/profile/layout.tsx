@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { signOut as nextAuthSignOut, getSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
-import { User, ShoppingBag, Heart, Utensils, LogOut, Menu } from 'lucide-react';
+import { User, ShoppingBag, Heart, Utensils, Salad, LogOut, Menu } from 'lucide-react';
 
 export default function ProfileLayout({
   children,
@@ -117,6 +117,10 @@ return (
           <Utensils className="w-4 h-4 shrink-0" />
           {!isCollapsed && <span>Resep Favorit</span>}
         </Link>
+        <Link href="/profile/preferences" className={getNavClass('/profile/preferences')}>
+          <Salad className="w-4 h-4 shrink-0" />
+          {!isCollapsed && <span>Preferensi Makanan</span>}
+        </Link>
         
         {/* LOGOUT DESKTOP: Sekarang masuk ke dalam 1 baris nav, berjarak pas di bawah resep */}
         <button 
@@ -156,7 +160,7 @@ return (
       {/* Konten Menu Dropdown Mobile yang muncul saat tombol garis tiga ditekan */}
       <div className={cn(
         "transition-all duration-300 ease-in-out overflow-hidden w-full bg-[#062F24]",
-        isCollapsed ? "max-h-0 opacity-0" : "max-h-[350px] opacity-100 border-b border-[#084233]"
+        isCollapsed ? "max-h-0 opacity-0" : "max-h-[420px] opacity-100 border-b border-[#084233]"
       )}>
         {/* Navigasi diatur memanjang ke bawah khusus untuk tampilan mobile agar tidak menumpuk kesamping */}
         <nav className="px-4 py-3 space-y-1.5 flex flex-col">
@@ -175,6 +179,10 @@ return (
           <Link href="/profile/favorites/recipes" className={getNavClass('/profile/favorites/recipes')} onClick={() => setIsCollapsed(true)}>
             <Utensils className="w-4 h-4 shrink-0" />
             <span>Resep Favorit</span>
+          </Link>
+          <Link href="/profile/preferences" className={getNavClass('/profile/preferences')} onClick={() => setIsCollapsed(true)}>
+            <Salad className="w-4 h-4 shrink-0" />
+            <span>Preferensi Makanan</span>
           </Link>
           <button 
             onClick={handleLogout} 
