@@ -22,7 +22,7 @@ export async function GET() {
   return NextResponse.json({ completed: !!preferences, preferences });
 }
 
-// Simpan preference onboarding (sekali saja, belum bisa diubah)
+// Simpan preference onboarding (pertama kali)
 export async function POST(req: Request) {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -49,6 +49,37 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Onboarding sudah pernah diisi" }, { status: 409 });
     }
     console.error("Gagal menyimpan onboarding:", e);
+    return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });
+  }
+}
+
+// Ubah preference (hanya untuk user yang sudah onboarding)
+export async function PUT(req: Request) {
+  const userId = await getUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json ({ error: "Body bukan JSON yang valid" }, { status: 400 });
+  }
+  const result = validateOnboarding(body);
+  if (!result.ok) {
+    return NextResponse.json ({ error: "Validasi gagal", details: result.errors }, { status: 400 });
+  }
+  try {
+    const preferences = await prisma.userPreference.update({
+      where: {id_user: userId},
+      data: result.data,
+    });
+    return NextResponse.json({ preferences });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      return NextResponse.json({ error: "Onboarding belum diisi" }, { status: 404 });
+    }
+    console.error("Gagal mengubah preference:", e);
     return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });
   }
 }
