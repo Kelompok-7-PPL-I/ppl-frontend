@@ -192,3 +192,205 @@ export async function vectorizeAllRecipes() {
   }
   return results;
 }
+
+/**
+ * Inisialisasi User Profile Vector dari preferensi onboarding (Cold Start)
+ */
+export async function initializeUserProfileVector(id_user: string): Promise<number[]> {
+  const pref = await prisma.userPreference.findUnique({
+    where: { id_user }
+  });
+
+  const vector: number[] = new Array(32).fill(0);
+
+  // Jika user belum mengisi preferensi, kembalikan vektor nol
+  if (!pref) {
+    await prisma.userProfileVector.upsert({
+      where: { id_user },
+      update: { vector, updated_at: new Date() },
+      create: { id_user, vector, interaction_count: 0 }
+    });
+    return vector;
+  }
+
+  const nutritionPrefs = Array.isArray(pref.nutrition_preferences)
+    ? (pref.nutrition_preferences as string[])
+    : [];
+  const ingredientPrefs = Array.isArray(pref.ingredient_preferences)
+    ? (pref.ingredient_preferences as string[])
+    : [];
+  const avoidedIngredients = Array.isArray(pref.avoided_ingredients)
+    ? (pref.avoided_ingredients as string[])
+    : [];
+  const allergies = Array.isArray(pref.allergies)
+    ? (pref.allergies as string[])
+    : [];
+  const categoryPrefs = Array.isArray(pref.category_preferences)
+    ? (pref.category_preferences as string[])
+    : [];
+
+  // 1. Nutrisi (Index 0 - 4): protein, karbohidrat, lemak, serat, kalori
+  vector[0] = nutritionPrefs.includes('tinggi_protein') || categoryPrefs.includes('high_protein') ? 0.8 : 0.5;
+  vector[1] = categoryPrefs.includes('diet') ? 0.3 : categoryPrefs.includes('weight_gain') ? 0.8 : 0.5;
+  vector[2] = nutritionPrefs.includes('rendah_lemak') ? 0.2 : 0.4;
+  vector[3] = nutritionPrefs.includes('tinggi_serat') || categoryPrefs.includes('diet') ? 0.8 : 0.4;
+  vector[4] = nutritionPrefs.includes('rendah_kalori') || categoryPrefs.includes('diet') ? 0.2 : categoryPrefs.includes('weight_gain') ? 0.8 : 0.5;
+
+  // 2. Bahan-Bahan (Index 5 - 24)
+  FEATURE_CONFIG.ingredients.forEach((ing, idx) => {
+    const vIndex = 5 + idx;
+
+    // Disukai
+    if (ingredientPrefs.some(p => p.toLowerCase().includes(ing) || (ing === 'kentang' && p.includes('umbi_ubian')))) {
+      vector[vIndex] = 1.0;
+    }
+
+    // Dihindari
+    if (avoidedIngredients.some(a => a.toLowerCase().includes(ing) || (ing === 'kentang' && a.includes('umbi_ubian')))) {
+      vector[vIndex] = -1.0;
+    }
+
+    // Alergi (Penalti Keras)
+    if (
+      (ing === 'telur' && allergies.includes('telur')) ||
+      (ing === 'susu' && allergies.includes('susu_sapi')) ||
+      ((ing === 'udang' || ing === 'ikan') && allergies.includes('makanan_laut')) ||
+      (ing === 'tepung' && allergies.includes('gandum'))
+    ) {
+      vector[vIndex] = -1.0;
+    }
+
+    // Rendah gula
+    if (ing === 'gula' && nutritionPrefs.includes('rendah_gula')) {
+      vector[vIndex] = -0.8;
+    }
+  });
+
+  // 3. Kategori (Index 25 - 31)
+  // 'makanan utama', 'snack', 'minuman', 'dessert', 'sarapan', 'olahan jagung', 'makanan sehat'
+  if (categoryPrefs.includes('snack')) vector[26] = 1.0;
+  if (categoryPrefs.includes('diet')) vector[31] = 1.0; // makanan sehat
+  if (categoryPrefs.includes('high_protein') || categoryPrefs.includes('weight_gain')) vector[25] = 1.0; // makanan utama
+  if (ingredientPrefs.includes('jagung')) vector[30] = 0.8; // olahan jagung
+
+  // Simpan / update ke database
+  await prisma.userProfileVector.upsert({
+    where: { id_user },
+    update: {
+      vector,
+      updated_at: new Date()
+    },
+    create: {
+      id_user,
+      vector,
+      interaction_count: 0
+    }
+  });
+
+  return vector;
+}
+
+/**
+ * Update User Profile Vector berdasarkan interaksi pengguna (Dynamic Behavioral Update)
+ * Rumus: V_new = (1 - alpha) * V_user + alpha * V_item
+ */
+export async function updateUserProfileVector(
+  id_user: string,
+  item_id: number,
+  item_type: string,
+  weight: number
+) {
+  const normType = item_type.toLowerCase();
+
+  // 1. Ambil atau generate Item Vector
+  let itemVectorRecord = await prisma.itemVector.findUnique({
+    where: {
+      item_id_item_type: {
+        item_id,
+        item_type: normType
+      }
+    }
+  });
+
+  if (!itemVectorRecord) {
+    if (normType === 'recipe') {
+      itemVectorRecord = await vectorizeRecipe(item_id);
+    } else if (normType === 'product') {
+      itemVectorRecord = await vectorizeProduct(item_id);
+    }
+  }
+
+  const itemVector: number[] = Array.isArray(itemVectorRecord?.vector)
+    ? (itemVectorRecord.vector as unknown as number[])
+    : new Array(32).fill(0);
+
+  // 2. Ambil User Profile Vector saat ini
+  let userProfile = await prisma.userProfileVector.findUnique({
+    where: { id_user }
+  });
+
+  let currentVector: number[];
+  if (!userProfile || !Array.isArray(userProfile.vector)) {
+    // Inisialisasi awal jika belum ada
+    currentVector = await initializeUserProfileVector(id_user);
+  } else {
+    currentVector = userProfile.vector as unknown as number[];
+  }
+
+  // 3. Hitung Alpha (Learning rate berdasarkan bobot interaksi)
+  // Bobot: view=1, cart=2, favorite=3, purchase=5 -> alpha antara 0.1 s/d 0.4
+  const alpha = Math.min(0.4, Math.max(0.1, weight / 10));
+
+  // 4. Update vektor dimensi per dimensi
+  const newVector: number[] = new Array(32).fill(0);
+  for (let i = 0; i < 32; i++) {
+    const userVal = currentVector[i] ?? 0;
+    const itemVal = itemVector[i] ?? 0;
+
+    // Jika user punya penalti alergi (< -0.5), jangan hilangkan alergi meski berinteraksi
+    if (userVal < -0.5) {
+      newVector[i] = userVal;
+      continue;
+    }
+
+    const updatedVal = (1 - alpha) * userVal + alpha * itemVal;
+    // Clamp pada rentang [-1.0, 1.0] dan bulatkan ke 4 desimal
+    newVector[i] = Math.round(Math.max(-1, Math.min(1, updatedVal)) * 10000) / 10000;
+  }
+
+  // 5. Simpan pembaruan ke database
+  const updated = await prisma.userProfileVector.upsert({
+    where: { id_user },
+    update: {
+      vector: newVector,
+      interaction_count: { increment: 1 },
+      updated_at: new Date()
+    },
+    create: {
+      id_user,
+      vector: newVector,
+      interaction_count: 1
+    }
+  });
+
+  return updated;
+}
+
+/**
+ * Mengambil User Profile Vector untuk user tertentu
+ */
+export async function getUserProfileVector(id_user: string) {
+  let profile = await prisma.userProfileVector.findUnique({
+    where: { id_user }
+  });
+
+  if (!profile) {
+    // Auto-create jika belum ada
+    await initializeUserProfileVector(id_user);
+    profile = await prisma.userProfileVector.findUnique({
+      where: { id_user }
+    });
+  }
+
+  return profile;
+}

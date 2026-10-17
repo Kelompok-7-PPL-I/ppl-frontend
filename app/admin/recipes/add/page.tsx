@@ -218,6 +218,19 @@ export default function AddRecipePage() {
         }
       }
 
+      // Auto-vectorize resep baru ke tabel item_vector
+      if (resepData?.id_resep) {
+        try {
+          await fetch('/api/item-vector', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item_id: resepData.id_resep, item_type: 'recipe' })
+          });
+        } catch (vecErr) {
+          console.warn('Gagal otomatisasi item vector resep:', vecErr);
+        }
+      }
+
       toast.success("Resep berhasil dipublikasikan!");
       router.push("/admin/recipes");
       router.refresh();

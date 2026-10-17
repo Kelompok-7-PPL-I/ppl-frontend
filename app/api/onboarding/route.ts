@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { validateOnboarding } from "@/lib/onboarding-options";
+import { initializeUserProfileVector } from "@/lib/recommendation/vectorizer";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,14 @@ export async function POST(req: Request) {
     const preferences = await prisma.userPreference.create({
       data: { id_user: userId, ...result.data },
     });
+
+    // Inisialisasi User Profile Vector (Cold-Start)
+    try {
+      await initializeUserProfileVector(userId);
+    } catch (vecErr) {
+      console.warn("Gagal inisialisasi user profile vector:", vecErr);
+    }
+
     return NextResponse.json({ preferences }, { status: 201 });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {

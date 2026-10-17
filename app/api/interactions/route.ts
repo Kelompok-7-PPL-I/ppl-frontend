@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
+import { updateUserProfileVector } from '@/lib/recommendation/vectorizer';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,23 +57,23 @@ export async function POST(req: Request) {
       }
     });
 
-    // 3. Increment / Update count di user_profile_vector
-    await prisma.userProfileVector.upsert({
-      where: { id_user: userId },
-      update: {
-        interaction_count: { increment: 1 },
-        updated_at: new Date()
-      },
-      create: {
-        id_user: userId,
-        interaction_count: 1,
-        vector: new Array(32).fill(0)
-      }
-    });
+    // 3. Update User Profile Vector berdasarkan interaksi dan item vector
+    let profileVector = null;
+    try {
+      profileVector = await updateUserProfileVector(
+        userId,
+        Number(item_id),
+        itemTypeKey,
+        weight
+      );
+    } catch (vecErr) {
+      console.error('Gagal update user profile vector saat interaksi:', vecErr);
+    }
 
     return NextResponse.json({
       message: 'Interaksi berhasil dicatat',
-      interaction
+      interaction,
+      profile_vector: profileVector
     }, { status: 201 });
   } catch (error: any) {
     console.error('Error recording interaction:', error);
