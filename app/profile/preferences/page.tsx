@@ -100,7 +100,7 @@ export default function PreferencesPage() {
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {STEPS.map((step) => {
-                const values = data.preferences![step.key] ?? [];
+                const values: (string | number)[] = data.preferences![step.key] ?? [];
                 const isAllergy = step.key === "allergies";
                 const chosen = step.options.filter((o) => values.includes(o.value));
                 return (

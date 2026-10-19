@@ -89,7 +89,7 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
   const [answers, setAnswers] = useState<Answers>(init.answers);
   const [phase, setPhase] = useState<Phase>(init.phase);
   const [queue, setQueue] = useState<Pending[]>(init.queue);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<(string | number)[]>([]);
   const [noneChosen, setNoneChosen] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
 
@@ -147,7 +147,6 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
 
   const goToStep = (step: number, editing: boolean, current: Answers) => {
     setPhase({ type: "question", step, editing });
-    setSelected(editing ? current[STEPS[step].key] ?? [] : []);
     setNoneChosen(editing && (current[STEPS[step].key]?.length ?? 0) === 0);
   };
 
@@ -499,9 +498,9 @@ function QuestionComposer({
 }: {
   stepIndex: number;
   answers: Answers;
-  selected: string[];
+  selected: (string | number)[];
   noneChosen: boolean;
-  onToggle: (value: string) => void;
+  onToggle: (value: string | number) => void;
   onNone: () => void;
   onSend: () => void;
 }) {
@@ -586,7 +585,7 @@ function SummaryCard({
               <div className={styles.summaryValues}>
                 {values.length ? (
                   step.options
-                    .filter((o) => values.includes(o.value))
+                    .filter((o) => values.some((v) => v === o.value))
                     .map((o) => (
                       <span key={o.value} className={styles.summaryTag}>
                         {o.label}

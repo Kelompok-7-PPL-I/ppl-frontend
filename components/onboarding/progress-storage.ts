@@ -1,6 +1,8 @@
 import type { OnboardingData } from "@/lib/onboarding-options";
 
-export type Answers = Partial<OnboardingData>;
+export type Answers = {
+  [K in keyof OnboardingData]?: OnboardingData[K];
+};
 
 export interface Message {
   id: string;
