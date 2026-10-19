@@ -28,7 +28,7 @@ export interface Step {
   /** Label chip "tidak ada" untuk pertanyaan opsional (min = 0) */
   noneLabel?: string;
   /** Respons avatar setelah user menjawab */
-  react: (selected: string[]) => string;
+  react: (selected: (string | number)[]) => string;
 }
 
 const NUTRITION_LABELS: Record<(typeof NUTRITION_FOCUS)[number], string> = {
@@ -87,7 +87,7 @@ export const STEPS: Step[] = [
     options: toOptions(CARB_SOURCES, CARB_LABELS),
     min: 1,
     react: (s) =>
-      s.some((v) => LOCAL_CARBS.includes(v))
+      s.some((v) => typeof v === "string" && LOCAL_CARBS.includes(v))
         ? "Asik, pangan lokal! Banyak resep seru dari bahan ini."
         : "Oke, aku catat ya!",
   },
@@ -129,20 +129,29 @@ export const STEPS: Step[] = [
 export function availableOptions(step: Step, answers: Partial<OnboardingData>): Option[] {
   // Bahan tidak boleh sekaligus disukai dan dihindari
   if (step.key === "avoided_ingredients") {
-    const liked = answers.ingredient_preferences ?? [];
+    const liked: (string | number)[] = answers.ingredient_preferences ?? [];
     return step.options.filter((o) => !liked.includes(o.value));
   }
   return step.options;
 }
 
-export function labelsFor(step: Step, values: string[]): string[] {
-  return values.map((v) => step.options.find((o) => o.value === v)?.label ?? v);
+export function labelsFor(
+  step: Step,
+  values: (string | number)[]
+): string[] {
+  return values.map(
+    (v) => step.options.find((o) => o.value === v)?.label ?? String(v)
+  );
 }
 
-export function answerText(step: Step, values: string[]): string {
+export function answerText(
+  step: Step,
+  values: (string | number)[]
+): string {
   if (!values.length) return step.noneLabel ?? "-";
+
   return step.options
-    .filter((o) => values.includes(o.value))
+    .filter((o) => values.some((v) => v === o.value))
     .map((o) => o.label)
     .join(", ");
 }
