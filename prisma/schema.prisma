@@ -27,6 +27,8 @@ model Pengguna {
   pesanan            Pesanan[]
   ulasan             Ulasan[]
   user_preference    UserPreference?
+  user_interaction   UserInteraction[]
+  user_profile_vector UserProfileVector?
 
   @@map("pengguna")
   @@schema("public")
@@ -48,6 +50,9 @@ model Produk {
   keranjang          Keranjang[]
   resep_bahan_produk ResepBahanProduk[]
   ulasan             Ulasan[]
+  kelompok_bahan_pangan Int?
+  kelompok           KelompokBahanPangan? @relation(fields: [kelompok_bahan_pangan], references: [id]) 
+  avoided_by         UserPreferenceAvoidedProduk[]
 
   @@map("produk")
   @@schema("public")
@@ -206,15 +211,92 @@ model UserPreference {
   id                     Int      @id @default(autoincrement())
   id_user                String   @unique @db.Uuid
   nutrition_preferences  Json     @default("[]")
-  ingredient_preferences Json     @default("[]")
-  avoided_ingredients    Json     @default("[]")
   allergies              Json     @default("[]")
   category_preferences   Json     @default("[]")
   created_at             DateTime @default(now()) @db.Timestamptz(6)
   updated_at             DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   pengguna               Pengguna @relation(fields: [id_user], references: [id], onDelete: Cascade)
+  kelompok               UserPreferenceKelompok[]
+  avoided_produk         UserPreferenceAvoidedProduk[]
 
   @@map("user_preference")
+  @@schema("public")
+}
+
+model KelompokBahanPangan {
+  id              Int      @id @default(autoincrement())
+  kelompok_pangan String?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  produk          Produk[]
+  preferensi      UserPreferenceKelompok[]
+
+  @@map("kelompok_bahan_pangan")
+  @@schema("public")
+}
+
+model UserPreferenceKelompok {
+  id_preference Int
+  id_kelompok   Int
+  preference    UserPreference      @relation(fields: [id_preference], references: [id], onDelete: Cascade)
+  kelompok      KelompokBahanPangan @relation(fields: [id_kelompok], references: [id])
+
+  @@id([id_preference, id_kelompok])
+  @@map("user_preference_kelompok")
+  @@schema("public")
+}
+
+model UserPreferenceAvoidedProduk {
+  id_preference Int
+  id_produk     Int
+  preference    UserPreference @relation(fields: [id_preference], references: [id], onDelete: Cascade)
+  produk        Produk         @relation(fields: [id_produk], references: [id_produk])
+
+  @@id([id_preference, id_produk])
+  @@map("user_preference_avoided_produk")
+  @@schema("public")
+}
+
+model Wilayah {
+  id_wilayah   Int    @id @default(autoincrement())
+  nama_wilayah String @unique @db.VarChar
+
+  @@map("wilayah")
+  @@schema("public")
+}
+
+model UserInteraction {
+  id         Int      @id @default(autoincrement())
+  id_user    String   @db.Uuid
+  item_type  String   @db.VarChar
+  item_id    Int
+  event      String   @db.VarChar
+  weight     Decimal  @default(1) @db.Decimal
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  pengguna   Pengguna @relation(fields: [id_user], references: [id])
+
+  @@map("user_interaction")
+  @@schema("public")
+}
+
+model ItemVector {
+  id         Int                      @id @default(autoincrement())
+  item_id    Int
+  item_type  String                   @db.VarChar
+  vector     Unsupported("vector(32)")
+  updated_at DateTime                 @default(now()) @db.Timestamptz(6)
+
+  @@map("item_vector")
+  @@schema("public")
+}
+
+model UserProfileVector {
+  id_user           String                   @id @db.Uuid
+  vector            Unsupported("vector(32)")
+  interaction_count Int                      @default(0)
+  updated_at        DateTime                 @default(now()) @db.Timestamptz(6)
+  pengguna          Pengguna                 @relation(fields: [id_user], references: [id])
+
+  @@map("user_profile_vector")
   @@schema("public")
 }
 
@@ -728,6 +810,7 @@ enum factor_type {
   totp
   webauthn
   phone
+  recovery_code
 
   @@schema("auth")
 }
