@@ -547,6 +547,12 @@
   margin-left: 2px;
 }
 
+.form-hint {
+  margin: -6px 0 16px;
+  font-size: 12px;
+  color: #6b7d71;
+}
+
 .form-input,
 .form-textarea {
   width: 100%;
