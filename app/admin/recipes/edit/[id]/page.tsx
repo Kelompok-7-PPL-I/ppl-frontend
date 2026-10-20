@@ -283,6 +283,17 @@ export default function EditRecipePage() {
         if (bahanError) throw bahanError;
       }
 
+      // Re-vectorize resep yang di-update ke tabel item_vector
+      try {
+        await fetch('/api/item-vector', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item_id: Number(id), item_type: 'recipe' })
+        });
+      } catch (vecErr) {
+        console.warn('Gagal re-vectorize item resep:', vecErr);
+      }
+
       toast.success("Resep berhasil diupdate!");
       router.push("/admin/recipes");
       router.refresh();
