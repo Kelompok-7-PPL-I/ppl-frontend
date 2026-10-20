@@ -1,8 +1,6 @@
 import type { OnboardingData } from "@/lib/onboarding-options";
 
-export type Answers = {
-  [K in keyof OnboardingData]?: OnboardingData[K];
-};
+export type Answers = Partial<OnboardingData>;
 
 export interface Message {
   id: string;
@@ -19,8 +17,11 @@ export type Phase =
   | { type: "error" }
   | { type: "done" };
 
+// v2: kelompok bahan & produk disimpan sebagai ID (schema preferensi baru). Progres v1 diabaikan.
+const VERSION = 2;
+
 interface SavedProgress {
-  v: 1;
+  v: typeof VERSION;
   messages: Message[];
   answers: Answers;
   phase: Extract<Phase, { type: "question" | "summary" }>;
@@ -34,7 +35,7 @@ export function loadProgress(userId: string): SavedProgress | null {
     const raw = localStorage.getItem(storageKey(userId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SavedProgress;
-    if (parsed?.v !== 1 || !Array.isArray(parsed.messages) || !parsed.phase) return null;
+    if (parsed?.v !== VERSION || !Array.isArray(parsed.messages) || !parsed.phase) return null;
     return parsed;
   } catch {
     return null;
@@ -43,7 +44,7 @@ export function loadProgress(userId: string): SavedProgress | null {
 
 export function saveProgress(userId: string, data: Omit<SavedProgress, "v">) {
   try {
-    localStorage.setItem(storageKey(userId), JSON.stringify({ v: 1, ...data }));
+    localStorage.setItem(storageKey(userId), JSON.stringify({ v: VERSION, ...data }));
   } catch {
     // Storage penuh / diblokir: onboarding tetap jalan, hanya tidak bisa dilanjutkan nanti
   }
