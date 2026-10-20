@@ -11,6 +11,8 @@
   import { useSession } from "next-auth/react";
   import { useToast } from "@/app/context/ToastContext";
   import OnboardingAssistant from "@/components/onboarding/OnboardingAssistant";
+  import RecommendationShelf from "@/components/recommendations/RecommendationShelf";
+  import { useTrackInteraction } from "@/lib/interactions/useTrackInteraction";
 
   // ─── Types ────────────────────────────────────────────────────────────────────
   interface Product {
@@ -165,6 +167,7 @@ function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike
     const queryClient = useQueryClient();
     const { data: session, status } = useSession();
     const { toast } = useToast();
+    const track = useTrackInteraction();
 
     // 1. Ambil ID User dari tabel 'pengguna' berdasarkan email session NextAuth
     const { data: userData } = useQuery({
@@ -233,6 +236,7 @@ function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike
             .from("favorit_produk")
             .insert([{ id_user: userId, id_produk: productId }]);
           if (error) throw error;
+          track("product", productId, "favorite");
         }
       },
       // Optimistic Update: Hati langsung merah/putih tanpa nunggu loading database
@@ -336,7 +340,15 @@ function ProductCard({ product, onToggleLike }: { product: Product; onToggleLike
           </div>
         </section>
 
+        {/* Rekomendasi personal; disembunyikan saat user sedang mencari produk */}
+        {!search && (
+          <div className="reco-section">
+            <RecommendationShelf page="dashboard" />
+          </div>
+        )}
+
         <section className="products-section">
+          {!search && <h2 className="section-title">Semua produk</h2>}
           {isLoading ? (
             <div className="products-grid">
             {[...Array(6)].map((_, i) => (

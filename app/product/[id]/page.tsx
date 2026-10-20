@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { useToast } from "@/app/context/ToastContext";
 import Link from "next/link";
+import { useTrackInteraction } from "@/lib/interactions/useTrackInteraction";
+import TrackView from "@/lib/interactions/TrackView";
 import "./page.css";
 
 const formatRupiah = (n: number) =>
@@ -17,6 +19,7 @@ export default function DetailProduct() {
   const params = useParams();
   const id = params.id;
   const { toast } = useToast(); 
+  const track = useTrackInteraction();
   console.log(id);
 
   const [product, setProduct] = useState<any>(null);
@@ -112,6 +115,7 @@ export default function DetailProduct() {
         body: JSON.stringify({ id_produk: product.id, quantity })
       });
       if (res.ok) {
+        track("product", product.id, "cart");
         setAddedToCart(true);
         setTimeout(() => setAddedToCart(false), 2000);
       } else {
@@ -141,6 +145,7 @@ export default function DetailProduct() {
 if (!product) {
   return (
     <div className="detail-root">
+      <TrackView type="product" id={Number(id)} />
       <header className="detail-header skeleton-header">
         <div className="skeleton skeleton-logo"></div>
       </header>
@@ -167,6 +172,7 @@ if (!product) {
 
   return (
     <div className="detail-root">
+      <TrackView type="product" id={Number(id)} />
       {/* Header */}
       <header className="detail-header">
         <div className="logo-wrap">

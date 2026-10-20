@@ -10,6 +10,8 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useToast } from "@/app/context/ToastContext";
+import RecommendationShelf from "@/components/recommendations/RecommendationShelf";
+import { useTrackInteraction } from "@/lib/interactions/useTrackInteraction";
 import "./page.css"
 
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"]});
@@ -31,6 +33,7 @@ export default function RecipesPage(){
     const queryClient = useQueryClient();
     const { data: session, status } = useSession();
     const { toast } = useToast();
+    const track = useTrackInteraction();
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -119,7 +122,8 @@ export default function RecipesPage(){
         if (isLiked) {
           await supabase.from("favorit_resep").delete().eq("id_user", userId).eq("id_resep", recipeId);
         } else {
-          await supabase.from("favorit_resep").insert([{ id_user: userId, id_resep: recipeId }]);
+          const { error } = await supabase.from("favorit_resep").insert([{ id_user: userId, id_resep: recipeId }]);
+          if (!error) track("recipe", recipeId, "favorite");
         }
       },
       onMutate: async ({ recipeId }) => {
@@ -398,6 +402,15 @@ export default function RecipesPage(){
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
       </div>
+
+      {/* Rekomendasi personal; disembunyikan saat user sedang mencari/memfilter */}
+      {!searchTerm && selectedTags.length === 0 && (
+        <div className="reco-wrapper">
+          <RecommendationShelf page="recipes" />
+        </div>
+      )}
+
+      {!searchTerm && selectedTags.length === 0 && <h2 className="all-recipes-title">Semua resep</h2>}
 
       {/* Recipe List Cards */}
       <section className="recipe-list">
