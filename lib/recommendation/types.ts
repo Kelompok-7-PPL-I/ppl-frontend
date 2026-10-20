@@ -4,6 +4,7 @@
 export type ReasonKind =
   | "preference" // cocok dengan preferensi (kelompok bahan, nutrisi, tujuan makan)
   | "purchase" // berkaitan dengan produk yang pernah dibeli
+  | "local" // pangan dari provinsi user (bonus wilayah engine vektor)
   | "viewed" // berkaitan dengan yang sering dilihat/disimpan (log interaksi)
   | "favorite" // berkaitan dengan resep/produk favorit
   | "recipe" // bahan dari resep tertentu

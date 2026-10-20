@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- gambar resep/produk bisa dari domain mana saja (lihat halaman resep) */
 import Link from "next/link";
-import { Sparkles, ShoppingBag, Heart, ChefHat, TrendingUp, Tag, Clock, Utensils, Eye } from "lucide-react";
+import { Sparkles, ShoppingBag, Heart, ChefHat, TrendingUp, Tag, Clock, Utensils, Eye, MapPin } from "lucide-react";
 import type { ReasonKind, RecoProduct, RecoRecipe } from "@/lib/recommendation/types";
 import styles from "./Recommendations.module.css";
 
@@ -12,6 +12,7 @@ const REASON_ICON: Record<ReasonKind, typeof Sparkles> = {
   preference: Sparkles,
   purchase: ShoppingBag,
   viewed: Eye,
+  local: MapPin,
   favorite: Heart,
   recipe: ChefHat,
   popular: TrendingUp,

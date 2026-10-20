@@ -1,9 +1,13 @@
 import prisma from "@/lib/prisma";
 import { CATEGORY_LABELS, NUTRITION_LABELS, kelompokLabel, labelOf } from "@/lib/food-labels";
 import type { ReasonKind, RecoPage, RecoProduct, RecoRecipe, RecoResponse, RecoSection } from "./types";
+import { recommendProducts, recommendRecipes, type Recommendation } from "./engine";
+import { toVector } from "./features";
+import { strongestMatch, reasonForDimension } from "./explain";
 
 /**
- * Engine rekomendasi SEMENTARA berbasis aturan (rule-based), memakai data asli:
+ * Penyusun rak rekomendasi. "Pilihan Pangi" & "Resep yang cocok" memakai engine vektor (engine.ts, cosine
+ * profil user vs item) kalau user sudah punya profil; selain itu & untuk baris lain memakai aturan (rule-based):
  * preferensi onboarding, log interaksi (view/cart/favorite), riwayat belanja, favorit, dan relasi resep–produk.
  *
  * Dipisah jadi `loadSignals` (ambil data) dan `rankRecommendations` (hitung, tanpa I/O) supaya:
@@ -83,7 +87,8 @@ const pickReason = (rs: Reason[], fallback: Reason): Reason => rs.sort((a, b) =>
 
 // ─── 1. Ambil data ────────────────────────────────────────────────────────────
 
-export async function loadSignals(userId: string) {
+/** `useEngine: false` → lewati engine vektor (untuk skrip/pengujian yang tidak boleh menulis ke DB) */
+export async function loadSignals(userId: string, { useEngine = true }: { useEngine?: boolean } = {}) {
   const paidOrder = {
     status_pembayaran: { equals: "dibayar", mode: "insensitive" as const },
     OR: [{ order_status: null }, { order_status: { not: "dibatalkan" } }],
@@ -137,7 +142,30 @@ export async function loadSignals(userId: string) {
     }),
   ]);
 
+  // Engine vektor. Kandidat diambil lebih banyak karena masih disaring stok & katalog di bawah.
+  // Catatan: engine membuat profil dari preferensi kalau user belum punya (perilaku engine.ts).
+  const engine = !useEngine
+    ? null
+    : await Promise.all([recommendProducts(userId, 40), recommendRecipes(userId, 30)])
+        .then(([products, recipes]) => ({ products, recipes }))
+        .catch((e) => {
+          console.error("Engine vektor gagal, pakai aturan:", e);
+          return null;
+        });
+  const [profileRow, itemVectorRows] = await Promise.all([
+    prisma.userProfileVector.findUnique({ where: { id_user: userId }, select: { vector: true } }),
+    prisma.itemVector.findMany({ select: { item_id: true, item_type: true, vector: true } }),
+  ]);
+  const itemVectors = new Map<string, number[]>();
+  for (const row of itemVectorRows) {
+    const v = toVector(row.vector);
+    if (v) itemVectors.set(`${row.item_type}:${row.item_id}`, v);
+  }
+
   return {
+    engine: engine as { products: Recommendation[]; recipes: Recommendation[] } | null,
+    profileVector: toVector(profileRow?.vector),
+    itemVectors,
     pref,
     products,
     recipes,
@@ -313,7 +341,34 @@ export function rankRecommendations(s: Signals, page: RecoPage): RecoResponse {
     })
     .sort((a, b) => b.score - a.score);
 
-  const recipesForYou = scoredRecipes.filter((x) => x.score >= RECIPE_MIN_SCORE);
+  // ── Engine vektor: alasan diambil dari dimensi yang paling menyumbang kecocokan ──
+  const kelompokNames = new Map<number, string>();
+  for (const p of products) {
+    if (p.kelompok_bahan_pangan && p.kelompok?.kelompok_pangan) kelompokNames.set(p.kelompok_bahan_pangan, p.kelompok.kelompok_pangan);
+  }
+  const vectorReason = (type: "product" | "recipe", id: number, wilayahMatch: boolean): Reason => {
+    if (wilayahMatch) return { text: "Pangan lokal dari daerahmu", w: 0, kind: "local" };
+    const item = s.itemVectors.get(`${type}:${id}`);
+    const d = s.profileVector && item ? strongestMatch(s.profileVector, item, kelompokNames) : null;
+    return { text: d ? reasonForDimension(d) : "Cocok dengan profil seleramu", w: 0, kind: "preference" };
+  };
+  const personalizedOnly = (list: Recommendation[] | undefined) => (list ?? []).filter((r) => r.source === "personalized");
+
+  const rulesTags = new Map(scoredRecipes.map((x) => [x.r.id_resep, x.tags]));
+  const vectorRecipes = personalizedOnly(s.engine?.recipes)
+    .map((rec) => ({ rec, r: recipeById.get(rec.id) }))
+    .filter((x): x is { rec: Recommendation; r: (typeof recipes)[number] } => !!x.r && recipeOk(x.r) && !favRecipeIds.has(x.r.id_resep))
+    .map(({ rec, r }) => {
+      const tags = rulesTags.get(r.id_resep) ?? [];
+      return {
+        r,
+        score: rec.score,
+        reason: vectorReason("recipe", r.id_resep, rec.wilayah_match),
+        tags: tags.length ? tags : r.kategori_jenis ? [r.kategori_jenis] : [],
+      };
+    });
+
+  const recipesForYou = vectorRecipes.length ? vectorRecipes : scoredRecipes.filter((x) => x.score >= RECIPE_MIN_SCORE);
 
   // ── Produk pilihan ──
   const topRecipeIngredients = new Map<number, string>();
@@ -325,7 +380,12 @@ export function rankRecommendations(s: Signals, page: RecoPage): RecoResponse {
     for (const id of recipeIngredients(r)) if (!favRecipeIngredients.has(id)) favRecipeIngredients.set(id, r.judul_resep);
   }
 
-  const productsForYou = allowedProducts
+  const vectorProducts = personalizedOnly(s.engine?.products)
+    .filter((rec) => allowedProductIds.has(rec.id))
+    .slice(0, LIMIT.products)
+    .map((rec) => toProduct(productById.get(rec.id)!, vectorReason("product", rec.id, rec.wilayah_match), rec.score));
+
+  const rulesProducts = () => allowedProducts
     .map((p) => {
       const reasons: Reason[] = [];
       let score = Math.log1p(soldCount.get(p.id_produk) ?? 0) * 0.2;
@@ -371,6 +431,8 @@ export function rankRecommendations(s: Signals, page: RecoPage): RecoResponse {
     .sort((a, b) => b.score - a.score)
     .slice(0, LIMIT.products)
     .map((x) => toProduct(x.p, x.reason, x.score));
+
+  const productsForYou = vectorProducts.length ? vectorProducts : rulesProducts();
 
   // ── Produk terkait (dimasak bareng di resep yang sama, lalu sekelompok) ──
   const recipesUsing = (productId: number) => allowedRecipes.filter((r) => recipeIngredients(r).includes(productId));
@@ -605,7 +667,7 @@ export function rankRecommendations(s: Signals, page: RecoPage): RecoResponse {
     personalized,
     hasPreferences: !!pref,
     basis,
-    engine: "rules",
+    engine: vectorRecipes.length || vectorProducts.length ? "vector" : "rules",
     sections: sections.filter((x): x is RecoSection => !!x && x.items.length > 0),
   };
 }

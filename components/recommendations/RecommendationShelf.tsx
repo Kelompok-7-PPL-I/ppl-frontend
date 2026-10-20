@@ -114,12 +114,24 @@ function ShelfHeader({ data }: { data: RecoResponse }) {
               <X size={14} />
             </button>
             <p className={styles.whyTitle}>Gimana {ASSISTANT_NAME} milih ini?</p>
-            <p className={styles.whyText}>
-              Rekomendasi disusun dari {basis}. Aktivitas yang dihitung: produk & resep yang kamu buka, masukkan ke
-              keranjang, dan favoritkan. Bahan yang kamu tandai untuk dihindari nggak akan ditampilkan.{" "}
-              {ASSISTANT_NAME} juga berusaha menyaring resep yang mengandung alergenmu, tapi tetap cek daftar bahannya
-              ya.
-            </p>
+            <ul className={styles.whyList}>
+              <li>
+                <b>Sumber:</b> {basis}.
+              </li>
+              {data.engine === "vector" && (
+                <li>
+                  <b>Cara:</b> profil seleramu dicocokkan dengan gizi, kelompok bahan, dan kategori tiap resep & produk.
+                  Pangan dari daerahmu didahulukan.
+                </li>
+              )}
+              <li>
+                <b>Aktivitas:</b> yang kamu buka, masukkan ke keranjang, favoritkan, dan beli.
+              </li>
+              <li>
+                <b>Disaring:</b> bahan yang kamu hindari. Alergen juga disaring dari teks bahan, tapi tetap cek daftar bahannya
+                ya.
+              </li>
+            </ul>
             {data.hasPreferences ? (
               <Link href="/profile/preferences" className={styles.whyLink}>
                 Ubah preferensi <ArrowRight size={14} />

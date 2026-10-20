@@ -9,6 +9,7 @@ import { useToast } from "@/app/context/ToastContext";
 import type { OnboardingData } from "@/lib/onboarding-options";
 import PangiAvatar from "@/components/onboarding/PangiAvatar";
 import ChoicePicker from "@/components/onboarding/ChoicePicker";
+import LearnedTasteCard, { profileVectorKey } from "@/components/recommendations/LearnedTasteCard";
 import { ASSISTANT_NAME, STEP_COUNT, buildSteps, labelsFor, type Step, type Value } from "@/components/onboarding/onboarding-content";
 import { loadProgress, answeredCount } from "@/components/onboarding/progress-storage";
 import {
@@ -113,7 +114,12 @@ export default function PreferencesPage() {
             onDone={() => setEditing(false)}
           />
         ) : (
-          steps && <PreferenceView steps={steps} preferences={data.preferences} onEdit={() => setEditing(true)} />
+          steps && (
+            <>
+              <PreferenceView steps={steps} preferences={data.preferences} onEdit={() => setEditing(true)} />
+              {userId && <LearnedTasteCard userId={userId} />}
+            </>
+          )
         )}
       </div>
     </main>
@@ -254,6 +260,8 @@ function PreferenceEditor({
         preferences: data.preferences,
       });
       queryClient.invalidateQueries({ queryKey: ["recommendations"] });
+      // Profil vektor dihitung ulang server dari preferensi baru
+      queryClient.invalidateQueries({ queryKey: profileVectorKey(userId) });
       toast.success("Preferensi diperbarui", "Rekomendasi resep & produk ikut disesuaikan.");
       onDone();
     } catch {
