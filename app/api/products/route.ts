@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 import { vectorizeProduct } from '@/lib/recommendation/vectorizer';
 
@@ -16,6 +18,14 @@ const relationFields = (data: Record<string, unknown>) => ({
     ...('kelompok' in data ? { kelompok_bahan_pangan: optionalId(data.kelompok) } : {}),
     ...('wilayah' in data ? { id_wilayah: optionalId(data.wilayah) } : {}),
 });
+
+// Tambah/ubah/hapus produk khusus admin. GET (katalog) tetap publik.
+async function requireAdmin(): Promise<NextResponse | null> {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (session.user.peran !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return null;
+}
 
 // Perbarui item vector produk supaya rekomendasi ikut data terbaru. Gagal tidak menggagalkan simpan.
 const refreshVector = (id: number) =>
@@ -39,6 +49,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+    const denied = await requireAdmin();
+    if (denied) return denied;
     try {
         const data = await req.json();
 
@@ -60,6 +72,8 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
+    const denied = await requireAdmin();
+    if (denied) return denied;
     try {
         const data = await req.json();
         const product = await prisma.produk.update({
@@ -81,6 +95,8 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+    const denied = await requireAdmin();
+    if (denied) return denied;
     try {
         const url = new URL(req.url);
         const id = url.searchParams.get("id");
