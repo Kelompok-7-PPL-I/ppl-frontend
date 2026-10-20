@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -9,13 +8,14 @@ import { X, CheckCircle2, ArrowRight } from "lucide-react";
 import { useToast } from "@/app/context/ToastContext";
 import PangiAvatar from "./PangiAvatar";
 import OnboardingChat from "./OnboardingChat";
-import { ASSISTANT_NAME, STEPS } from "./onboarding-content";
+import { ASSISTANT_NAME, STEP_COUNT } from "./onboarding-content";
 import { loadProgress, answeredCount } from "./progress-storage";
 import {
   useOnboardingStatus,
   onboardingStatusKey,
   hasOnboardingAutostart,
   clearOnboardingAutostart,
+  onOpenOnboarding,
   type OnboardingStatus,
   type SavedPreferences,
 } from "./useOnboardingStatus";
@@ -25,7 +25,6 @@ type NudgeState = "expanded" | "collapsed" | "hidden";
 
 const NUDGE_KEY = "panganesia:onboarding-nudge";
 const FAREWELL_MS = 6000;
-const PREFERENCES_PATH = "/profile/preferences";
 
 function readNudge(): NudgeState {
   try {
@@ -64,6 +63,9 @@ export default function OnboardingAssistant() {
     clearOnboardingAutostart();
   }, []);
 
+  // Komponen lain di halaman ini (mis. kartu rekomendasi) bisa minta chat dibuka
+  useEffect(() => onOpenOnboarding(() => setOpen(true)), []);
+
   // Chat hanya untuk user yang belum selesai, kecuali baru saja selesai di sesi ini (layar "Yeay")
   const chatVisible = open && !!data && (!data.completed || doneInSession);
 
@@ -87,7 +89,7 @@ export default function OnboardingAssistant() {
   if (!enabled || !userId || !data) return null;
 
   const saved = chatVisible || data.completed ? null : loadProgress(userId);
-  const remaining = saved ? STEPS.length - answeredCount(saved.answers) : 0;
+  const remaining = saved ? STEP_COUNT - answeredCount(saved.answers) : 0;
   const showNudge = !data.completed && !chatVisible && nudge !== "hidden";
 
   const updateNudge = (v: NudgeState) => {
@@ -104,6 +106,8 @@ export default function OnboardingAssistant() {
     }));
     // Ambil versi dari server (mis. kasus 409 yang tidak mengembalikan data)
     queryClient.invalidateQueries({ queryKey: key });
+    // Rekomendasi disusun ulang dari preferensi baru
+    queryClient.invalidateQueries({ queryKey: ["recommendations"] });
   };
 
   const handleClose = (reason: "exit" | "done", answered: number, next?: string) => {
@@ -233,10 +237,18 @@ export default function OnboardingAssistant() {
               <p className={styles.farewellTitle}>
                 <CheckCircle2 size={16} /> Preferensi tersimpan
               </p>
-              <p className={styles.nudgeText}>Sampai jumpa! Jawabanmu bisa kamu cek kapan aja di Profil.</p>
-              <Link href={PREFERENCES_PATH} className={styles.farewellLink}>
-                Lihat preferensi <ArrowRight size={15} />
-              </Link>
+              <p className={styles.nudgeText}>Rekomendasi buatmu udah aku perbarui. Preferensi bisa diubah kapan aja di Profil.</p>
+              <a
+                href="#rekomendasi"
+                className={styles.farewellLink}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setFarewell(false);
+                  document.getElementById("rekomendasi")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+                }}
+              >
+                Lihat rekomendasi <ArrowRight size={15} />
+              </a>
               <span className={styles.farewellTimer} style={{ animationDuration: `${FAREWELL_MS}ms` }} />
             </motion.div>
             <div className={styles.nudgeAvatarWrap}>

@@ -4,7 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 
 // Kita menggunakan adapter PG karena konfigurasi Prisma Early Access
 // membutuhkan eksplisit adapter ketika engineType="client" digunakan.
-const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

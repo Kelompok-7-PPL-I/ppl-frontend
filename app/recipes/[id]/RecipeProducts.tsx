@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useToast } from "@/app/context/ToastContext"; 
 import { useSession } from "next-auth/react";
+import { useTrackInteraction } from "@/lib/interactions/useTrackInteraction";
 
 const formatRupiah = (n: number) =>
   "Rp " + n.toLocaleString("id-ID").replace(/\./g, ".");
@@ -54,6 +55,7 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
   const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
   const [isKeranjangBulk, setIsKeranjangBulk] = useState(false);
   const [isBuyingBulk, setIsBuyingBulk] = useState(false);
+  const track = useTrackInteraction();
 
   if (!products || products.length === 0) {
     return null;
@@ -86,6 +88,7 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
       });
 
       if (res.ok) {
+        payloadItems.forEach((item) => track("product", item.id_produk, "cart"));
         toast.success("Semua bahan berhasil dimasukkan ke keranjang!");
       } else {
         toast.danger ("Gagal menambahkan ke keranjang. Pastikan Anda sudah login.");
@@ -171,6 +174,7 @@ export default function RecipeProducts({ products }: { products: Product[] }) {
       });
 
       if (res.ok) {
+        track("product", product.id_produk, "cart");
         setAddedIds((prev) => {
           const newSet = new Set(prev);
           newSet.add(product.id_produk);

@@ -252,9 +252,22 @@
   transform: scale(1.2); /* Sedikit diperbesar agar menonjol */
 }
 
+/* ── Rekomendasi ── */
+.reco-section {
+  padding: 8px 60px 44px;
+}
+
 /* ── Products ── */
 .products-section {
   padding: 0 60px;
+}
+
+.section-title {
+  margin: 0 0 18px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #14532d;
 }
 
 .products-grid {
@@ -434,7 +447,7 @@
     padding: 20px 32px;
     gap: 24px;
   }
-  .hero-text, .banner-section, .products-section {
+  .hero-text, .banner-section, .products-section, .reco-section {
     padding-left: 32px;
     padding-right: 32px;
   }
@@ -467,9 +480,13 @@
     display: none;
   }
 
-  .hero-text, .banner-section, .products-section {
+  .hero-text, .banner-section, .products-section, .reco-section {
     padding-left: 20px;
     padding-right: 20px;
+  }
+
+  .section-title {
+    font-size: 19px;
   }
 
   .welcome-title {
@@ -533,7 +550,7 @@
   .navbar {
     padding: 12px 16px;
   }
-  .hero-text, .banner-section, .products-section {
+  .hero-text, .banner-section, .products-section, .reco-section {
     padding-left: 16px;
     padding-right: 16px;
   }

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { X, Check, ArrowRight, Pencil, RotateCcw, Loader2 } from "lucide-react";
 import type { OnboardingData } from "@/lib/onboarding-options";
 import PangiAvatar, { type AvatarMood } from "./PangiAvatar";
-import { ASSISTANT_NAME, STEPS, availableOptions, answerText, labelsFor } from "./onboarding-content";
-import type { SavedPreferences } from "./useOnboardingStatus";
+import ChoicePicker from "./ChoicePicker";
+import { ASSISTANT_NAME, STEP_COUNT, buildSteps, answerText, labelsFor, type Step, type Value } from "./onboarding-content";
+import { useOnboardingOptions, type SavedPreferences } from "./useOnboardingStatus";
 import {
   type Answers,
   type Message,
@@ -23,8 +24,7 @@ type Pending = string | { summary: Answers };
 interface Props {
   userId: string;
   userName: string;
-  /** "exit" = keluar sebelum selesai, "done" = selesai & tersimpan */
-  /** `next` = halaman tujuan setelah chat ditutup */
+  /** "exit" = keluar sebelum selesai, "done" = selesai & tersimpan; `next` = halaman tujuan setelah ditutup */
   onClose: (reason: "exit" | "done", answered: number, next?: string) => void;
   onCompleted: (preferences?: SavedPreferences) => void;
 }
@@ -39,26 +39,13 @@ const toMessage = (item: Pending): Message =>
 
 const SUMMARY_INTRO = "Ini rangkuman preferensimu. Udah sesuai belum?";
 
-/** Langkah berikutnya, melewati step yang opsinya habis (mis. semua karbo disukai → tidak ada yang bisa dihindari) */
-function nextStep(from: number, answers: Answers): { index: number; answers: Answers; skipped: boolean } {
-  let index = from;
-  let skipped = false;
-  let next = answers;
-  while (index < STEPS.length && availableOptions(STEPS[index], next).length === 0) {
-    next = { ...next, [STEPS[index].key]: [] };
-    skipped = true;
-    index++;
-  }
-  return { index, answers: next, skipped };
-}
-
-function initialState(userId: string, firstName: string) {
+function initialState(steps: Step[], userId: string, firstName: string) {
   const saved = loadProgress(userId);
   if (saved) {
     const reask: Pending[] =
       saved.phase.type === "summary"
         ? [SUMMARY_INTRO, { summary: saved.answers }]
-        : STEPS[saved.phase.step].prompt;
+        : steps[saved.phase.step].prompt;
     return {
       messages: [...saved.messages, { id: newId(), from: "system" as const, text: "Dilanjutkan dari sesi sebelumnya" }],
       answers: saved.answers,
@@ -73,23 +60,57 @@ function initialState(userId: string, firstName: string) {
     phase: { type: "question", step: 0, editing: false } as Phase,
     queue: [
       `Hai ${firstName}! Aku ${ASSISTANT_NAME}, teman masakmu di Panganesia.`,
-      `Biar rekomendasi resep yang aku kasih pas sama selera dan kebutuhanmu, aku mau tanya ${STEPS.length} hal singkat ya. Nggak sampai semenit kok!`,
-      ...STEPS[0].prompt,
+      `Biar rekomendasi resep yang aku kasih pas sama selera dan kebutuhanmu, aku mau tanya ${STEP_COUNT} hal singkat ya. Nggak sampai semenit kok!`,
+      ...steps[0].prompt,
     ] as Pending[],
     restored: 0,
   };
 }
 
-export default function OnboardingChat({ userId, userName, onClose, onCompleted }: Props) {
+/** Chat onboarding. Menunggu opsi kelompok bahan & produk dari database sebelum percakapan dimulai. */
+export default function OnboardingChat(props: Props) {
+  const { data: options, isError, refetch, isFetching } = useOnboardingOptions();
+  const steps = useMemo(() => (options ? buildSteps(options) : null), [options]);
+
+  if (steps) return <ChatSession {...props} steps={steps} />;
+
+  return (
+    <div className={`${styles.chat} ${styles.chatLoading}`} role="dialog" aria-modal="true" aria-label={`Onboarding bersama ${ASSISTANT_NAME}`}>
+      <button
+        type="button"
+        className={`${styles.iconBtn} ${styles.loadingClose}`}
+        onClick={() => props.onClose("exit", 0)}
+        aria-label="Tutup onboarding"
+      >
+        <X size={20} />
+      </button>
+      <PangiAvatar size={96} mood={isError ? "thinking" : "talking"} />
+      {isError ? (
+        <>
+          <p className={styles.loadingText}>Aku gagal ambil daftar bahan pangan. Coba lagi ya.</p>
+          <button type="button" className={styles.primaryBtn} onClick={() => refetch()} disabled={isFetching}>
+            <RotateCcw size={18} /> Coba lagi
+          </button>
+        </>
+      ) : (
+        <p className={styles.loadingText} aria-live="polite">
+          Menyiapkan pertanyaan…
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ChatSession({ userId, userName, onClose, onCompleted, steps }: Props & { steps: Step[] }) {
   const reduceMotion = useReducedMotion();
   const firstName = userName.trim().split(/\s+/)[0] || "kamu";
 
-  const [init] = useState(() => initialState(userId, firstName));
+  const [init] = useState(() => initialState(steps, userId, firstName));
   const [messages, setMessages] = useState<Message[]>(init.messages);
   const [answers, setAnswers] = useState<Answers>(init.answers);
   const [phase, setPhase] = useState<Phase>(init.phase);
   const [queue, setQueue] = useState<Pending[]>(init.queue);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<Value[]>([]);
   const [noneChosen, setNoneChosen] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
 
@@ -146,64 +167,47 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
   const pushUser = (text: string) => setMessages((m) => [...m, { id: newId(), from: "user", text }]);
 
   const goToStep = (step: number, editing: boolean, current: Answers) => {
+    const prev: Value[] = editing ? (current[steps[step].key] ?? []) : [];
     setPhase({ type: "question", step, editing });
-    setSelected(editing ? current[STEPS[step].key] ?? [] : []);
-    setNoneChosen(editing && (current[STEPS[step].key]?.length ?? 0) === 0);
+    setSelected(prev);
+    setNoneChosen(editing && prev.length === 0);
   };
 
   const sendAnswer = () => {
     if (phase.type !== "question") return;
-    const step = STEPS[phase.step];
+    const step = steps[phase.step];
     const values = noneChosen ? [] : selected;
-
-    let next: Answers = { ...answers, [step.key]: values };
-    const notes: string[] = [step.react(values)];
-
-    // Jaga aturan backend: bahan yang disukai tidak boleh ada di daftar yang dihindari
-    if (step.key === "ingredient_preferences" && next.avoided_ingredients?.length) {
-      const removed = next.avoided_ingredients.filter((v) => values.includes(v));
-      if (removed.length) {
-        next.avoided_ingredients = next.avoided_ingredients.filter((v) => !values.includes(v));
-        const avoidStep = STEPS.find((s) => s.key === "avoided_ingredients")!;
-        notes.push(`Aku juga hapus ${labelsFor(avoidStep, removed).join(", ")} dari daftar yang kamu hindari ya.`);
-      }
-    }
+    const next = { ...answers, [step.key]: values } as Answers;
 
     pushUser(answerText(step, values));
+    setAnswers(next);
 
     if (phase.editing) {
-      setAnswers(next);
       setPhase({ type: "summary" });
-      say([...notes, SUMMARY_INTRO, { summary: next }]);
+      say([step.react(values), SUMMARY_INTRO, { summary: next }]);
       return;
     }
 
-    const upcoming = nextStep(phase.step + 1, next);
-    next = upcoming.answers;
-    if (upcoming.skipped) {
-      notes.push("Karena kamu suka semua sumber karbo, pertanyaan soal yang dihindari aku lewati ya.");
-    }
-    setAnswers(next);
-
-    if (upcoming.index < STEPS.length) {
-      goToStep(upcoming.index, false, next);
-      say([...notes, ...STEPS[upcoming.index].prompt]);
+    const upcoming = phase.step + 1;
+    if (upcoming < steps.length) {
+      goToStep(upcoming, false, next);
+      say([step.react(values), ...steps[upcoming].prompt]);
     } else {
       setPhase({ type: "summary" });
-      say([...notes, SUMMARY_INTRO, { summary: next }]);
+      say([step.react(values), SUMMARY_INTRO, { summary: next }]);
     }
   };
 
   const editStep = (index: number) => {
     if (busy) return;
-    pushUser(`Ubah ${STEPS[index].title.toLowerCase()}`);
+    pushUser(`Ubah ${steps[index].title.toLowerCase()}`);
     goToStep(index, true, answers);
-    say(["Boleh! Pilih lagi ya:", ...STEPS[index].prompt]);
+    say(["Boleh! Pilih lagi ya:", ...steps[index].prompt]);
   };
 
   const save = async () => {
     if (phase.type !== "summary" && phase.type !== "error") return;
-    const payload = Object.fromEntries(STEPS.map((s) => [s.key, answers[s.key] ?? []])) as unknown as OnboardingData;
+    const payload = Object.fromEntries(steps.map((s) => [s.key, answers[s.key] ?? []])) as unknown as OnboardingData;
 
     if (phase.type === "summary") pushUser("Udah sesuai, simpan!");
     setPhase({ type: "submitting" });
@@ -228,7 +232,7 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
                 "Mulai sekarang rekomendasi resep dan produk buat kamu bakal aku sesuaikan. Selamat masak!",
               ]
             : ["Ternyata preferensimu udah pernah tersimpan sebelumnya, jadi kita aman."]),
-          "Jawabanmu bisa kamu cek lagi kapan aja di Profil → Preferensi Makanan.",
+          "Kalau seleramu berubah, preferensinya bisa diubah kapan aja di Profil → Preferensi Makanan.",
         ]);
         return;
       }
@@ -238,7 +242,9 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
       say([
         res.status === 401
           ? "Sesi login kamu habis nih. Coba masuk lagi, nanti jawabanmu masih ada kok."
-          : "Ups, aku gagal nyimpen jawabanmu. Coba sekali lagi ya.",
+          : res.status === 400 && Array.isArray(data?.details)
+            ? `Ada jawaban yang nggak valid: ${data.details.join("; ")}. Coba ubah lewat kartu rangkuman ya.`
+            : "Ups, aku gagal nyimpen jawabanmu. Coba sekali lagi ya.",
       ]);
     } catch {
       setPhase({ type: "error" });
@@ -260,7 +266,7 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
     : phase.type === "question"
       ? phase.editing
         ? "Mengubah jawaban"
-        : `Pertanyaan ${phase.step + 1} dari ${STEPS.length}`
+        : `Pertanyaan ${phase.step + 1} dari ${steps.length}`
       : phase.type === "done"
         ? "Preferensi tersimpan"
         : phase.type === "submitting"
@@ -302,10 +308,10 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
         role="progressbar"
         aria-label="Progres onboarding"
         aria-valuemin={0}
-        aria-valuemax={STEPS.length}
+        aria-valuemax={steps.length}
         aria-valuenow={answered}
       >
-        {STEPS.map((s) => (
+        {steps.map((s) => (
           <span key={s.key} className={`${styles.progressSeg} ${answers[s.key] ? styles.progressSegDone : ""}`} />
         ))}
       </div>
@@ -335,11 +341,10 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               className={`${styles.row} ${isBot ? styles.rowBot : styles.rowUser} ${firstInGroup ? styles.rowFirst : ""}`}
             >
-              {isBot && (
-                <div className={styles.rowAvatar}>{lastInGroup && <PangiAvatar size={30} />}</div>
-              )}
+              {isBot && <div className={styles.rowAvatar}>{lastInGroup && <PangiAvatar size={30} />}</div>}
               {m.summary ? (
                 <SummaryCard
+                  steps={steps}
                   answers={m.summary}
                   interactive={m.id === lastSummaryId && phase.type === "summary" && !busy}
                   onEdit={editStep}
@@ -369,7 +374,10 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
               <div className={styles.rowAvatar}>
                 <PangiAvatar size={30} mood="talking" />
               </div>
-              <div className={`${styles.bubble} ${styles.bubbleBot} ${styles.bubbleLast} ${styles.typing}`} aria-label={`${ASSISTANT_NAME} sedang mengetik`}>
+              <div
+                className={`${styles.bubble} ${styles.bubbleBot} ${styles.bubbleLast} ${styles.typing}`}
+                aria-label={`${ASSISTANT_NAME} sedang mengetik`}
+              >
                 <span />
                 <span />
                 <span />
@@ -392,8 +400,7 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
           >
             {phase.type === "question" && (
               <QuestionComposer
-                stepIndex={phase.step}
-                answers={answers}
+                step={steps[phase.step]}
                 selected={selected}
                 noneChosen={noneChosen}
                 onToggle={(v) => {
@@ -411,7 +418,7 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
             {phase.type === "summary" && (
               <>
                 <p className={styles.composerNote}>
-                  Setelah disimpan, preferensi cuma bisa dilihat di Profil (belum bisa diubah), jadi cek lagi ya. Ketuk <b>Ubah</b> di kartu kalau ada yang mau diganti.
+                  Tenang, preferensi ini masih bisa kamu ubah nanti di Profil. Ketuk <b>Ubah</b> di kartu kalau ada yang mau diganti sekarang.
                 </p>
                 <button type="button" className={styles.primaryBtn} onClick={save}>
                   Simpan preferensi <Check size={18} />
@@ -434,7 +441,7 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
             {phase.type === "done" && (
               <div className={styles.doneActions}>
                 <button type="button" className={styles.primaryBtn} onClick={() => onClose("done", answered, "/recipes")}>
-                  Jelajahi resep <ArrowRight size={18} />
+                  Lihat resep buatmu <ArrowRight size={18} />
                 </button>
                 <button type="button" className={styles.ghostBtn} onClick={() => onClose("done", answered)}>
                   Lanjut belanja
@@ -470,7 +477,7 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
               <PangiAvatar size={64} mood="thinking" />
               <h3 id="exit-title" className={styles.sheetTitle}>Mau berhenti dulu?</h3>
               <p id="exit-desc" className={styles.sheetText}>
-                Tenang, {answered} dari {STEPS.length} jawabanmu udah aku simpan. Kamu bisa lanjut kapan aja lewat aku di pojok kiri bawah.
+                Tenang, {answered} dari {steps.length} jawabanmu udah aku simpan. Kamu bisa lanjut kapan aja lewat aku di pojok kiri bawah.
               </p>
               <button type="button" className={styles.primaryBtn} onClick={() => setConfirmExit(false)} autoFocus>
                 Lanjut isi
@@ -489,66 +496,27 @@ export default function OnboardingChat({ userId, userName, onClose, onCompleted 
 // ─── Sub-komponen ──────────────────────────────────────────────────────────────
 
 function QuestionComposer({
-  stepIndex,
-  answers,
+  step,
   selected,
   noneChosen,
   onToggle,
   onNone,
   onSend,
 }: {
-  stepIndex: number;
-  answers: Answers;
-  selected: string[];
+  step: Step;
+  selected: Value[];
   noneChosen: boolean;
-  onToggle: (value: string) => void;
+  onToggle: (value: Value) => void;
   onNone: () => void;
   onSend: () => void;
 }) {
-  const step = STEPS[stepIndex];
-  const options = availableOptions(step, answers);
   const valid = noneChosen || selected.length >= Math.max(1, step.min);
   const count = noneChosen ? 0 : selected.length;
 
   return (
     <>
       <p className={styles.composerHint}>{step.hint}</p>
-      <div className={styles.chips} role="group" aria-label={step.title}>
-        {options.map((o, i) => {
-          const active = selected.includes(o.value);
-          return (
-            <motion.button
-              key={o.value}
-              type="button"
-              className={`${styles.chip} ${active ? styles.chipActive : ""}`}
-              aria-pressed={active}
-              onClick={() => onToggle(o.value)}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.035, duration: 0.2 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {o.label}
-              {active && <Check size={15} strokeWidth={3} className={styles.chipCheck} />}
-            </motion.button>
-          );
-        })}
-        {step.noneLabel && (
-          <motion.button
-            type="button"
-            className={`${styles.chip} ${styles.chipNone} ${noneChosen ? styles.chipActive : ""}`}
-            aria-pressed={noneChosen}
-            onClick={onNone}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: options.length * 0.035, duration: 0.2 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {step.noneLabel}
-            {noneChosen && <Check size={15} strokeWidth={3} className={styles.chipCheck} />}
-          </motion.button>
-        )}
-      </div>
+      <ChoicePicker step={step} selected={selected} noneChosen={noneChosen} onToggle={onToggle} onNone={onNone} animate />
       <button type="button" className={styles.primaryBtn} onClick={onSend} disabled={!valid}>
         {valid ? (count > 1 ? `Kirim ${count} pilihan` : "Kirim") : step.min > 0 ? "Pilih minimal satu" : "Pilih salah satu"}
         {valid && <ArrowRight size={18} />}
@@ -558,10 +526,12 @@ function QuestionComposer({
 }
 
 function SummaryCard({
+  steps,
   answers,
   interactive,
   onEdit,
 }: {
+  steps: Step[];
   answers: Answers;
   interactive: boolean;
   onEdit: (index: number) => void;
@@ -570,14 +540,13 @@ function SummaryCard({
     <div className={styles.summary}>
       <p className={styles.summaryTitle}>Preferensi kamu</p>
       <ul className={styles.summaryList}>
-        {STEPS.map((step, i) => {
-          const values = answers[step.key] ?? [];
-          const editable = interactive && availableOptions(step, answers).length > 0;
+        {steps.map((step, i) => {
+          const values: Value[] = answers[step.key] ?? [];
           return (
             <li key={step.key} className={styles.summaryRow}>
               <div className={styles.summaryRowHead}>
                 <span className={styles.summaryLabel}>{step.title}</span>
-                {editable && (
+                {interactive && (
                   <button type="button" className={styles.editBtn} onClick={() => onEdit(i)} aria-label={`Ubah ${step.title}`}>
                     <Pencil size={13} /> Ubah
                   </button>
@@ -585,13 +554,11 @@ function SummaryCard({
               </div>
               <div className={styles.summaryValues}>
                 {values.length ? (
-                  step.options
-                    .filter((o) => values.includes(o.value))
-                    .map((o) => (
-                      <span key={o.value} className={styles.summaryTag}>
-                        {o.label}
-                      </span>
-                    ))
+                  labelsFor(step, values).map((label) => (
+                    <span key={label} className={styles.summaryTag}>
+                      {label}
+                    </span>
+                  ))
                 ) : (
                   <span className={`${styles.summaryTag} ${styles.summaryTagMuted}`}>{step.noneLabel ?? "-"}</span>
                 )}

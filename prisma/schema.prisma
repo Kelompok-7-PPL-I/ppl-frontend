@@ -9,45 +9,57 @@ datasource db {
   schemas  = ["auth", "public"]
 }
 
+// =====================================================================
+// PUBLIC SCHEMA
+// =====================================================================
+
 model Pengguna {
-  id                 String           @id @default(uuid()) @db.Uuid
-  nama               String?          @db.VarChar
-  email              String           @unique @db.VarChar
-  alamat             String?
-  nomor_telp         String?          @db.VarChar
-  peran              String           @default("user") @db.VarChar
-  dibuat_pada        DateTime         @default(now()) @db.Timestamptz(6)
-  password           String?
-  reset_token        String?
-  reset_token_expiry DateTime?        @db.Timestamptz(6)
-  alamat_pengguna    AlamatPengguna[]
-  favorit_produk     FavoritProduk[]
-  favorit_resep      FavoritResep[]
-  keranjang          Keranjang[]
-  pesanan            Pesanan[]
-  ulasan             Ulasan[]
-  user_preference    UserPreference?
+  id                  String             @id @default(uuid()) @db.Uuid
+  nama                String?            @db.VarChar
+  email               String             @unique @db.VarChar
+  alamat              String?
+  nomor_telp          String?            @db.VarChar
+  peran               String             @default("user") @db.VarChar
+  dibuat_pada         DateTime           @default(now()) @db.Timestamptz(6)
+  password            String?
+  reset_token         String?
+  reset_token_expiry  DateTime?          @db.Timestamptz(6)
+  alamat_pengguna     AlamatPengguna[]
+  favorit_produk      FavoritProduk[]
+  favorit_resep       FavoritResep[]
+  keranjang           Keranjang[]
+  pesanan             Pesanan[]
+  ulasan              Ulasan[]
+  user_preference     UserPreference?
+  user_interaction    UserInteraction[]
+  user_profile_vector UserProfileVector?
 
   @@map("pengguna")
   @@schema("public")
 }
 
 model Produk {
-  id_produk          Int                @id @default(autoincrement())
-  nama_produk        String             @db.VarChar
-  deskripsi          String?
-  harga              Decimal            @db.Decimal(12, 2)
-  stok               Int                @default(0)
-  gambar_url         String?            @db.VarChar
-  is_promo           Boolean            @default(false)
-  dibuat_pada        DateTime           @default(now()) @db.Timestamptz(6)
-  satuan_produk      Int?               @default(1)
-  unit_nama          String?            @default("gr") @db.VarChar
-  favorit            FavoritProduk[]
-  item_pesanan       ItemPesanan[]
-  keranjang          Keranjang[]
-  resep_bahan_produk ResepBahanProduk[]
-  ulasan             Ulasan[]
+  id_produk             Int                           @id @default(autoincrement())
+  nama_produk           String                        @db.VarChar
+  deskripsi             String?
+  harga                 Decimal                       @db.Decimal(12, 2)
+  stok                  Int                           @default(0)
+  gambar_url            String?                       @db.VarChar
+  is_promo              Boolean                       @default(false)
+  dibuat_pada           DateTime                      @default(now()) @db.Timestamptz(6)
+  satuan_produk         Int?                          @default(1)
+  unit_nama             String?                       @default("gr") @db.VarChar
+  id_wilayah            Int?
+  informasi_gizi        String?
+  kelompok_bahan_pangan Int?
+  wilayah               Wilayah?                      @relation(fields: [id_wilayah], references: [id_wilayah])
+  kelompok              KelompokBahanPangan?          @relation(fields: [kelompok_bahan_pangan], references: [id])
+  favorit               FavoritProduk[]
+  item_pesanan          ItemPesanan[]
+  keranjang             Keranjang[]
+  resep_bahan_produk    ResepBahanProduk[]
+  ulasan                Ulasan[]
+  avoided_by            UserPreferenceAvoidedProduk[]
 
   @@map("produk")
   @@schema("public")
@@ -92,6 +104,15 @@ model Kategori {
   resep         Resep[]
 
   @@map("kategori")
+  @@schema("public")
+}
+
+model Wilayah {
+  id_wilayah   Int      @id @default(autoincrement())
+  nama_wilayah String   @unique @db.VarChar
+  produk       Produk[]
+
+  @@map("wilayah")
   @@schema("public")
 }
 
@@ -202,24 +223,105 @@ model AlamatPengguna {
   @@schema("public")
 }
 
+// ---------------------------------------------------------------------
+// User preference (onboarding)
+// ---------------------------------------------------------------------
+
 model UserPreference {
-  id                     Int      @id @default(autoincrement())
-  id_user                String   @unique @db.Uuid
-  nutrition_preferences  Json     @default("[]")
-  ingredient_preferences Json     @default("[]")
-  avoided_ingredients    Json     @default("[]")
-  allergies              Json     @default("[]")
-  category_preferences   Json     @default("[]")
-  created_at             DateTime @default(now()) @db.Timestamptz(6)
-  updated_at             DateTime @default(now()) @updatedAt @db.Timestamptz(6)
-  pengguna               Pengguna @relation(fields: [id_user], references: [id], onDelete: Cascade)
+  id                    Int                           @id @default(autoincrement())
+  id_user               String                        @unique @db.Uuid
+  nutrition_preferences Json                          @default("[]")
+  allergies             Json                          @default("[]")
+  category_preferences  Json                          @default("[]")
+  created_at            DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                      @default(now()) @updatedAt @db.Timestamptz(6)
+  pengguna              Pengguna                      @relation(fields: [id_user], references: [id], onDelete: Cascade)
+  kelompok              UserPreferenceKelompok[]
+  avoided_produk        UserPreferenceAvoidedProduk[]
 
   @@map("user_preference")
   @@schema("public")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model KelompokBahanPangan {
+  id              Int                      @id @default(autoincrement())
+  kelompok_pangan String?
+  created_at      DateTime                 @default(now()) @db.Timestamptz(6)
+  produk          Produk[]
+  preferensi      UserPreferenceKelompok[]
+
+  @@map("kelompok_bahan_pangan")
+  @@schema("public")
+}
+
+model UserPreferenceKelompok {
+  id_preference Int
+  id_kelompok   Int
+  preference    UserPreference      @relation(fields: [id_preference], references: [id], onDelete: Cascade)
+  kelompok      KelompokBahanPangan @relation(fields: [id_kelompok], references: [id])
+
+  @@id([id_preference, id_kelompok])
+  @@map("user_preference_kelompok")
+  @@schema("public")
+}
+
+model UserPreferenceAvoidedProduk {
+  id_preference Int
+  id_produk     Int
+  preference    UserPreference @relation(fields: [id_preference], references: [id], onDelete: Cascade)
+  produk        Produk         @relation(fields: [id_produk], references: [id_produk])
+
+  @@id([id_preference, id_produk])
+  @@map("user_preference_avoided_produk")
+  @@schema("public")
+}
+
+// ---------------------------------------------------------------------
+// Recommendation engine
+// ---------------------------------------------------------------------
+
+model UserInteraction {
+  id         Int      @id @default(autoincrement())
+  id_user    String   @db.Uuid
+  item_type  String   @db.VarChar
+  item_id    Int
+  event      String   @db.VarChar
+  weight     Decimal  @default(1) @db.Decimal(5, 2)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  pengguna   Pengguna @relation(fields: [id_user], references: [id], onDelete: Cascade)
+
+  @@index([id_user, created_at])
+  @@map("user_interaction")
+  @@schema("public")
+}
+
+model ItemVector {
+  id         Int      @id @default(autoincrement())
+  item_id    Int
+  item_type  String   @db.VarChar
+  vector     Json?    @db.JsonB
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@unique([item_id, item_type])
+  @@map("item_vector")
+  @@schema("public")
+}
+
+model UserProfileVector {
+  id_user           String   @id @db.Uuid
+  vector            Json?    @db.JsonB
+  interaction_count Int      @default(0)
+  updated_at        DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  pengguna          Pengguna @relation(fields: [id_user], references: [id], onDelete: Cascade)
+
+  @@map("user_profile_vector")
+  @@schema("public")
+}
+
+// =====================================================================
+// AUTH SCHEMA (Supabase, hasil introspeksi - jangan diubah)
+// =====================================================================
+
 model audit_log_entries {
   instance_id String?   @db.Uuid
   id          String    @id @db.Uuid
@@ -231,7 +333,6 @@ model audit_log_entries {
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model custom_oauth_providers {
   id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   provider_type         String
@@ -265,8 +366,6 @@ model custom_oauth_providers {
   @@schema("auth")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model flow_state {
   id                     String                 @id @db.Uuid
   user_id                String?                @db.Uuid
@@ -293,8 +392,6 @@ model flow_state {
   @@schema("auth")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model identities {
   provider_id     String
   user_id         String    @db.Uuid
@@ -313,8 +410,6 @@ model identities {
   @@schema("auth")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model instances {
   id              String    @id @db.Uuid
   uuid            String?   @db.Uuid
@@ -325,8 +420,6 @@ model instances {
   @@schema("auth")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model mfa_amr_claims {
   session_id            String   @db.Uuid
   created_at            DateTime @db.Timestamptz(6)
@@ -339,8 +432,6 @@ model mfa_amr_claims {
   @@schema("auth")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model mfa_challenges {
   id                     String      @id @db.Uuid
   factor_id              String      @db.Uuid
@@ -355,8 +446,6 @@ model mfa_challenges {
   @@schema("auth")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model mfa_factors {
   id                           String           @id @db.Uuid
   user_id                      String           @db.Uuid
@@ -381,7 +470,6 @@ model mfa_factors {
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model oauth_authorizations {
   id                    String                     @id @db.Uuid
   authorization_id      String                     @unique
@@ -407,7 +495,6 @@ model oauth_authorizations {
   @@schema("auth")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model oauth_client_states {
   id            String   @id @db.Uuid
   provider_type String
@@ -418,7 +505,6 @@ model oauth_client_states {
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model oauth_clients {
   id                         String                  @id @db.Uuid
   client_secret_hash         String?
@@ -441,7 +527,6 @@ model oauth_clients {
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model oauth_consents {
   id            String        @id @db.Uuid
   user_id       String        @db.Uuid
@@ -459,8 +544,6 @@ model oauth_consents {
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model one_time_tokens {
   id         String              @id @db.Uuid
   user_id    String              @db.Uuid
@@ -477,8 +560,6 @@ model one_time_tokens {
   @@schema("auth")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model refresh_tokens {
   instance_id String?   @db.Uuid
   id          BigInt    @id @default(autoincrement())
@@ -499,9 +580,6 @@ model refresh_tokens {
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model saml_providers {
   id                String        @id @db.Uuid
   sso_provider_id   String        @db.Uuid
@@ -518,9 +596,6 @@ model saml_providers {
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model saml_relay_states {
   id              String        @id @db.Uuid
   sso_provider_id String        @db.Uuid
@@ -539,17 +614,12 @@ model saml_relay_states {
   @@schema("auth")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model schema_migrations {
   version String @id @db.VarChar(255)
 
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model sessions {
   id                     String           @id @db.Uuid
   user_id                String           @db.Uuid
@@ -578,10 +648,6 @@ model sessions {
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model sso_domains {
   id              String        @id @db.Uuid
   sso_provider_id String        @db.Uuid
@@ -594,10 +660,6 @@ model sso_domains {
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model sso_providers {
   id                String              @id @db.Uuid
   resource_id       String?
@@ -612,10 +674,6 @@ model sso_providers {
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model users {
   instance_id                 String?                @db.Uuid
   id                          String                 @id @db.Uuid
@@ -666,7 +724,6 @@ model users {
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model webauthn_challenges {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id        String?  @db.Uuid
@@ -728,6 +785,7 @@ enum factor_type {
   totp
   webauthn
   phone
+  recovery_code
 
   @@schema("auth")
 }

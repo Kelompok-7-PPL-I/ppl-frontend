@@ -16,6 +16,13 @@ interface Product {
   gambar: string;
   isPromo: boolean;
   dibuatPada: string;
+  kelompok: number | null;
+  wilayah: number | null;
+}
+
+interface CatalogOptions {
+  kelompok: { id: number; nama: string }[];
+  wilayah: { id: number; nama: string }[];
 }
 
 interface Ulasan {
@@ -114,7 +121,18 @@ export default function AdminProductsPage() {
     harga: "",
     stok: "",
     deskripsi: "",
+    kelompok: "",
+    wilayah: "",
   });
+  // Kelompok bahan & asal wilayah dipakai engine rekomendasi
+  const [catalogOptions, setCatalogOptions] = useState<CatalogOptions>({ kelompok: [], wilayah: [] });
+
+  useEffect(() => {
+    fetch("/api/admin/catalog-options")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data && setCatalogOptions(data))
+      .catch(() => {});
+  }, []);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -134,6 +152,8 @@ export default function AdminProductsPage() {
         deskripsi: p.deskripsi || "",
         gambar: p.gambar_url || "/images/corn-1.jpg",
         dibuatPada: p.dibuat_pada || "",
+        kelompok: p.kelompok_bahan_pangan ?? null,
+        wilayah: p.id_wilayah ?? null,
       }));
       setProducts(mapped);
     } catch (err) {
@@ -253,6 +273,8 @@ export default function AdminProductsPage() {
         stok: Number(form.stok),
         deskripsi: form.deskripsi,
         gambar: gambar,
+        kelompok: form.kelompok || null,
+        wilayah: form.wilayah || null,
       };
 
       if (modalMode === "edit" && editTarget) {
@@ -361,7 +383,7 @@ export default function AdminProductsPage() {
             <button
               className="btn-tambah"
               onClick={() => {
-                setForm({ nama: "", harga: "", stok: "", deskripsi: ""});
+                setForm({ nama: "", harga: "", stok: "", deskripsi: "", kelompok: "", wilayah: "" });
                 setSelectedFile(null);
                 setModalMode("add");
               }}
@@ -447,6 +469,8 @@ export default function AdminProductsPage() {
                             harga: String(p.harga),
                             stok: String(p.stok),
                             deskripsi: p.deskripsi,
+                            kelompok: p.kelompok ? String(p.kelompok) : "",
+                            wilayah: p.wilayah ? String(p.wilayah) : "",
                           });
                           setSelectedFile(null);
                           setModalMode("edit");
@@ -545,6 +569,40 @@ export default function AdminProductsPage() {
                   />
                 </div>
               </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="produk-kelompok">Kelompok Bahan Pangan</label>
+                  <select
+                    id="produk-kelompok"
+                    className="form-input"
+                    value={form.kelompok}
+                    onChange={(e) => setForm((prev) => ({ ...prev, kelompok: e.target.value }))}
+                  >
+                    <option value="">Belum ditentukan</option>
+                    {catalogOptions.kelompok.map((k) => (
+                      <option key={k.id} value={k.id}>{k.nama}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="produk-wilayah">Asal Wilayah</label>
+                  <select
+                    id="produk-wilayah"
+                    className="form-input"
+                    value={form.wilayah}
+                    onChange={(e) => setForm((prev) => ({ ...prev, wilayah: e.target.value }))}
+                  >
+                    <option value="">Belum ditentukan</option>
+                    {catalogOptions.wilayah.map((w) => (
+                      <option key={w.id} value={w.id}>{w.nama}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <p className="form-hint">
+                Kelompok & asal wilayah dipakai untuk rekomendasi. Produk dari provinsi pembeli diprioritaskan.
+              </p>
 
               <div className="form-group">
                 <label className="form-label">Deskripsi</label>

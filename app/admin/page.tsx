@@ -9,6 +9,7 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 import "./page.css";
+import RecommendationDataCard from "@/components/admin/RecommendationDataCard";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TabKey = "Produk" | "Pengguna" | "Resep";
@@ -174,6 +175,9 @@ export default function AdminDashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* ── Data rekomendasi (engine vektor) ── */}
+        <RecommendationDataCard />
 
         {/* ── Charts ── */}
         <div className="charts-row">

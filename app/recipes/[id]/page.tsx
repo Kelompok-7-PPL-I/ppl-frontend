@@ -4,6 +4,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { createClient } from '@/utils/supabase/client';
 import BackButton from "./BackButton";
 import RecipeProducts from "./RecipeProducts";
+import TrackView from "@/lib/interactions/TrackView";
 import "./page.css";
 
 // Konfigurasi Font Plus Jakarta Sans
@@ -79,6 +80,7 @@ export default async function RecipeDetail({ params }: { params: Promise<{ id: s
 
   return (
     <main className={`recipe-detail-page ${plusJakartaSans.className}`}>
+      <TrackView type="recipe" id={recipe.id_resep} />
       {/* HEADER */}
       <header className="detail-header">
         <BackButton />

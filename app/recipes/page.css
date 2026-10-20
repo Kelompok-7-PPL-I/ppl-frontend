@@ -519,6 +519,19 @@ body {
 }
 
 /* List Resep */
+/* Rekomendasi personal */
+.reco-wrapper {
+  margin: 8px 0 44px;
+}
+
+.all-recipes-title {
+  margin: 0 0 18px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #14532d;
+}
+
 .recipe-list {
   display: flex;
   flex-direction: column;

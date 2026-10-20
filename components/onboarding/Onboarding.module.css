@@ -772,6 +772,128 @@ div.nudgeAvatar {
   margin-left: -1px;
 }
 
+.chipSmall {
+  padding: 7px 12px;
+  font-size: 13px;
+}
+
+/* ── Pemilih produk (daftar panjang + pencarian) ── */
+.searchPicker {
+  margin-bottom: 14px;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1.5px solid #d9e4dc;
+  background: #f7faf7;
+  color: #6b7d71;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.searchBox:focus-within {
+  border-color: #2a8a3a;
+  background: #fff;
+}
+
+.searchBox input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  color: #1d2b22;
+}
+
+.searchBox input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.searchClear {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: #e6ece7;
+  color: #34483b;
+  cursor: pointer;
+}
+
+.selectedRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.searchList {
+  max-height: min(30vh, 260px);
+  overflow-y: auto;
+  margin-top: 10px;
+  padding: 2px 2px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd8ce transparent;
+}
+
+.searchNone {
+  margin-bottom: 4px;
+}
+
+.groupLabel {
+  margin: 10px 0 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #7d8f83;
+}
+
+.chipsInline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.searchEmpty {
+  margin: 12px 0 4px;
+  font-size: 13px;
+  color: #6b7d71;
+}
+
+/* ── Chat: memuat opsi ── */
+.chatLoading {
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px;
+  text-align: center;
+}
+
+.chatLoading .primaryBtn {
+  max-width: 260px;
+}
+
+.loadingClose {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+}
+
+.loadingText {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #34483b;
+}
+
 .primaryBtn,
 .ghostBtn {
   width: 100%;

@@ -1,0 +1,666 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Rak rekomendasi "Untukmu" — baris geser horizontal ala e-commerce.
+   Palet Panganesia: hijau #2a8a3a / #14532d, krem maskot #f5eedc.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.shelf {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  scroll-margin-top: 120px;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+}
+
+/* ── Header rak ── */
+.shelfHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.shelfAvatar {
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px #fff, 0 4px 14px rgba(6, 47, 36, 0.12);
+}
+
+.shelfHeadText {
+  min-width: 0;
+}
+
+.shelfTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #14532d;
+}
+
+.shelfSub {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  color: #6b7d71;
+}
+
+.whyWrap {
+  position: relative;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.whyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border: 1px solid #e3eae4;
+  border-radius: 999px;
+  background: #fff;
+  color: #34483b;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.whyBtn:hover {
+  background: #f4f7f2;
+  border-color: #cfdcd2;
+}
+
+.whyBtn:focus-visible,
+.whyClose:focus-visible,
+.whyLink:focus-visible,
+.arrow:focus-visible,
+.rowLink:focus-visible,
+.personalizeBtn:focus-visible {
+  outline: 2px solid #2a8a3a;
+  outline-offset: 2px;
+}
+
+.whyPanel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  width: 300px;
+  padding: 16px 16px 14px;
+  border-radius: 18px;
+  border: 1px solid #e3eae4;
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(6, 47, 36, 0.16);
+}
+
+.whyClose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #8a9a90;
+  cursor: pointer;
+}
+
+.whyClose:hover {
+  background: #f2f5f3;
+}
+
+.whyTitle {
+  margin: 0 24px 6px 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #14532d;
+}
+
+.whyList {
+  margin: 0 0 12px;
+  padding: 0 0 0 16px;
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #4b5b50;
+}
+
+.whyList b {
+  color: #24382b;
+}
+
+.whyLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #2a8a3a;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.whyLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Ajakan isi preferensi ── */
+.personalize {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 22px;
+  border-radius: 24px;
+  border: 1px solid #ebe1c4;
+  background: linear-gradient(115deg, #f8f1de 0%, #eef6ec 100%);
+}
+
+.personalizeAvatar {
+  flex-shrink: 0;
+}
+
+.personalizeText {
+  flex: 1;
+  min-width: 0;
+}
+
+.personalizeTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #14532d;
+}
+
+.personalizeSub {
+  margin: 3px 0 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #5b6b60;
+}
+
+.personalizeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  height: 42px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 999px;
+  background: #2a8a3a;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(42, 138, 58, 0.25);
+  transition: background 0.15s ease;
+}
+
+.personalizeBtn:hover {
+  background: #1f6e2b;
+}
+
+/* ── Baris ── */
+.rowHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.rowIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+}
+
+.rowIcon_for-you {
+  background: #eaf6ec;
+  color: #2a8a3a;
+}
+
+.rowIcon_because-viewed {
+  background: #e3f4f1;
+  color: #0f766e;
+}
+
+.rowIcon_because-bought {
+  background: #fff1e6;
+  color: #e8590c;
+}
+
+.rowIcon_complete-recipe {
+  background: #fff6db;
+  color: #b7791f;
+}
+
+.rowIcon_popular {
+  background: #f1f3f5;
+  color: #495057;
+}
+
+.rowHeadText {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1a2e22;
+}
+
+.rowTitle strong {
+  font-weight: 800;
+  color: #14532d;
+}
+
+.rowSub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #6b7d71;
+}
+
+.rowLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #14532d;
+  text-decoration: none;
+}
+
+.rowLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.arrows {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.arrow {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #dfe7e1;
+  border-radius: 50%;
+  background: #fff;
+  color: #34483b;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.arrow:hover:not(:disabled) {
+  background: #f4f7f2;
+}
+
+.arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.track {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  padding: 4px 2px 14px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.track::-webkit-scrollbar {
+  display: none;
+}
+
+.trackItem {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+/* ── Kartu produk ── */
+.productCard,
+.recipeCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid #eef2ef;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(16, 40, 24, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.productCard {
+  width: 184px;
+  border-radius: 20px;
+}
+
+.productCard:hover,
+.recipeCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 26px rgba(16, 40, 24, 0.12);
+}
+
+.productCard:focus-visible,
+.recipeCard:focus-visible {
+  outline: 3px solid #2a8a3a;
+  outline-offset: 2px;
+}
+
+.productMedia,
+.recipeMedia {
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #f1f4f1;
+}
+
+.productMedia {
+  aspect-ratio: 1 / 1;
+}
+
+/* Absolut supaya ukuran asli gambar tidak ikut mendorong tinggi wadah (aspect-ratio tetap) */
+.media {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mediaFallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: #9ab5a2;
+}
+
+.reason {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: calc(100% - 16px);
+  padding: 4px 9px 4px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.reason svg {
+  flex-shrink: 0;
+}
+
+.reasonText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reason_preference {
+  color: #1f7a31;
+}
+
+.reason_local {
+  color: #8a5a00;
+}
+
+.reason_viewed {
+  color: #0f766e;
+}
+
+.reason_purchase {
+  color: #c2410c;
+}
+
+.reason_favorite {
+  color: #be123c;
+}
+
+.reason_recipe {
+  color: #a16207;
+}
+
+.reason_popular {
+  color: #475569;
+}
+
+.reason_promo {
+  color: #b91c1c;
+}
+
+.productBody,
+.recipeBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 12px 14px 14px;
+}
+
+.productName,
+.recipeTitle {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+  margin: 0 0 6px;
+  line-height: 1.3;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.productName {
+  font-size: 14px;
+}
+
+.reasonLine {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin: 0 0 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.reasonLine svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.reasonLine span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.productPrice {
+  margin: auto 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a8a3a;
+}
+
+/* ── Kartu resep ── */
+.recipeCard {
+  width: 260px;
+  border-radius: 22px;
+}
+
+.recipeMedia {
+  aspect-ratio: 4 / 3;
+}
+
+.recipeShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.32), transparent 55%);
+}
+
+.recipeTitle {
+  font-size: 14.5px;
+  margin-bottom: 8px;
+}
+
+.recipeMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #5b6b60;
+}
+
+.tag {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f1f7f2;
+  color: #1f4d34;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* ── Skeleton ── */
+.skeleton {
+  background: linear-gradient(90deg, #eef1ee 25%, #f6f8f6 37%, #eef1ee 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.skelAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skelHeadText {
+  flex: 1;
+  max-width: 320px;
+}
+
+.skelLine {
+  height: 14px;
+  width: 80%;
+  margin-bottom: 8px;
+  border-radius: 8px;
+}
+
+.skelLineShort {
+  height: 12px;
+  width: 50%;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  from { background-position: 100% 50%; }
+  to { background-position: 0 50%; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .shelf {
+    gap: 24px;
+  }
+
+  .shelfTitle {
+    font-size: 19px;
+  }
+
+  .whyLabel,
+  .arrows {
+    display: none;
+  }
+
+  .whyBtn {
+    padding: 8px;
+  }
+
+  .whyPanel {
+    width: min(300px, calc(100vw - 32px));
+  }
+
+  .personalize {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+
+  .personalizeBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rowTitle {
+    font-size: 15.5px;
+  }
+
+  .track {
+    gap: 12px;
+  }
+
+  .productCard {
+    width: 152px;
+  }
+
+  .recipeCard {
+    width: 224px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+
+  .productCard,
+  .recipeCard {
+    transition: none;
+  }
+
+  .productCard:hover,
+  .recipeCard:hover {
+    transform: none;
+  }
+}

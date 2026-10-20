@@ -1,7 +1,35 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
+import { vectorizeProduct } from '@/lib/recommendation/vectorizer';
 
 export const dynamic = 'force-dynamic';
+
+// "" / null → kosongkan relasi; angka valid → ID
+const optionalId = (v: unknown) => {
+    if (v === null || v === undefined || v === '') return null;
+    const n = Number(v);
+    return Number.isInteger(n) && n > 0 ? n : null;
+};
+
+// Kelompok bahan & wilayah dipakai engine rekomendasi; hanya diubah kalau dikirim
+const relationFields = (data: Record<string, unknown>) => ({
+    ...('kelompok' in data ? { kelompok_bahan_pangan: optionalId(data.kelompok) } : {}),
+    ...('wilayah' in data ? { id_wilayah: optionalId(data.wilayah) } : {}),
+});
+
+// Tambah/ubah/hapus produk khusus admin. GET (katalog) tetap publik.
+async function requireAdmin(): Promise<NextResponse | null> {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (session.user.peran !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return null;
+}
+
+// Perbarui item vector produk supaya rekomendasi ikut data terbaru. Gagal tidak menggagalkan simpan.
+const refreshVector = (id: number) =>
+    vectorizeProduct(id).catch((e) => console.error('Gagal vectorize produk:', e));
 
 export async function GET() {
     try {
@@ -21,6 +49,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+    const denied = await requireAdmin();
+    if (denied) return denied;
     try {
         const data = await req.json();
 
@@ -30,9 +60,11 @@ export async function POST(req: Request) {
                 harga: Number(data.harga),       // Dipaksa jadi angka
                 stok: Number(data.stok),         // Dipaksa jadi angka
                 deskripsi: data.deskripsi,
-                gambar_url: data.gambar         // Membaca 'gambar' dari frontend
+                gambar_url: data.gambar,        // Membaca 'gambar' dari frontend
+                ...relationFields(data),
             }
         });
+        await refreshVector(product.id_produk);
         return NextResponse.json(product);
     } catch (error: any) {
         return NextResponse.json({ error: "Gagal simpan: " + error.message }, { status: 500 });
@@ -40,6 +72,8 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
+    const denied = await requireAdmin();
+    if (denied) return denied;
     try {
         const data = await req.json();
         const product = await prisma.produk.update({
@@ -49,9 +83,11 @@ export async function PUT(req: Request) {
                 harga: Number(data.harga),
                 stok: Number(data.stok),
                 deskripsi: data.deskripsi,
-                gambar_url: data.gambar
+                gambar_url: data.gambar,
+                ...relationFields(data),
             }
         });
+        await refreshVector(product.id_produk);
         return NextResponse.json(product);
     } catch (error: any) {
         return NextResponse.json({ error: "Gagal update: " + error.message }, { status: 500 });
@@ -59,6 +95,8 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+    const denied = await requireAdmin();
+    if (denied) return denied;
     try {
         const url = new URL(req.url);
         const id = url.searchParams.get("id");
