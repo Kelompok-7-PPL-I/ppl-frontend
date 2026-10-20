@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isPaidStatus, recordPurchaseInteractions } from "@/lib/interactions/server";
 
 export async function PATCH(
     request: Request,
@@ -26,6 +27,11 @@ export async function PATCH(
             return NextResponse.json({ error: "Tidak ada data untuk diupdate" }, { status: 400 });
         }
 
+        // Status sebelum diubah, supaya pembelian hanya dicatat sekali (saat berubah jadi dibayar)
+        const before = status
+            ? await prisma.pesanan.findUnique({ where: { id_pesanan: Number(id) }, select: { status_pembayaran: true } })
+            : null;
+
         const updatedOrder = await prisma.pesanan.update({
             where: { id_pesanan: Number(id) },
             data: updateData,
@@ -43,6 +49,14 @@ export async function PATCH(
                     },
                 });
             }
+        }
+
+        // Catat pembelian untuk rekomendasi (interaksi "purchase")
+        if (isPaidStatus(status) && !isPaidStatus(before?.status_pembayaran)) {
+            await recordPurchaseInteractions(
+                updatedOrder.id_user,
+                updatedOrder.item_pesanan.map((item) => item.id_produk)
+            );
         }
 
         return NextResponse.json({ success: true });

@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 import { vectorizeRecipe, vectorizeProduct, vectorizeAllRecipes } from '@/lib/recommendation/vectorizer';
 
 export const dynamic = 'force-dynamic';
 
+// Generate item vector mengubah data rekomendasi → khusus admin (sama seperti /api/recommendations/rebuild)
 export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  const user = session?.user as { id?: string; peran?: string } | undefined;
+  if (!user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (user.peran !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
   try {
     const body = await req.json();
     const { item_id, item_type, all } = body;
