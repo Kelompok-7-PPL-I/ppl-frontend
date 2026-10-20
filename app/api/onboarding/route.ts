@@ -72,6 +72,13 @@ export async function POST(req: Request) {
       },
       include,
     });
+
+    // Bentuk user profile vector dari preferensi yang baru disimpan.
+    // Kalau gagal, onboarding tetap dianggap berhasil.
+    await initializeUserProfileVector(userId).catch((e) =>
+      console.error("Gagal init profile vector:", e)
+    );
+
     return NextResponse.json({ preferences: shape(preferences) }, { status: 201 });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
@@ -123,6 +130,12 @@ export async function PUT(req: Request) {
       },
       include,
     });
+
+    // Hitung ulang user profile vector dari preferensi yang baru.
+    await initializeUserProfileVector(userId).catch((e) =>
+      console.error("Gagal init profile vector:", e)
+    );
+
     return NextResponse.json({ preferences: shape(preferences) });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
