@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 
 const PAGES: RecoPage[] = ["dashboard", "recipes"];
 
-// GET /api/recommendations?page=dashboard|recipes
+// GET /api/recommendations/shelves?page=dashboard|recipes
+// Menyusun baris-baris rak rekomendasi untuk UI. Daftar top-N mentah dari engine vektor ada di /api/recommendations.
 // User selalu diambil dari session (bukan dari query) supaya tidak bisa membaca rekomendasi user lain.
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);

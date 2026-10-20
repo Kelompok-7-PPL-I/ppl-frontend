@@ -13,7 +13,7 @@ export function useRecommendations(page: RecoPage) {
   const query = useQuery<RecoResponse>({
     queryKey: ["recommendations", page, userId],
     queryFn: async () => {
-      const res = await fetch(`/api/recommendations?page=${page}`);
+      const res = await fetch(`/api/recommendations/shelves?page=${page}`);
       if (!res.ok) throw new Error(`Rekomendasi gagal dimuat (${res.status})`);
       return res.json();
     },

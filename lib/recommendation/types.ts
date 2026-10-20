@@ -1,4 +1,4 @@
-// Kontrak response GET /api/recommendations — dipakai UI rekomendasi.
+// Kontrak response GET /api/recommendations/shelves — dipakai UI rak rekomendasi.
 // Engine boleh diganti (rules → vektor), asal bentuk response ini tetap.
 
 export type ReasonKind =
